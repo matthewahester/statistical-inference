@@ -1,0 +1,376 @@
+---
+title: "Week 4 — Bias, variance & MSE"
+subtitle: "What makes one estimator better than another for a purpose?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Properties of estimators (bias, variance) — supports bias, variance, and the MSE decomposition"
+toc: true
+---
+
+## The week question
+
+Last week you met two estimators — the sample proportion $\hat p$ and the sample mean $\bar X$ — and you
+measured how much each one bounces from sample to sample with a standard error. That tells you how *variable*
+an estimator is. But variability is only half of the story of whether an estimator is any good. An estimator
+can be steady and still be systematically wrong, or it can be a little off-center on average yet land closer to
+the truth more often than a "fair" competitor. This week's question is the one that lets you actually *choose*:
+
+> Given two estimators of the same parameter, what makes one of them better — and better *for what*?
+
+The answer is a single quantity that combines how off-center an estimator is (its **bias**) with how much it
+scatters (its **variance**) into one number you can compare: the **mean squared error**. The plan for the week
+is to define bias and variance precisely, show how they combine, and then use the combination to compare two
+honest competitors for the same parameter — including a case where deliberately accepting a little bias buys you
+a lower error overall.
+
+## Why this matters
+
+Every method in the rest of this course produces an estimator: the maximum-likelihood estimate in weeks 5–6, the
+center of a confidence interval in week 7, a bootstrap estimate in week 10, a posterior mean in week 12. None of
+those is automatically "the right answer." Each is a recipe that takes a random sample and returns a number, and
+recipes differ in quality. To compare them you need a yardstick that respects two different ways an estimator can
+disappoint you:
+
+- it can be **biased** — wrong *on average*, missing the parameter even if you could repeat the study forever;
+- it can be **high-variance** — right on average but wildly unstable, so any single sample is untrustworthy.
+
+A yardstick that looks only at variance would crown a useless estimator (always report $0.5$, no matter the data)
+as the "best," because a constant has zero variance. A yardstick that looks only at bias would tolerate an
+unbiased estimator that swings so hard it is never close. Mean squared error refuses both shortcuts: it charges
+you for being off-center *and* for being unstable, in the same units, so a comparison is meaningful. This week is
+where "which estimator should I use?" stops being a matter of taste and becomes a calculation — while staying
+honest that the calculation depends on the model and on what you are trying to do.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- State the definition $\operatorname{Bias}(\hat\theta) = E[\hat\theta] - \theta$ in words and symbols, and
+  explain why bias is a property of the **estimator** (a random variable) relative to a **fixed** parameter.
+- Show that the sample proportion is **unbiased** for the proportion it estimates, and write its variance.
+- Derive and state the **MSE decomposition** $\operatorname{MSE}(\hat\theta) = \operatorname{Var}(\hat\theta) +
+  \operatorname{Bias}(\hat\theta)^2$, and explain what each piece charges you for.
+- Compare two estimators of the same parameter by MSE, including a **biased-but-lower-variance** competitor, and
+  say which is better *and at which true value*.
+- Avoid the week's trap: never declare an estimator better because it has smaller variance alone.
+
+## Core vocabulary
+
+Keep the **parameter vs statistic vs estimator vs estimate** discipline in front of you; bias and MSE only make
+sense once you are clear about which object is random and which is fixed.
+
+- **Parameter** $\theta$ — a fixed, unknown number describing the process (for Strand A, the true passing
+  probability $\theta$). It does not have a sampling distribution and never gets a hat of its own.
+- **Estimator** $\hat\theta$ — a *random variable*, a function of the sample, with a sampling distribution. The
+  sample proportion $\hat p = X/n$ is an estimator before you see the data.
+- **Estimate** — one realized number from one observed sample, e.g. $\hat p = 0.65$. Bias and variance are
+  statements about the estimator (the recipe), not about a single estimate (one number).
+- **Expectation of an estimator**, $E[\hat\theta]$ — the long-run average of the estimator across all the
+  samples its sampling distribution could produce. This is the center of the sampling distribution.
+- **Bias** — $\operatorname{Bias}(\hat\theta) = E[\hat\theta] - \theta$: how far the *center* of the sampling
+  distribution sits from the parameter. An estimator is **unbiased** when this is exactly $0$, meaning
+  $E[\hat\theta] = \theta$.
+- **Variance** $\operatorname{Var}(\hat\theta) = E\big[(\hat\theta - E[\hat\theta])^2\big]$ — the spread of the
+  sampling distribution around its own center. Its square root is the standard error from week 3.
+- **Mean squared error** $\operatorname{MSE}(\hat\theta) = E\big[(\hat\theta - \theta)^2\big]$ — the average
+  squared distance of the estimator from the *true* parameter. This is the single yardstick for the week, and it
+  equals $\operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2$.
+
+The distinction between $\operatorname{Var}$ and $\operatorname{MSE}$ is the heart of the week: variance measures
+spread around the estimator's *own* average; MSE measures spread around the *truth*. They agree only when the
+estimator is unbiased.
+
+## Concept development
+
+### Bias: where the sampling distribution is centered
+
+Picture the sampling distribution of an estimator — the histogram you would get by repeating the whole study many
+times and plotting the estimate each time (you built exactly this picture, by simulation, in week 2). Bias asks a
+single question of that histogram: *where is it centered, relative to the parameter?* Formally,
+$$
+\operatorname{Bias}(\hat\theta) = E[\hat\theta] - \theta .
+$$
+Read this carefully against the notation discipline. The parameter $\theta$ is **fixed** — it is not random, and
+it is not something the data "lands near with probability." The expectation $E[\hat\theta]$ is an average over the
+**randomness in the estimator**. So bias compares a fixed target with the center of a random thing. If the center
+sits exactly on the target, $\operatorname{Bias} = 0$ and we call $\hat\theta$ **unbiased**: across infinitely many
+repetitions, the estimator is right *on average*. Unbiased does not mean *right on this sample* — a single
+unbiased estimate can be far off; it means the misses cancel in the long run.
+
+Now apply this to the proportion. With $X \sim \text{Binomial}(n, \theta)$ counting passes and $\hat p = X/n$, the
+mean of a binomial count is $E[X] = n\theta$, so
+$$
+E[\hat p] = E\!\left[\frac{X}{n}\right] = \frac{E[X]}{n} = \frac{n\theta}{n} = \theta .
+$$
+The center of the sampling distribution of $\hat p$ sits exactly on $\theta$, so $\operatorname{Bias}(\hat p) =
+E[\hat p] - \theta = 0$. **The sample proportion is unbiased.** This is a statement about the recipe $\hat p = X/n$,
+true for every $n$ and every $\theta$ — not about the single estimate $0.65$ we happened to observe.
+
+### Variance: how much the estimator scatters
+
+The second property is the spread of that same sampling distribution around its own center. For the proportion,
+$\operatorname{Var}(X) = n\theta(1-\theta)$ for a binomial count, and dividing a random variable by the constant
+$n$ divides its variance by $n^2$, so
+$$
+\operatorname{Var}(\hat p) = \operatorname{Var}\!\left(\frac{X}{n}\right) = \frac{\operatorname{Var}(X)}{n^2}
+= \frac{n\theta(1-\theta)}{n^2} = \frac{\theta(1-\theta)}{n} .
+$$
+This is the squared standard error from week 3. Notice what it depends on: it shrinks like $1/n$, so larger samples
+give a tighter sampling distribution, and it is largest near $\theta = 0.5$, where a pass is most unpredictable. The
+variance says *nothing* about whether $\hat p$ is centered correctly — an estimator can have tiny variance and still
+be badly biased. That is precisely why variance alone cannot rank estimators, and why we need to fold bias and
+variance into one number.
+
+### The MSE decomposition: charging for both faults at once
+
+Mean squared error is the average squared distance from the **truth**:
+$$
+\operatorname{MSE}(\hat\theta) = E\big[(\hat\theta - \theta)^2\big].
+$$
+The key algebraic fact of the week is that this splits cleanly into variance and squared bias. Write $\mu_{\hat\theta}
+= E[\hat\theta]$ for the center of the estimator's sampling distribution, add and subtract it, and expand:
+$$
+\begin{aligned}
+\operatorname{MSE}(\hat\theta)
+&= E\big[(\hat\theta - \mu_{\hat\theta} + \mu_{\hat\theta} - \theta)^2\big] \\
+&= E\big[(\hat\theta - \mu_{\hat\theta})^2\big]
+ + 2(\mu_{\hat\theta} - \theta)\,E\big[\hat\theta - \mu_{\hat\theta}\big]
+ + (\mu_{\hat\theta} - \theta)^2 \\
+&= \operatorname{Var}(\hat\theta) + 2(\mu_{\hat\theta} - \theta)\cdot 0 + \operatorname{Bias}(\hat\theta)^2 \\
+&= \operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2 .
+\end{aligned}
+$$
+The cross term vanishes because $E[\hat\theta - \mu_{\hat\theta}] = E[\hat\theta] - \mu_{\hat\theta} = 0$ — the
+deviations of an estimator from its own mean average to zero. What remains is the decomposition that names the whole
+week:
+$$
+\operatorname{MSE}(\hat\theta) = \operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2 .
+$$
+Read each piece as a charge. The variance term charges you for **instability** — an estimator that swings far from
+its own average pays, even if that average is perfect. The squared-bias term charges you for being **systematically
+off** — an estimator centered away from $\theta$ pays, even if it never swings at all. MSE is the total bill, in the
+squared units of the parameter, and it is the same currency for every estimator, which is what makes a comparison
+fair. Two consequences follow immediately. First, for an **unbiased** estimator the bias term is zero, so
+$\operatorname{MSE} = \operatorname{Var}$ — variance and MSE coincide only there. Second, and this is the surprising
+part, an estimator with *nonzero* bias can have *smaller* MSE than an unbiased one, if it buys enough variance
+reduction to more than pay for the squared bias it takes on. That trade is the subject of the worked examples.
+
+### Comparing estimators: smaller MSE wins, but check where
+
+To compare two estimators $\hat\theta_1$ and $\hat\theta_2$ of the same parameter, compute each one's MSE and prefer
+the smaller. The catch is that MSE is usually a function of the true $\theta$, which you do not know. So the honest
+comparison is not "estimator 1 is better, full stop"; it is "estimator 1 has smaller MSE for these values of
+$\theta$, estimator 2 for those." An estimator that wins everywhere is said to **dominate**; more often each wins in
+some region, and the right choice depends on where you believe $\theta$ actually lies and on what a miss costs you.
+That conditional, purpose-dependent character — *better for what, and where?* — is exactly why the week question is
+phrased the way it is.
+
+## Worked examples
+
+### Worked example — reading-fluency study: $\hat p$ versus a shrink-toward-$0.5$ estimator
+
+**The study (synthetic; seed set, `set.seed(35103)`).** In Strand A of the recurring reading-fluency study, $n = 40$
+students were assessed and $x = 26$ reached the competency threshold, giving the estimate $\hat p = 26/40 = 0.65$.
+The parameter $\theta$ is the true passing probability for the program; it is fixed and unknown. We compare two
+*recipes* for estimating $\theta$, not two numbers.
+
+**Estimator 1 — the sample proportion.** $\hat p = X/n$. From the concept section it is unbiased and has variance
+$\theta(1-\theta)/n$, so
+$$
+\operatorname{Bias}(\hat p) = 0, \qquad
+\operatorname{MSE}(\hat p) = \operatorname{Var}(\hat p) = \frac{\theta(1-\theta)}{n} .
+$$
+
+**Estimator 2 — shrink toward $0.5$.** A program analyst worries that with only $40$ students the proportion is
+jumpy, and proposes pulling the estimate a fraction of the way toward the "coin-flip" value $0.5$:
+$$
+\hat p_{\text{sh}} = w\,\hat p + (1-w)\,(0.5), \qquad 0 < w < 1 ,
+$$
+say with $w = 0.8$. Shrinking trades a little bias for less variance. Because $\hat p_{\text{sh}}$ is a linear
+function of $\hat p$, its mean and variance follow directly:
+$$
+E[\hat p_{\text{sh}}] = w\theta + (1-w)(0.5), \qquad
+\operatorname{Var}(\hat p_{\text{sh}}) = w^2\,\operatorname{Var}(\hat p) = w^2\,\frac{\theta(1-\theta)}{n} .
+$$
+Its bias is $\operatorname{Bias}(\hat p_{\text{sh}}) = E[\hat p_{\text{sh}}] - \theta = (1-w)(0.5 - \theta)$ —
+zero only when $\theta$ is exactly $0.5$, and growing as $\theta$ moves away from $0.5$. Its MSE is therefore
+$$
+\operatorname{MSE}(\hat p_{\text{sh}}) = w^2\,\frac{\theta(1-\theta)}{n} + (1-w)^2(0.5 - \theta)^2 .
+$$
+
+**The computation, at two illustrative true values (synthetic, drafted, `verified: false`).** Take $w = 0.8$,
+$n = 40$.
+
+- *If the truth were $\theta = 0.5$* (the shrink target): $\operatorname{Var}(\hat p) = 0.5\cdot0.5/40 = 0.00625$,
+  so $\operatorname{MSE}(\hat p) = 0.00625$. The shrink estimator has bias $0$ here and variance $0.8^2(0.00625) =
+  0.0040$, so $\operatorname{MSE}(\hat p_{\text{sh}}) = 0.0040 + 0 = 0.0040$. The biased-looking recipe wins
+  decisively — because near its target it carries no bias and strictly less variance.
+- *If the truth were $\theta = 0.65$* (near our estimate): $\operatorname{Var}(\hat p) = 0.65\cdot0.35/40 =
+  0.0056875$, so $\operatorname{MSE}(\hat p) = 0.0056875$. The shrink estimator has variance $0.8^2(0.0056875) =
+  0.0036400$ and bias $(1-0.8)(0.5 - 0.65) = 0.2(-0.15) = -0.03$, so squared bias $0.0009$ and
+  $\operatorname{MSE}(\hat p_{\text{sh}}) = 0.0036400 + 0.0009 = 0.0045400$. The shrink estimator *still* wins, but
+  by less — the variance savings ($0.0020475$) still beat the squared bias it took on ($0.0009$).
+
+**Interpretation, naming what is random/fixed/assumed.** At both of these true values the shrink-toward-$0.5$
+estimator has the smaller MSE, so for this $n$ it would, on average across repeated studies, land closer to the
+truth than the unbiased sample proportion. That is the whole point of the week made concrete: an estimator can be
+*biased* and still *better by MSE*. But read the claim precisely. The parameter $\theta$ is fixed; the comparison
+averages over the **randomness of the sample**, which is what is random here. The verdict is conditional on the
+true $\theta$: the shrink estimator's advantage shrinks as $\theta$ moves away from $0.5$ and would *reverse* far
+enough out, because the squared-bias charge grows like $(0.5 - \theta)^2$ while the variance saving does not. It is
+also conditional on the **model** ($X \sim \text{Binomial}(40, \theta)$, independent trials) and on **using MSE** as
+the loss — a different loss could rank them differently. None of this is a statement about the single number $0.65$;
+it is a statement about two recipes. And every value above is synthetic and drafted: the math gate is blocked.
+
+A small static R sketch makes the comparison tangible. It is shown as teaching code; it is **not executed** here.
+
+```r
+# Bias-variance-MSE comparison of two estimators of a proportion theta.
+# Synthetic teaching study; shown, NOT executed. set.seed only matters if you run it.
+set.seed(35103)
+
+n <- 40
+w <- 0.8                       # shrink weight toward 0.5
+
+# Closed-form MSE pieces as functions of the (unknown) true theta:
+mse_phat <- function(theta) theta * (1 - theta) / n          # unbiased: MSE = Var
+mse_shrink <- function(theta) {
+  var_term  <- w^2 * theta * (1 - theta) / n
+  bias_term <- ((1 - w) * (0.5 - theta))^2
+  var_term + bias_term
+}
+
+# Evaluate at the two illustrative true values used in the note:
+mse_phat(0.50)    # ~ 0.00625
+mse_shrink(0.50)  # ~ 0.00400   (lower: no bias at the target, less variance)
+mse_phat(0.65)    # ~ 0.0056875
+mse_shrink(0.65)  # ~ 0.0045400 (still lower: variance saving beats squared bias)
+
+# A Monte-Carlo check of the unbiased recipe's centering, for intuition:
+theta_true <- 0.65
+draws  <- rbinom(10000, size = n, prob = theta_true) / n     # 10,000 sampling-dist draws of p-hat
+mean(draws)    # ~ 0.65  -> E[p-hat] = theta, i.e. p-hat is unbiased
+var(draws)     # ~ 0.0057 -> matches theta(1-theta)/n
+```
+
+The two MSE functions return the numbers used above; the simulation block illustrates separately that the *center*
+of $\hat p$'s sampling distribution sits on $\theta$ (unbiasedness) with variance $\theta(1-\theta)/n$. Reported
+numbers are synthetic and unverified.
+
+### Worked example (transfer) — a biased-but-lower-variance estimator of a mean
+
+**A fresh context (synthetic; seed set, `set.seed(35103)`).** Move from a proportion to a mean. A lab measures the
+dissolved-oxygen level of a pond on $n = 25$ independent mornings, modeling each reading as $X_i$ with unknown mean
+$\mu$ and known-ish spread $\sigma = 2.0$ mg/L. The obvious estimator is the sample mean $\bar X$, which is
+unbiased ($E[\bar X] = \mu$) with variance $\sigma^2/n$. A field handbook instead recommends a *damped* estimator
+that pulls the mean a fraction toward a long-run reference value $m_0 = 8.0$ mg/L for that pond type:
+$$
+\hat\mu_{\text{d}} = c\,\bar X + (1 - c)\,m_0, \qquad c = 0.9 .
+$$
+
+**The computation.** By the same linear-function rules,
+$$
+E[\hat\mu_{\text{d}}] = c\mu + (1-c)m_0, \quad
+\operatorname{Bias}(\hat\mu_{\text{d}}) = (1-c)(m_0 - \mu), \quad
+\operatorname{Var}(\hat\mu_{\text{d}}) = c^2\frac{\sigma^2}{n} .
+$$
+With $\sigma = 2.0$ and $n = 25$, $\operatorname{Var}(\bar X) = 4/25 = 0.16$, so $\operatorname{MSE}(\bar X) = 0.16$
+(unbiased). Suppose the truth were $\mu = 8.4$ mg/L, close to but not at the reference $8.0$. Then
+$\operatorname{Var}(\hat\mu_{\text{d}}) = 0.9^2(0.16) = 0.1296$, the bias is $(1-0.9)(8.0 - 8.4) = -0.04$, squared
+bias $0.0016$, and
+$$
+\operatorname{MSE}(\hat\mu_{\text{d}}) = 0.1296 + 0.0016 = 0.1312 < 0.16 = \operatorname{MSE}(\bar X) .
+$$
+**Interpretation.** When the truth sits near the reference, the damped estimator's variance saving ($0.0304$)
+outweighs the squared bias it accepts ($0.0016$), so it has the smaller MSE — it is biased yet, on average across
+repeated weeks of sampling, closer to $\mu$. But push the truth far from the reference: at $\mu = 12.0$ the bias is
+$(1-0.9)(8.0 - 12.0) = -0.4$, squared bias $0.16$, and $\operatorname{MSE}(\hat\mu_{\text{d}}) = 0.1296 + 0.16 =
+0.2896 > 0.16$ — now the unbiased $\bar X$ wins. The lesson transfers exactly from the proportion case: shrinking
+toward a value helps *when that value is close to the truth* and hurts when it is far. What is random is the
+sample of mornings; $\mu$ is fixed; the verdict is conditional on where $\mu$ sits, on the model, and on MSE as the
+yardstick. All numbers here are synthetic and drafted, `verified: false`.
+
+## A common mistake
+
+**The trap (convention-risk 8): judging an estimator by its variance alone.** It is tempting to look at two
+estimators, notice that one has a smaller standard error, and declare it the winner. Resist this. Variance only
+measures spread around the estimator's *own* average — it is blind to whether that average is the right place to
+be. The reductio is the estimator "always report $0.5$, ignore the data": it has variance exactly $0$, the smallest
+possible, yet it is hopeless unless $\theta$ truly equals $0.5$, because all of its error is bias. A variance-only
+ranking would crown it.
+
+The correct move is to compare by **MSE**, which charges for variance *and* squared bias in the same units:
+$\operatorname{MSE}(\hat\theta) = \operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2$. Two further
+guardrails. First, keep the objects straight — bias and variance are properties of the **estimator** (a random
+recipe) relative to a **fixed** parameter, never properties of a single estimate; "$0.65$ is biased" is a category
+error. Second, remember the verdict is usually **conditional on $\theta$**: a biased estimator that wins by MSE near
+some value can lose far from it, so "better" must come with "for which true values, and for what loss." Saying an
+estimator is better full stop, on the strength of a smaller standard error, is the mistake this week exists to
+prevent.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — no points, no submission, nothing to turn in.
+
+1. In your own words, state the difference between $\operatorname{Var}(\hat\theta)$ and
+   $\operatorname{MSE}(\hat\theta)$. When are the two equal?
+2. Show from $E[X] = n\theta$ that $\hat p = X/n$ is unbiased. Which object is random in $E[\hat p]$, and which is
+   fixed?
+3. Using $\operatorname{MSE} = \operatorname{Var} + \operatorname{Bias}^2$, explain why the constant estimator
+   "always report $0.5$" has zero variance but can have enormous MSE.
+4. For the shrink estimator $\hat p_{\text{sh}} = 0.8\,\hat p + 0.2(0.5)$ with $n = 40$, find the value of $\theta$
+   at which its bias is exactly zero. Why does its MSE advantage over $\hat p$ shrink as $\theta$ moves away from
+   that value?
+5. A classmate says "estimator B has a smaller standard error, so B is better." Give the one-sentence correction
+   this week is built around, and name what extra information you would need to actually decide.
+
+## Reading and source pointer
+
+For this week, read the **MIT OCW 18.05** treatment of the **properties of estimators — bias and variance**, which
+grounds the definitions of bias, the variance of an estimator, and the mean-squared-error decomposition used here.
+That reading supplies the shape (the order of ideas, the level of notation, the framing of bias as a property of an
+estimator relative to a fixed parameter); the worked numbers, the shrink-toward-$0.5$ comparison, and the
+dissolved-oxygen transfer are the course's own synthetic constructions. *These notes are the course's own synthesis,
+grounded in but not copied from the sources.*
+
+## Formula-verification status
+
+**verified: false.** The formulas and every numeric value on this page are **drafted, synthetic, and not
+independently checked**. The load-bearing items here are: the bias definition $\operatorname{Bias}(\hat\theta) =
+E[\hat\theta] - \theta$; unbiasedness of $\hat p$ with $E[\hat p] = \theta$ and $\operatorname{Var}(\hat p) =
+\theta(1-\theta)/n$; the MSE decomposition $\operatorname{MSE}(\hat\theta) = \operatorname{Var}(\hat\theta) +
+\operatorname{Bias}(\hat\theta)^2$; and the comparison numbers for the shrink-toward-$0.5$ estimator
+($\operatorname{MSE}(\hat p) = 0.00625$ vs $0.0040$ at $\theta = 0.5$; $0.0056875$ vs $0.0045400$ at $\theta = 0.65$,
+with $w = 0.8$, $n = 40$) and the transfer means ($\operatorname{MSE}(\bar X) = 0.16$ vs $0.1312$ at $\mu = 8.4$,
+vs $0.2896$ at $\mu = 12.0$, with $c = 0.9$, $\sigma = 2.0$, $n = 25$). All data are synthetic with
+`set.seed(35103)`. The course **math/statistics gate is BLOCKED**; do not treat any value here as a confirmed
+reference until the human/source sign-off in `_state/notation_ledger.md` §5 is complete.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**, which
+is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow
+Blackboard.
+
+## Looking ahead
+
+Next week shifts the question from *judging* estimators to *building* one. So far you have taken estimators as
+given — $\hat p$, $\bar X$, a shrink recipe — and asked which is better. Week 5 turns to the data's **likelihood**:
+the function $L(\theta)$ that measures how well each candidate value of $\theta$ explains the observed sample. From
+that function you will learn to read which parameter values the data prefer, setting up week 6, where the value
+that maximizes the likelihood becomes an estimator in its own right — the maximum-likelihood estimate.
+
+## See also
+
+- [Week 3 — Estimators & standard errors](week-03-estimators-and-standard-errors.qmd) — where $\hat p$, $\bar X$,
+  and the standard error (the square root of $\operatorname{Var}(\hat\theta)$) came from.
+- [Week 5 — Likelihood](week-05-likelihood.qmd) — from judging estimators to building one from the data's
+  likelihood.
+- [Notation glossary](../resources/notation-glossary.qmd) — the parameter / statistic / estimator / estimate
+  discipline and the bias–variance–MSE symbols.
+- [Inference reference](../resources/inference-reference.qmd) — the four inferential lenses side by side.

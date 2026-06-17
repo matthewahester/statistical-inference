@@ -1,0 +1,80 @@
+---
+title: "Notes"
+subtitle: "The weekly inferential spine"
+page-type: orientation
+toc: true
+---
+
+The notes are the backbone of the course. There is one note per week, and reading the current week's note
+before class — and again after — is the single most reliable way to keep up. Every note follows the same
+shape, so once you learn to read one, you can read them all.
+
+## How to read a week
+
+Each weekly note is built from the same parts, in the same order. Knowing the anatomy lets you skim for what
+you need and study with intent:
+
+- **The week question.** A single inferential question that the week exists to answer. Hold it in mind as you
+  read; everything else is in service of it.
+- **Concept development.** The core ideas, built up in a few short sections from intuition toward a precise
+  inferential statement. This is the part to read slowly — and where the conditioning, the assumptions, and
+  the claim are made explicit.
+- **Worked examples.** Each idea is worked on the recurring **reading-fluency study** (a synthetic campus
+  reading-intervention study) — the method is set up, the computation is shown, and the result is interpreted
+  in sentences — plus one *transfer* example in a fresh context, so you see the idea move.
+- **A common mistake.** The inferential error students most often make on this topic — a confused conditioning
+  statement, a misread interval, a mistaken p-value — named plainly so you can watch for it in your own work.
+- **Ungraded self-checks.** A few low-stakes practice prompts to test yourself. These are *self-check only* —
+  no points, no submission.
+- **Reading pointer.** Where to read more: the relevant *MIT OCW 18.05* reading (and, for the simulation and
+  resampling weeks, *ModernDive*; for lighter review, *Introduction to Modern Statistics*), with the reminder
+  that these notes are the course's own synthesis.
+- **Formula-verification status.** An honest note that the formulas and numbers on the page are drafted and
+  synthetic, pending review — this is a draft course site.
+- **Looking ahead.** A sentence or two connecting this week to the next, so the inferential arc stays visible.
+
+Keep the [notation glossary](../resources/notation-glossary.qmd) and the
+[inference reference](../resources/inference-reference.qmd) open alongside the notes.
+
+## The four parts
+
+The fifteen weeks fall into four parts. Each part has a job, and the weeks within it build on one another.
+
+**Part I — The inferential problem.** What inference is, how sampling variability behaves, how we measure an
+estimate's variability, and how we judge an estimator.
+
+1. [Week 1 — What statistical inference is](week-01-what-statistical-inference-is.qmd)
+2. [Week 2 — Sampling distributions & simulation](week-02-sampling-distributions-and-simulation.qmd)
+3. [Week 3 — Estimators & standard errors](week-03-estimators-and-standard-errors.qmd)
+4. [Week 4 — Bias, variance & MSE](week-04-bias-variance-mse.qmd)
+
+**Part II — Likelihood & classical inference.** Comparing parameter values by likelihood, finding the MLE,
+and building confidence intervals and hypothesis tests.
+
+1. [Week 5 — Likelihood](week-05-likelihood.qmd)
+2. [Week 6 — Maximum likelihood estimation](week-06-maximum-likelihood-estimation.qmd)
+3. [Week 7 — Confidence intervals (midterm)](week-07-confidence-intervals-and-midterm.qmd)
+4. [Week 8 — Hypothesis tests & p-values](week-08-hypothesis-tests-and-p-values.qmd)
+5. [Week 9 — Error rates, power & decisions](week-09-error-rates-power-decisions.qmd)
+
+**Part III — Simulation-based inference.** Estimating uncertainty by resampling, and testing by relabeling
+under a null.
+
+1. [Week 10 — Bootstrap inference](week-10-bootstrap-inference.qmd)
+2. [Week 11 — Randomization & permutation tests](week-11-randomization-and-permutation-tests.qmd)
+
+**Part IV — Bayesian inference & synthesis.** The Bayesian lens, a comparison of all four frameworks, a
+project workshop, and a closing synthesis.
+
+1. [Week 12 — Bayesian inference](week-12-bayesian-inference.qmd)
+2. [Week 13 — Comparing inferential frameworks](week-13-comparing-inferential-frameworks.qmd)
+3. [Week 14 — Inference project workshop](week-14-inference-project-workshop.qmd)
+4. [Week 15 — Final review & synthesis](week-15-final-review-synthesis.qmd)
+
+## Public vs. graded
+
+These notes and the practice in them are **public and ungraded** — study material only. No graded prompts,
+answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints, quizzes,
+homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**, which is
+authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree, follow
+Blackboard.

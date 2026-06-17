@@ -1,0 +1,156 @@
+---
+title: "Week 14 — Inference project workshop"
+subtitle: "Comparing inferential approaches and communicating responsibly"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+readings:
+  - "ModernDive (Ismay, Kim & Valdivia), Ch 11 — Tell Your Story with Data — supports a reproducible inferential report"
+toc: true
+---
+
+## Concept note
+
+The course project is where the four lenses stop being a table and become your own piece of work. The task is
+deliberately not "run a test and report a p-value." It is to take one inferential question, apply **at least
+two** of the frameworks we have built — frequentist, likelihood, simulation-based, Bayesian — to *the same*
+question, lay their assumptions and conclusions side by side, and write a responsible interpretation that an
+honest reader would trust. The thinking you practiced in Week 13 is the project; this workshop is about turning
+that thinking into a reproducible artifact.
+
+A good inferential comparison has a recognizable shape, and it is worth naming before you start. First, a
+**question** precise enough to be answered: not "is the program good?" but "is the pass rate above one-half?"
+or "does the intervention raise fluency speed?" Second, **two methods** chosen because they illuminate the
+question from different angles — a confidence interval and a Bayesian credible interval, say, or a theory-based
+test and a permutation test. Third, an honest **comparison of assumptions**: what does each method condition
+on, what must be true for it to be valid, and where might that fail? Fourth, a **responsible conclusion** that
+states the estimate, the uncertainty, the assumptions, the limitations, and — because inference exists to
+inform action — the decision consequences. A project that nails the question and the assumptions but reports
+the numbers carelessly is weaker than one with modest numbers and a scrupulous interpretation.
+
+Reproducibility is part of credibility here, not an add-on. An inferential claim that no one else can re-run is
+a claim on trust alone. So the project is built as a single Quarto document with a fixed random seed and
+recorded session information, so that the same code yields the same intervals, the same p-values, and the same
+posterior every time anyone runs it — including you, three weeks later, when you have forgotten exactly what
+you did. The methods you compare are only as believable as the workflow that produced them.
+
+## Setup and practice sequence
+
+Work the project in this order; each step is small and checkable.
+
+1. **State the question and the parameter.** Write one sentence naming the unknown ($\theta$ the pass rate,
+   $\mu$ the mean gain, or the treatment difference) and what you want to claim about it. Name the population
+   and the assumed sampling scheme in the same breath.
+2. **Pick two frameworks and say why.** Choose two lenses that genuinely differ in what they assume or claim
+   (e.g. a frequentist CI and a Bayesian credible interval; or a theory test and a permutation test). Write one
+   sentence justifying each choice by what it conditions on.
+3. **Compute each, showing the code.** Run each method in R with a fixed seed, and report its estimate and
+   uncertainty. Use the recurring reading-fluency study or your own clearly-described synthetic data.
+4. **Compare assumptions and conclusions.** Build a small table: for each method, what is fixed vs. random,
+   what is assumed, what it claims. Note where the numbers agree and where the *meanings* differ.
+5. **Write the responsible interpretation.** State the conclusion, the uncertainty, the assumptions you relied
+   on, the limitations, and the decision consequence if someone acted on it. Flag any place a different
+   reasonable assumption would change the story.
+
+Here is the computational skeleton, shown as static teaching code (not executed on this site):
+
+```r
+set.seed(35103)
+# --- the question: is the pass rate theta above one-half? ---
+x <- 26; n <- 40
+phat <- x / n                                   # 0.65
+
+# method 1 (frequentist): 95% CI + one-sided test of H0: theta = 0.5
+se   <- sqrt(phat * (1 - phat) / n)             # ~ 0.0754
+ci   <- phat + c(-1, 1) * 1.96 * se             # ~ (0.502, 0.798)
+z    <- (phat - 0.5) / sqrt(0.5 * 0.5 / n)      # ~ 1.90
+p_one_sided <- 1 - pnorm(z)                      # ~ 0.029
+
+# method 2 (Bayesian): Beta(2,2) prior -> Beta(28,16) posterior
+A <- 2 + x; B <- 2 + (n - x)
+cred <- qbeta(c(0.025, 0.975), A, B)            # ~ (0.493, 0.766)
+post_gt_half <- 1 - pbeta(0.5, A, B)            # ~ 0.975
+```
+
+## Reproducible-file convention
+
+Submit one self-contained Quarto file. Four conventions make it reproducible and reviewable, and they are the
+same four every analyst uses:
+
+- **One `.qmd`, top to bottom.** The narrative, the code, and the results live in a single document that runs
+  start to finish without manual steps. If a reader cannot render it in one click, it is not reproducible.
+- **A fixed seed at the top.** `set.seed(35103)` (or any fixed value you state) so every simulation — bootstrap,
+  permutation, posterior draw — returns the same numbers on every run.
+- **Recorded session information.** End with `sessionInfo()` so the exact R and package versions are part of the
+  record; results that depend on a package version are only trustworthy when the version is captured.
+- **Named, dated files and clear labels.** Name the file for the project and the date; label each code block by
+  what it computes, so the document reads as an argument, not a pile of output.
+
+## Debugging
+
+The snags in an inference project are usually about reproducibility and conditioning, not syntax. The most
+common is **forgetting the seed** (or setting it in the wrong place): a bootstrap or permutation result that
+changes every render is not wrong, but it is not reproducible, and a reviewer cannot confirm your numbers. Set
+the seed once, near the top, *before* any random draw. A second frequent snag is a **simulation that is too
+small to be stable** — 200 bootstrap resamples will give a visibly jittery interval; push to 10,000 so the
+percentile interval settles. A third is a **mismatched comparison**: computing a one-sided p-value but a
+two-sided interval, or a credible interval at 90% against a confidence interval at 95%, so the two methods are
+not actually answering the same question — keep the levels and the sidedness aligned across methods, or say
+explicitly why they differ. When two methods disagree more than you expected, suspect a conditioning mismatch
+before you suspect a bug.
+
+## AI Use Note
+
+If you use an AI assistant on the project, include this note. Verification is the load-bearing line.
+
+| Field | What to record |
+|-------|----------------|
+| Tool | which assistant you used, with approximate date or version |
+| Purpose | what you used it for (e.g. explaining a method, debugging simulation code, drafting an outline) |
+| Verification | how you checked it: recomputed the interval, re-ran the simulation, confirmed the conditioning statement, compared to class notes, or rewrote the explanation in your own words after checking |
+
+AI may help you *understand and debug*; it may not produce the interpretation you submit, choose your methods,
+or fabricate results. Inference is sensitive to assumptions and conditioning, and AI explanations frequently
+confuse a parameter with a statistic, a confidence interval with a credible interval, or a p-value with a
+posterior probability — so every AI-touched claim must be checked against the reasoning you have built this
+term.
+
+## Reading and source pointer
+
+Read **ModernDive Chapter 11 — Tell Your Story with Data** alongside this workshop for the reproducible-report
+workflow and the discipline of communicating an analysis. These notes are the course's own synthesis, grounded
+in but not copied from the sources.
+
+## Formula-verification status
+
+**verified: false.** The skeleton's numbers — $\hat p = 0.65$, $\operatorname{SE} \approx 0.0754$, CI
+$(0.502,\ 0.798)$, $z \approx 1.90$, one-sided $p \approx 0.029$, posterior $\text{Beta}(28,16)$ with credible
+interval $(0.493,\ 0.766)$ and $P(\theta>0.5) \approx 0.975$ — are **drafted, synthetic, and not independently
+checked**. The course **math/statistics gate is BLOCKED**: every value here is provisional, pending the
+human/source sign-off in `_state/notation_ledger.md` §5. Use this skeleton as a workflow pattern, not a source
+of confirmed results.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. The project itself — its prompt,
+rubric, checkpoints, due dates, and submission — lives in **Blackboard (the LMS)**, which is authoritative for
+due dates, submissions, and grades. If this page and Blackboard ever disagree, follow Blackboard.
+
+## Portfolio connection
+
+The inference project is the capstone of your **portfolio** of work this term: it gathers the estimation,
+likelihood, testing, resampling, and Bayesian skills from the weekly notes and labs into one reproducible
+analysis you can show as evidence of what you can do. Treat it as the piece you would hand to a future
+instructor or employer to demonstrate that you can take a question, apply more than one inferential method,
+weigh their assumptions, and communicate a conclusion responsibly — the whole point of the course in a single
+document.
+
+## See also
+
+- [Week 13 — Comparing inferential frameworks](week-13-comparing-inferential-frameworks.qmd)
+- [Week 15 — Final review & synthesis](week-15-final-review-synthesis.qmd)
+- [Lab 12 — Bayesian updating by simulation](../labs/lab-12-bayesian-updating-by-simulation.qmd)
+- [R · Quarto setup](../resources/r-quarto-setup.qmd)
+- [Inference reference](../resources/inference-reference.qmd)

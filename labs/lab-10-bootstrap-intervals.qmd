@@ -1,0 +1,111 @@
+---
+title: "Lab 10 — Bootstrap intervals"
+subtitle: "Resampling your own data to build a percentile confidence interval"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+toc: true
+---
+
+> **Purpose.** This lab is the hands-on companion to
+> [Week 10 — Bootstrap inference](../notes/week-10-bootstrap-inference.qmd). The note develops the bootstrap
+> principle — resample the sample with replacement to estimate sampling variability; here you build a bootstrap
+> distribution for the mean, read a standard error and a percentile interval off it, and confirm it matches the
+> theory-based interval from Week 7.
+
+## The idea
+
+The bootstrap treats your one sample as a stand-in for the population: resample it *with replacement* many
+times, recompute the estimate each time, and the spread of those estimates approximates the sampling
+distribution — no formula required. This lab builds that distribution for the mean reading-gain, reads the
+bootstrap standard error and a percentile confidence interval, and checks both against the $t$-interval from
+Week 7. The two agreeing is the point: simulation and theory measuring the same variability.
+
+## Goal
+
+From a sample of $n = 36$ gains with mean $8.0$ and SD $6.0$, generate a bootstrap distribution of the sample
+mean, report the bootstrap SE (about $1.0$) and the 95% percentile interval (about $(6.0, 10.0)$), and compare
+to the Week-7 $t$-interval $(5.97, 10.03)$.
+
+## Setup
+
+Open R and a fresh Quarto document; fix the seed. We build a synthetic sample whose mean and SD match the
+locked study values, then bootstrap *that sample* — the bootstrap only ever uses the data you have.
+
+```r
+set.seed(35103)
+# a synthetic sample of 36 gains with mean ~ 8 and SD ~ 6 (stands in for the observed cohort)
+gains <- rnorm(36, mean = 8, sd = 6)
+mean(gains); sd(gains)    # close to 8.0 and 6.0
+B <- 10000                # number of bootstrap resamples
+```
+
+## Steps
+
+### Step 1 — one bootstrap resample
+
+A single bootstrap resample draws 36 gains *with replacement* from the 36 observed gains; some appear twice,
+some not at all. Its mean is one bootstrap statistic.
+
+```r
+set.seed(35103)
+one <- sample(gains, size = 36, replace = TRUE)   # a resample
+mean(one)                                          # one bootstrap mean
+```
+
+### Step 2 — many resamples, the bootstrap distribution
+
+Repeat `B` times to get the whole bootstrap distribution of the mean, and look at it.
+
+```r
+boot_means <- replicate(B, mean(sample(gains, replace = TRUE)))
+hist(boot_means, breaks = 30,
+     main = "Bootstrap distribution of the mean gain", xlab = "bootstrap mean")
+```
+
+### Step 3 — read the SE and the percentile interval
+
+The bootstrap SE is the SD of the bootstrap means; the percentile interval is their middle 95%.
+
+```r
+sd(boot_means)                          # bootstrap SE   ~ 1.0
+quantile(boot_means, c(0.025, 0.975))   # percentile 95% CI  ~ (6.0, 10.0)
+
+# compare to the Week-7 theory interval
+mean(gains) + c(-1, 1) * qt(0.975, df = 35) * (sd(gains) / sqrt(36))   # ~ (5.97, 10.03)
+```
+
+## Verify
+
+- **Center.** The bootstrap distribution is centered near the sample mean ($\approx 8.0$) — the bootstrap
+  describes variability *around the estimate*, not a shift away from it.
+- **SE matches the formula.** `sd(boot_means)` is about $1.0$, matching $s/\sqrt n = 6/6$. The simulation
+  reproduced the standard error.
+- **Interval matches theory.** The percentile interval $(6.0, 10.0)$ is essentially the $t$-interval
+  $(5.97, 10.03)$. When they agree, both are trustworthy; if they disagreed sharply, you would suspect skew or
+  a too-small sample and investigate.
+- **Replacement matters.** If you drop `replace = TRUE`, every resample is just the original sample, the
+  bootstrap SE collapses to $0$, and the interval vanishes — a fast way to confirm replacement is doing the
+  work.
+
+## AI use note
+
+| Field | What to record |
+|-------|----------------|
+| Tool | which assistant you used, with approximate date or version |
+| Purpose | what you used it for (e.g. explaining `sample(..., replace = TRUE)`, debugging `quantile`) |
+| Verification | how you checked it: compared the bootstrap SE to $s/\sqrt n$, compared the percentile interval to the $t$-interval, or re-ran with the fixed seed |
+
+Verification is the load-bearing line: an AI can write the resampling loop, but you confirm the bootstrap SE
+matches $s/\sqrt n$ and the interval matches Week 7 yourself.
+
+## See also
+
+- [Week 10 — Bootstrap inference](../notes/week-10-bootstrap-inference.qmd)
+- [Week 7 — Confidence intervals (midterm)](../notes/week-07-confidence-intervals-and-midterm.qmd)
+- [Week 11 — Randomization & permutation tests](../notes/week-11-randomization-and-permutation-tests.qmd)
+- [R · Quarto setup](../resources/r-quarto-setup.qmd)
+
+*The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only. All numbers are synthetic and `verified: false`; the math gate is blocked pending sign-off.*

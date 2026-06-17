@@ -1,0 +1,138 @@
+# Statistical Inference — public Quarto course site (assembled undergraduate course materials).
+# Sibling of matthewhester.com; intended to live at /statistical-inference/ under that domain.
+# Layout/theme aligned to the matthewhester.com course family (cosmo + styles.css, dark navbar,
+# floating sidebar, right-side TOC, MathML math). site-url set for the combined deploy; this
+# repo does not self-deploy (no CI here — the hub workflow assembles the courses).
+# Boundary: this is the PUBLIC surface. Private build state (_state/), source governance
+# (source_text/), assessment shadows (assessment_shadow/), run reports (run_reports/), and
+# accessibility evidence (accessibility/) are NOT rendered.
+project:
+  type: website
+  output-dir: _site
+  # RENDER ALLOW-LIST (docs/08 §2 boundary hazard; docs/26 §6). Fails safe — only the public
+  # sections below render into _site/. Every private dir (_state/ underscore-skipped, plus
+  # source_text/, assessment_shadow/, run_reports/, accessibility/) is excluded.
+  # NOTE: a bare "*.qmd" matches RECURSIVELY in Quarto 1.8.26 and could leak nested private .qmd.
+  # List the three public root pages explicitly instead, and negate private dirs as
+  # belt-and-suspenders (docs/08 §2, docs/26 §6).
+  render:
+    - index.qmd
+    - syllabus.qmd
+    - schedule.qmd
+    - notes/*.qmd
+    - labs/*.qmd
+    - resources/*.qmd
+    - "!source_text/"
+    - "!assessment_shadow/"
+    - "!run_reports/"
+    - "!accessibility/"
+
+website:
+  title: "Statistical Inference"
+  site-url: https://matthewhester.com/statistical-inference/
+  description: |
+    Public-facing course materials for Statistical Inference — an assembled
+    undergraduate course site (notes, labs, and resources) curated by Matt Hester.
+  open-graph: true
+  navbar:
+    pinned: true
+    background: dark            # black top bar — the family signature
+    logo: assets/icon.png
+    logo-alt: "Statistical Inference — a crystal course mark"
+    left:
+      - href: index.qmd
+        text: Home
+      - href: syllabus.qmd
+        text: Syllabus
+      - href: schedule.qmd
+        text: Schedule
+  sidebar:
+    style: floating
+    collapse-level: 2
+    contents:
+      - section: "Notes"
+        href: notes/index.qmd
+        contents:
+          - href: notes/index.qmd
+            text: "Notes overview"
+          - section: "Part I — The inferential problem (Wk 1–4)"
+            contents:
+              - href: notes/week-01-what-statistical-inference-is.qmd
+                text: "1 — What statistical inference is"
+              - href: notes/week-02-sampling-distributions-and-simulation.qmd
+                text: "2 — Sampling distributions & simulation"
+              - href: notes/week-03-estimators-and-standard-errors.qmd
+                text: "3 — Estimators & standard errors"
+              - href: notes/week-04-bias-variance-mse.qmd
+                text: "4 — Bias, variance & MSE"
+          - section: "Part II — Likelihood & classical inference (Wk 5–9)"
+            contents:
+              - href: notes/week-05-likelihood.qmd
+                text: "5 — Likelihood"
+              - href: notes/week-06-maximum-likelihood-estimation.qmd
+                text: "6 — Maximum likelihood estimation"
+              - href: notes/week-07-confidence-intervals-and-midterm.qmd
+                text: "7 — Confidence intervals (midterm)"
+              - href: notes/week-08-hypothesis-tests-and-p-values.qmd
+                text: "8 — Hypothesis tests & p-values"
+              - href: notes/week-09-error-rates-power-decisions.qmd
+                text: "9 — Error rates, power & decisions"
+          - section: "Part III — Simulation-based inference (Wk 10–11)"
+            contents:
+              - href: notes/week-10-bootstrap-inference.qmd
+                text: "10 — Bootstrap inference"
+              - href: notes/week-11-randomization-and-permutation-tests.qmd
+                text: "11 — Randomization & permutation tests"
+          - section: "Part IV — Bayesian inference & synthesis (Wk 12–15)"
+            contents:
+              - href: notes/week-12-bayesian-inference.qmd
+                text: "12 — Bayesian inference"
+              - href: notes/week-13-comparing-inferential-frameworks.qmd
+                text: "13 — Comparing inferential frameworks"
+              - href: notes/week-14-inference-project-workshop.qmd
+                text: "14 — Inference project workshop"
+              - href: notes/week-15-final-review-synthesis.qmd
+                text: "15 — Final review & synthesis"
+      - section: "Labs"
+        href: labs/index.qmd
+        contents:
+          - href: labs/index.qmd
+            text: "Labs overview"
+          - href: labs/lab-02-simulating-sampling-distributions.qmd
+            text: "Lab 2 — Simulating sampling distributions"
+          - href: labs/lab-06-likelihood-and-mle-curves.qmd
+            text: "Lab 6 — Likelihood & MLE curves"
+          - href: labs/lab-10-bootstrap-intervals.qmd
+            text: "Lab 10 — Bootstrap intervals"
+          - href: labs/lab-12-bayesian-updating-by-simulation.qmd
+            text: "Lab 12 — Bayesian updating by simulation"
+      - section: "Resources"
+        href: resources/index.qmd
+        contents:
+          - href: resources/index.qmd
+            text: "Resources overview"
+          - href: resources/notation-glossary.qmd
+            text: "Notation glossary"
+          - href: resources/inference-reference.qmd
+            text: "Inference reference"
+          - href: resources/r-quarto-setup.qmd
+            text: "R · Quarto setup"
+  page-footer:
+    left: "© 2026 Matt Hester · Statistical Inference"
+    center: "[Matt Hester · matthewhester.com](https://matthewhester.com/)"
+    right: "Built with [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-location: right
+    anchor-sections: true
+    smooth-scroll: true
+    link-external-newwindow: true
+    fontsize: 1.05em
+    mainfont: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    monofont: "JetBrains Mono, Consolas, Menlo, monospace"
+# Math renders as MathML/MathJax (accessible text), never as images (docs/05 P7; docs/08 §4).
+# R is shown as static, non-executed ```r fences in this diagnostic, so render is deterministic and R-free.

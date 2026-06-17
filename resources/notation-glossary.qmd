@@ -1,0 +1,111 @@
+---
+title: "Notation glossary"
+subtitle: "Symbols and conventions used across the course"
+page-type: reference
+toc: true
+---
+
+Keep this page open while you read the notes. The single most important distinction in the course runs down
+the first three tables: a **parameter** is a fixed unknown, a **statistic / estimator** is a random function of
+the sample, and an **estimate** is one realized number. Confusing them is the root of most inferential
+mistakes, so the symbols are chosen to keep them apart. All numeric values shown are from the synthetic
+recurring **reading-fluency study** and are `verified: false` (the math gate is blocked pending sign-off).
+
+## Parameters (fixed unknowns)
+
+A parameter is a fixed feature of the population or process. It does not have a sampling distribution and never
+takes a "hat."
+
+| Symbol | Meaning |
+|---|---|
+| $\theta$ | a generic parameter (in this course, usually the true pass rate) |
+| $p$ | a success probability / proportion parameter |
+| $\mu$ | a population mean |
+| $\sigma$, $\sigma^2$ | a population standard deviation, variance |
+
+## Statistics and estimators (random — functions of the sample)
+
+A statistic is computed from the random sample, so it is itself random and has a **sampling distribution**. An
+estimator is a statistic used to estimate a parameter.
+
+| Symbol | Meaning |
+|---|---|
+| $X_1,\dots,X_n$, $X$ | the sample (random variables); lowercase $x$ are observed values |
+| $\bar X$ | the sample mean (estimator of $\mu$) |
+| $\hat p = X/n$ | the sample proportion (estimator of $p$ or $\theta$) |
+| $S$ | the sample standard deviation (estimator of $\sigma$) |
+| $\hat\theta$ | a generic estimator of $\theta$ |
+
+## Estimates (one realized number)
+
+| Symbol | Meaning |
+|---|---|
+| $\hat p = 0.65$ | the observed sample proportion ($26$ of $40$) |
+| $\bar x = 8.0$ | the observed sample mean gain |
+| $s = 6.0$ | the observed sample SD of the gains |
+
+The hat does double duty — $\hat\theta$ can mean the estimator (a random variable) or its realized value (a
+number). Say which you mean.
+
+## Variability, bias, and error
+
+| Symbol | Meaning |
+|---|---|
+| $\operatorname{SE}(\hat\theta)$ | standard error — the (estimated) SD of the estimator's sampling distribution (not the SD of the data) |
+| $\operatorname{Bias}(\hat\theta) = E[\hat\theta] - \theta$ | bias; the estimator is unbiased when this is $0$ |
+| $\operatorname{Var}(\hat\theta)$ | the variance of the estimator |
+| $\operatorname{MSE}(\hat\theta) = \operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2$ | mean squared error; the bias–variance decomposition |
+
+## Likelihood and maximum likelihood
+
+| Symbol | Meaning |
+|---|---|
+| $L(\theta)$ | the likelihood — a function **of $\theta$** given the data; **not** a distribution over $\theta$ (it need not integrate to 1) |
+| $\ell(\theta) = \log L(\theta)$ | the log-likelihood; maximized at the same $\theta$ as $L$ |
+| $\hat\theta_{\text{MLE}}$ | the maximum likelihood estimate; for the study, $26/40 = 0.65$ |
+
+## Intervals and testing
+
+| Symbol | Meaning |
+|---|---|
+| CI | **confidence interval** — a *procedure* with long-run coverage; never a probability statement about a fixed $\theta$ |
+| $z^{*}$, $t^{*}$ | the critical multiplier ($1.96$ for a 95% normal interval; $t_{n-1,\,0.975}$ for a mean) |
+| $H_0$, $H_a$ | null and alternative hypotheses |
+| $T$, $Z$ | a test statistic |
+| $p$-value | $P(T \text{ as or more extreme} \mid H_0)$ — a tail probability **under $H_0$**, not $P(H_0 \text{ true})$ |
+| $\alpha$ | significance level; the Type I error rate (rejecting a true $H_0$) |
+| $\beta$ | the Type II error rate (failing to reject a false $H_0$) |
+| power | $1 - \beta$ |
+
+## Simulation-based inference
+
+| Symbol | Meaning |
+|---|---|
+| $\hat\theta^{*}$ | a bootstrap resampled estimate (resample the sample with replacement) |
+| percentile interval | the middle 95% of the bootstrap distribution |
+| permutation null | a randomization / reference distribution built by relabeling under the null |
+
+## Bayesian inference
+
+| Symbol | Meaning |
+|---|---|
+| $\pi(\theta)$ | the **prior** distribution for $\theta$ (an assumption, not data) |
+| $p(x \mid \theta)$ | the **likelihood** of the data given $\theta$ |
+| $\pi(\theta \mid x)$ | the **posterior**: $\pi(\theta \mid x) \propto p(x \mid \theta)\,\pi(\theta)$ |
+| $p(x)$ | the **evidence** / marginal likelihood — the normalizing constant dropped by $\propto$ |
+| $\propto$ | "proportional to"; always know which constant ($p(x)$) it dropped |
+| $\text{Beta}(a,b)$ | the Beta prior/posterior (shape–shape); mean $a/(a+b)$ |
+| credible interval | a Bayesian posterior interval — a genuine probability statement about $\theta$ (the opposite of a CI) |
+| posterior predictive | the distribution of a future observation, averaging the likelihood over the posterior |
+
+## Decisions
+
+| Symbol | Meaning |
+|---|---|
+| $a$ | an action / decision |
+| $\operatorname{Loss}(\theta, a)$ | a decision **loss** — written out, **never** $L$ (which is the likelihood) |
+
+---
+
+*This page is a study reference. For graded specifics — deadlines, submissions, and policies — **Blackboard
+(the LMS) is authoritative**.*

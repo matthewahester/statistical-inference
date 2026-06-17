@@ -1,0 +1,109 @@
+---
+title: "Lab 6 — Likelihood & MLE curves"
+subtitle: "Drawing the likelihood for a proportion and finding where it peaks"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+toc: true
+---
+
+> **Purpose.** This lab is the hands-on companion to
+> [Week 6 — Maximum likelihood estimation](../notes/week-06-maximum-likelihood-estimation.qmd) (and builds on
+> [Week 5 — Likelihood](../notes/week-05-likelihood.qmd)). The notes develop the likelihood as a function of
+> the parameter and the MLE as its peak; here you draw that curve, find its maximum, and confirm it lands on
+> the value the algebra predicted.
+
+## The idea
+
+The likelihood $L(\theta)$ asks, for each candidate value of the pass rate $\theta$, how probable the data we
+actually saw would be. Plot it over a grid of $\theta$ values and it is a curve with a single hump; the
+**maximum likelihood estimate** is the $\theta$ at the top of the hump. This lab makes that picture concrete
+for the reading-fluency study's $26$ passes out of $40$, and shows why we usually work with the
+**log-likelihood** instead — same peak, friendlier arithmetic.
+
+## Goal
+
+Compute and plot $L(\theta)$ and $\log L(\theta)$ for $x = 26$ successes in $n = 40$ trials over a grid of
+$\theta$, find the grid maximum, confirm it equals $\hat\theta = 26/40 = 0.65$, and check it against a numerical
+optimizer.
+
+## Setup
+
+Open R and a fresh Quarto document. Fix the seed (there is no randomness here, but the convention keeps every
+lab reproducible). The data are just the two counts.
+
+```r
+set.seed(35103)
+x <- 26    # successes (passes)
+n <- 40    # trials (students)
+theta_grid <- seq(0.001, 0.999, by = 0.001)   # candidate pass rates
+```
+
+## Steps
+
+### Step 1 — the likelihood over a grid
+
+The likelihood for binomial data is $L(\theta) = \binom{n}{x}\theta^{x}(1-\theta)^{n-x}$. In R, `dbinom` gives
+exactly this for each grid value.
+
+```r
+L <- dbinom(x, size = n, prob = theta_grid)   # L(theta) for every candidate theta
+plot(theta_grid, L, type = "l",
+     main = "Likelihood L(theta) for x = 26, n = 40",
+     xlab = expression(theta), ylab = "L(theta)")
+```
+
+### Step 2 — find the peak
+
+The grid maximum is the value of $\theta$ where `L` is largest. It should land on $0.65$.
+
+```r
+theta_grid[which.max(L)]   # ~ 0.650  -> the MLE
+x / n                       # 0.65     -> the closed-form MLE, for comparison
+```
+
+### Step 3 — the log-likelihood, and an optimizer
+
+The log-likelihood $\ell(\theta) = \log L(\theta)$ has its peak at the same $\theta$ but is numerically nicer
+(sums instead of products). Plot it, and confirm the maximum with a general-purpose optimizer.
+
+```r
+loglik <- function(t) x * log(t) + (n - x) * log(1 - t)   # up to a constant
+plot(theta_grid, loglik(theta_grid), type = "l",
+     main = "Log-likelihood", xlab = expression(theta), ylab = "log L(theta)")
+
+opt <- optimize(loglik, interval = c(0.001, 0.999), maximum = TRUE)
+opt$maximum   # ~ 0.65  -> matches the grid and the formula
+```
+
+## Verify
+
+- **Grid, formula, optimizer agree.** `theta_grid[which.max(L)]`, `x/n`, and `opt$maximum` should all be about
+  $0.65$. Three independent routes to the same MLE is the confirmation.
+- **Same peak, two curves.** The likelihood and the log-likelihood peak at the same $\theta$; the log just
+  stretches the vertical scale. If your log-likelihood peaks somewhere else, you have a bug (often a misplaced
+  `n - x`).
+- **Shape.** The curve is humped and falls toward $0$ near $\theta = 0$ and $\theta = 1$ — values far from
+  $0.65$ make $26$ passes out of $40$ implausible, which is exactly what the likelihood is measuring.
+
+## AI use note
+
+| Field | What to record |
+|-------|----------------|
+| Tool | which assistant you used, with approximate date or version |
+| Purpose | what you used it for (e.g. explaining `dbinom`, debugging the `optimize` call) |
+| Verification | how you checked it: confirmed the grid maximum equals `x/n`, compared the optimizer to the formula, or rederived the score equation by hand |
+
+Verification is the load-bearing line: an AI can write the `optimize` call, but you confirm its answer matches
+$26/40$ — and that you can say *why* the MLE is the count ratio.
+
+## See also
+
+- [Week 5 — Likelihood](../notes/week-05-likelihood.qmd)
+- [Week 6 — Maximum likelihood estimation](../notes/week-06-maximum-likelihood-estimation.qmd)
+- [Lab 12 — Bayesian updating by simulation](lab-12-bayesian-updating-by-simulation.qmd)
+- [Notation glossary](../resources/notation-glossary.qmd)
+
+*The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only. All numbers are synthetic and `verified: false`; the math gate is blocked pending sign-off.*

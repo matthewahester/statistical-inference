@@ -1,0 +1,125 @@
+---
+title: "Lab 2 — Simulating sampling distributions"
+subtitle: "Repeating the study in code to watch a sampling distribution form"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+toc: true
+---
+
+> **Purpose.** This lab is the hands-on companion to
+> [Week 2 — Sampling distributions & simulation](../notes/week-02-sampling-distributions-and-simulation.qmd).
+> The note argues that an estimator is a random variable with a sampling distribution; here you *make* that
+> distribution appear by repeating the study thousands of times in code and reading its center and spread.
+
+## The idea
+
+A sampling distribution is what you would see if you could run the study over and over and collect the
+estimate each time. In the real world you run it once. In simulation you can run it ten thousand times — and
+because we are using a synthetic study with a known true parameter, we can watch the estimates pile up into the
+very distribution the theory predicts. This lab does that twice: for a proportion ($\hat p$) and for a mean
+($\bar X$), so you see the same idea in two settings. All data are synthetic and the seed is fixed, so your
+numbers will match the notes' locked values.
+
+## Goal
+
+Generate the sampling distribution of $\hat p$ for $n = 40$ at a true pass rate $\theta = 0.65$, read its
+center (near $0.65$) and spread (SD near $0.075$), and confirm the spread matches the standard-error formula
+$\sqrt{\theta(1-\theta)/n}$. Then repeat the exercise for the sample mean and see the central limit theorem
+shape emerge.
+
+## Setup
+
+Open R (or Posit Cloud) and a fresh Quarto document; see [R · Quarto setup](../resources/r-quarto-setup.qmd).
+Set the seed once at the top so the whole lab is reproducible. The "study" is the recurring reading-fluency
+study: a competency pass/fail for the proportion, and a reading-gain score for the mean. Nothing is read from
+disk — we simulate directly from the model.
+
+```r
+set.seed(35103)
+theta <- 0.65     # true pass rate (known here because the study is synthetic)
+n     <- 40       # students per sample
+reps  <- 10000    # number of simulated studies
+```
+
+## Steps
+
+### Step 1 — simulate one study, then many
+
+A single study draws 40 pass/fail outcomes and records the sample proportion. Repeating that `reps` times gives
+one $\hat p$ per simulated study — a whole sampling distribution in a vector.
+
+```r
+set.seed(35103)
+phat_sim <- replicate(reps, {
+  passes <- rbinom(1, size = n, prob = theta)   # number who pass, out of 40
+  passes / n                                     # the sample proportion p-hat
+})
+length(phat_sim)   # 10000 simulated estimates
+```
+
+### Step 2 — read the center and spread
+
+The sampling distribution's center should sit near the true $\theta = 0.65$, and its standard deviation is the
+standard error.
+
+```r
+mean(phat_sim)   # ~ 0.65   (centered at the true theta -> p-hat is unbiased)
+sd(phat_sim)     # ~ 0.075  (this IS the standard error of p-hat)
+hist(phat_sim, breaks = 30,
+     main = "Sampling distribution of p-hat (n = 40, theta = 0.65)",
+     xlab = "p-hat")
+```
+
+### Step 3 — check against the formula, then do the mean
+
+Compare the simulated spread to the standard-error formula, then repeat the whole exercise for the sample mean
+to see the CLT shape appear for a continuous outcome.
+
+```r
+sqrt(theta * (1 - theta) / n)   # ~ 0.0754  -> matches sd(phat_sim)
+
+# the mean strand: gains with population mean 8, SD 6, samples of n = 36
+set.seed(35103)
+xbar_sim <- replicate(reps, mean(rnorm(36, mean = 8, sd = 6)))
+mean(xbar_sim)   # ~ 8.0
+sd(xbar_sim)     # ~ 1.0   (= 6 / sqrt(36), the SE of the mean)
+hist(xbar_sim, breaks = 30, main = "Sampling distribution of x-bar", xlab = "x-bar")
+```
+
+## Verify
+
+Three checks tell you the simulation behaved as the theory says it should:
+
+- **Center.** `mean(phat_sim)` is about $0.65$ and `mean(xbar_sim)` is about $8.0$ — each estimator is centered
+  at its true parameter, which is what "unbiased" looks like.
+- **Spread matches the formula.** `sd(phat_sim)` is about $0.075$, matching $\sqrt{0.65 \times 0.35/40} \approx
+  0.0754$; `sd(xbar_sim)` is about $1.0$, matching $6/\sqrt{36}$. The simulated standard error and the formula
+  agree.
+- **Shape.** Both histograms are mound-shaped and roughly symmetric — the central limit theorem at work, even
+  though the proportion came from yes/no draws.
+
+If your numbers are off, check that you set the seed *before* the simulation and that `reps` is large (10,000,
+not 100); a small `reps` gives a jittery, untrustworthy picture.
+
+## AI use note
+
+| Field | What to record |
+|-------|----------------|
+| Tool | which assistant you used, with approximate date or version |
+| Purpose | what you used it for (e.g. explaining `replicate`, debugging a histogram, interpreting the spread) |
+| Verification | how you checked it: re-ran with the fixed seed, compared `sd(phat_sim)` to the formula, or rewrote the explanation in your own words after checking |
+
+Verification is the load-bearing line: an AI can explain `replicate`, but you confirm the simulated standard
+error matches $\sqrt{\theta(1-\theta)/n}$ yourself.
+
+## See also
+
+- [Week 2 — Sampling distributions & simulation](../notes/week-02-sampling-distributions-and-simulation.qmd)
+- [Week 3 — Estimators & standard errors](../notes/week-03-estimators-and-standard-errors.qmd)
+- [Lab 10 — Bootstrap intervals](lab-10-bootstrap-intervals.qmd)
+- [R · Quarto setup](../resources/r-quarto-setup.qmd)
+
+*The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only. All numbers are synthetic and `verified: false`; the math gate is blocked pending sign-off.*

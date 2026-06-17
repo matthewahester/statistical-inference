@@ -1,0 +1,338 @@
+---
+title: "Week 3 — Estimators & standard errors"
+subtitle: "What is a good estimate, and how much would it vary?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Estimators; standard error — supports the standard error as the SD of an estimator's sampling distribution"
+toc: true
+---
+
+## The week question
+
+When you compute a number from a sample — a sample proportion, a sample mean — you get one value, and it
+feels solid. But that one value is a draw from a process that could have come out differently. Last week you
+watched that process directly: you simulated the **sampling distribution** of a statistic and saw it spread.
+This week the question is sharper and more practical: *how good is the single number you actually got, and
+how much would it move if you had drawn a different sample?*
+
+That second part has a name. The **standard error** is the standard deviation of an estimator's sampling
+distribution — a measure of how much your estimate would wobble from sample to sample. It is the bridge
+between "here is my one estimate" and "here is the uncertainty I should attach to it," and almost every
+interval and test in the rest of this course is built on top of it.
+
+A scheduling note that shapes how this week is taught: **Labor Day is Monday, September 7**, so there is no
+Monday class. Week 3 runs **Wednesday and Friday only** — a compressed week. We keep it deliberately tight
+and centered on a single idea: the difference between an **estimator** and an **estimate**, and the meaning
+of the **standard error** that travels with it. That single idea is enough to carry the week, and it pays off
+for the rest of the semester.
+
+## Why this matters
+
+Every inferential claim you will make this term rests on a quiet move: you treat the number in your hand as
+*one realization* of a random procedure, and you reason about the procedure to say something about the world.
+If you forget that move, you will read your estimate as if it were the truth, attach no uncertainty to it,
+and be surprised when the next study "disagrees."
+
+The standard error is how you stop being surprised. It quantifies, before you ever build an interval, how
+much sampling alone would jostle your answer. It tells you whether $\hat p = 0.65$ is a number you should
+trust to the second decimal or only to the first. It is the thing that turns a point into a range, and a
+range is what an honest inference actually delivers.
+
+There is also a recurring trap this week exists to dismantle. The standard error is **not** the standard
+deviation of your data. Your data spread (the variability among students, say) and the spread of your
+estimator (how much $\bar X$ itself would move) are different quantities — related by a $\sqrt{n}$, but
+conceptually distinct. Keeping them separate is the central discipline of the week, and the rest of the
+course assumes you have it.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Distinguish an **estimator** (a random variable — a rule applied to a yet-to-be-seen sample) from an
+  **estimate** (the one number it produces on the sample you actually saw), and say which you mean.
+- State precisely what the **standard error** is: the standard deviation of the *estimator's* sampling
+  distribution, **not** the standard deviation of the data.
+- Compute $\operatorname{SE}(\hat p)$ for a proportion and $\operatorname{SE}(\bar X)$ for a mean, and read
+  each as a statement about sampling variability rather than about any single observation.
+- Name what is **fixed** (the parameter), what is **random** (the estimator before you sample), and what is
+  **observed** (the estimate) in every standard-error statement you write.
+- Explain how the standard error shrinks with $n$, and why that does not mean the data became less variable.
+
+## Core vocabulary
+
+A compact notation block for the week. These mirror the course
+[notation glossary](../resources/notation-glossary.qmd); keep the four words distinct on every line.
+
+- **Parameter** ($\theta$, $p$, $\mu$, $\sigma$): a *fixed, unknown* feature of the population or process.
+  Parameters do not have sampling distributions; they are not random. They never wear a hat.
+- **Statistic / estimator** ($\bar X$, $\hat p = X/n$, $S$, $\hat\theta$): a *random variable* — a function
+  of the sample. Because the sample is random, the estimator is random, and it has a **sampling
+  distribution**. We write estimators with capital letters or hats.
+- **Estimate** ($\bar x = 8.0$, $\hat p = 0.65$): the *one realized number* the estimator produces on the
+  particular sample you observed. The hat symbol does double duty — $\hat p$ can mean the estimator (random)
+  or its value (a number). Always say which you mean.
+- **Standard error**, $\operatorname{SE}(\hat\theta)$: the (estimated) standard deviation of the estimator's
+  sampling distribution. It measures how much the *estimator* varies across repeated samples — **not** how
+  much the *data* vary within one sample.
+- **Sampling distribution**: the distribution of the estimator over all the samples you might have drawn. The
+  SE is its spread; the center is what week 4 will scrutinize (is it the parameter?).
+
+A one-line anchor to carry through the week: *the data have a spread; the estimator has a spread; the
+standard error is the second one.*
+
+## Concept development
+
+### From estimator to estimate, and why the order matters
+
+Start before you have any data. You plan to draw a sample of size $n$ and compute some number from it — a
+proportion, a mean. That *rule* — "take the sample and return $X/n$," or "take the sample and return the
+average" — is the **estimator**. Because you have not yet drawn the sample, the estimator is a random
+variable: it is a function of random inputs $X_1, \dots, X_n$. Write it with a capital or a hat:
+$$
+\hat p = \frac{X}{n}, \qquad \bar X = \frac{1}{n}\sum_{i=1}^{n} X_i .
+$$
+
+Now draw the sample and plug in the observed values. The estimator collapses to a single number — the
+**estimate**. We write it lowercase, or read the hat as "the value here": $\hat p = 0.65$, $\bar x = 8.0$.
+The estimate carries no randomness; it already happened. The randomness lives in the estimator, in the
+*procedure* that could have produced a different number on a different draw.
+
+This ordering is the whole game. An estimator has a sampling distribution; an estimate does not. When we
+later say "$\hat p$ is approximately normal," we mean the estimator. When we say "$\hat p = 0.65$," we mean
+the estimate. The standard error is a property of the first thing — the random procedure — even though we
+*compute* it from the second thing, the data we have.
+
+### The standard error is the SD of the estimator, not of the data
+
+Here is the definition the week turns on. For any estimator $\hat\theta$,
+$$
+\operatorname{SE}(\hat\theta) \;=\; \operatorname{SD}\!\big(\hat\theta\big)
+\;=\; \sqrt{\operatorname{Var}(\hat\theta)} ,
+$$
+where the variance is taken over the estimator's **sampling distribution** — that is, over the many samples
+you might have drawn. In practice the true variance involves unknown parameters, so we plug in estimates and
+call the result the (estimated) standard error. The name "error" is about *sampling error*: how far the
+estimate typically lands from the center of its sampling distribution.
+
+Contrast this with the **standard deviation of the data**, which describes how spread out the individual
+observations are *within a single sample*. For the mean, the two are related but not equal:
+$$
+\operatorname{SE}(\bar X) \;=\; \frac{\sigma}{\sqrt{n}} \;\approx\; \frac{s}{\sqrt{n}} ,
+$$
+where $\sigma$ (estimated by the sample SD $s$) is the data spread and $\operatorname{SE}(\bar X)$ is the
+estimator spread. The $\sqrt{n}$ in the denominator is the entire difference. The data are exactly as
+variable as they are; averaging $n$ of them produces a quantity that varies $\sqrt{n}$ times *less*. Confuse
+the two and you will report the spread of students when you meant the spread of the average — off by a factor
+of six when $n = 36$.
+
+### Two standard-error formulas, and how $n$ enters
+
+For a **proportion**, the sample proportion $\hat p = X/n$ with $X \sim \text{Binomial}(n, \theta)$ has
+$\operatorname{Var}(\hat p) = \theta(1-\theta)/n$, so
+$$
+\operatorname{SE}(\hat p) \;=\; \sqrt{\frac{\theta(1-\theta)}{n}}
+\;\approx\; \sqrt{\frac{\hat p\,(1-\hat p)}{n}} ,
+$$
+estimating the unknown $\theta$ by $\hat p$. For a **mean**, $\operatorname{SE}(\bar X) = \sigma/\sqrt n
+\approx s/\sqrt n$ as above. Both have $\sqrt n$ in the denominator, so both shrink as the sample grows —
+specifically, to halve a standard error you must *quadruple* the sample size, because $\sqrt n$ moves slowly.
+That diminishing return is worth internalizing: precision is expensive, and it gets more expensive as you
+chase it.
+
+Crucially, when $n$ grows the standard error shrinks, but the **data do not become less variable**. A bigger
+sample of reading scores is just as spread out, student to student, as a small one; what tightens is the
+sampling distribution of the *average*. This is the same content as risk 3 below, stated as a formula: the
+$\sqrt n$ lives in $\operatorname{SE}$, not in $s$.
+
+## Worked examples
+
+### Worked example — the reading-fluency study (synthetic; seed set)
+
+Our recurring **reading-fluency study** is synthetic and seed-set (`set.seed(35103)`); it stands in for a
+campus reading-intervention program and is not real student data. Two of its strands give us two standard
+errors this week.
+
+**Strand A — a proportion.** Of $n = 40$ students, $x = 26$ reached the reading-competency threshold, so the
+estimate is $\hat p = 26/40 = 0.65$. Here $\hat p$ estimates the fixed, unknown parameter $\theta$, the true
+pass probability in the population this sample represents. The standard error is
+$$
+\operatorname{SE}(\hat p) \;=\; \sqrt{\frac{\hat p\,(1-\hat p)}{n}}
+\;=\; \sqrt{\frac{0.65 \cdot 0.35}{40}} \;=\; \sqrt{0.0056875} \;\approx\; 0.0754 .
+$$
+*Interpretation.* If you repeated this study many times — same $n = 40$, same population — the sample
+proportion would vary from study to study with a standard deviation of about $0.075$. So $\hat p = 0.65$ is a
+single draw from a sampling distribution roughly $0.075$ wide. We are conditioning on $n = 40$ and on the
+sample being a fair (independent, random) draw from the target population; we are treating $\theta$ as fixed
+and $\hat p$ as random. The $0.0754$ is *not* the spread of pass/fail outcomes among the 40 students — it is
+the spread of the *proportion* across hypothetical repetitions of the whole study.
+
+**Strand B — a mean.** A different strand records reading-gain scores in a cohort of $n = 36$ students, with
+sample mean $\bar x = 8.0$ points and sample SD $s = 6.0$ points. The estimate $\bar x = 8.0$ estimates the
+fixed parameter $\mu$. The standard error of the mean is
+$$
+\operatorname{SE}(\bar X) \;=\; \frac{s}{\sqrt{n}} \;=\; \frac{6.0}{\sqrt{36}} \;=\; \frac{6.0}{6} \;=\; 1.0 .
+$$
+*Interpretation.* The **data** spread is $s = 6.0$ points — that is how much individual students' gains
+differ from one another. The **estimator** spread is $\operatorname{SE}(\bar X) = 1.0$ point — that is how
+much the *average* would move from cohort to cohort. They differ by exactly $\sqrt{36} = 6$. Reporting
+"$\bar x = 8.0$ with a standard error of $1.0$" says the average gain is known to within about a point of
+sampling wobble; reporting $6.0$ there would be a category error — it would describe the students, not the
+estimate. We condition on $n = 36$ and on the CLT giving $\bar X$ an approximately normal sampling
+distribution; $\mu$ is fixed, $\bar X$ is random, $\bar x = 8.0$ is the one observed value.
+
+Notice the contrast the two strands draw out. For the proportion, the data spread and the estimator spread
+are both small numbers and easy to conflate; for the mean, the data spread ($6.0$) and the estimator spread
+($1.0$) are visibly different, which makes the lesson concrete. The standard error is the *second* number in
+each case.
+
+### Worked example — transfer: a proportion in a different survey
+
+Now move the idea to a fresh context to check that you are tracking the *concept*, not memorizing one number.
+Suppose a separate campus survey — unrelated to the reading program — asks $n = 200$ students whether they
+used the tutoring center this term, and $120$ say yes. The estimate is $\hat p = 120/200 = 0.60$, estimating
+the survey's own parameter $\theta$ (the true proportion of tutoring-center users). Its standard error is
+$$
+\operatorname{SE}(\hat p) \;=\; \sqrt{\frac{\hat p\,(1-\hat p)}{n}}
+\;=\; \sqrt{\frac{0.60 \cdot 0.40}{200}} \;=\; \sqrt{0.0012} \;\approx\; 0.0245 .
+$$
+*Interpretation.* Even though this proportion ($0.60$) is near the reading study's ($0.65$), its standard
+error is much smaller — about $0.025$ versus $0.075$ — because $n = 200$ is five times $n = 40$, and
+$\sqrt{200/40} = \sqrt{5} \approx 2.24$, which is almost exactly the ratio $0.0754/0.0245$. Same kind of
+estimate, different precision, driven by sample size through the $\sqrt n$. The interpretation is the same in
+shape: if the survey were repeated under the same design, $\hat p$ would vary across repetitions with SD
+about $0.025$; the parameter $\theta$ is fixed, the estimator $\hat p$ is random, and $0.60$ is the one value
+we observed. (These survey numbers are an illustrative transfer scenario, also synthetic.)
+
+### A small simulation to make the SE visible
+
+You can *see* the standard error as a sampling-distribution spread by simulating. The chunk below draws many
+samples of size $40$ at $\theta = 0.65$, computes $\hat p$ each time, and takes the standard deviation of
+those $\hat p$ values — which should land near the formula's $0.0754$. The code is shown as teaching and is
+**not executed** in these notes; numbers in comments are the drafted, synthetic targets.
+
+```r
+set.seed(35103)
+
+# Strand A: sampling distribution of p-hat at theta = 0.65, n = 40
+theta <- 0.65
+n     <- 40
+reps  <- 10000
+
+phat <- rbinom(reps, size = n, prob = theta) / n   # one p-hat per simulated study
+
+mean(phat)          # ~ 0.65   : centers near the parameter theta
+sd(phat)            # ~ 0.0754 : the SIMULATED standard error of p-hat
+
+# Compare to the plug-in formula on a single observed sample (x = 26):
+phat_obs <- 26 / 40
+sqrt(phat_obs * (1 - phat_obs) / n)   # ~ 0.0754 : the FORMULA standard error
+
+# Contrast for the mean (Strand B): data SD vs SE of the mean
+s_data <- 6.0
+n_b    <- 36
+s_data                # 6.0  : spread of the DATA (students)
+s_data / sqrt(n_b)    # 1.0  : SE of the MEAN (the estimator)
+```
+
+The point of the chunk is the comparison: `sd(phat)` (the spread of the estimator across simulated studies)
+matches the plug-in `sqrt(phat*(1-phat)/n)`, and both are a different object from `s_data`, the spread of the
+observations. The standard error is the estimator's spread, whether you get it by simulation or by formula.
+
+## A common mistake
+
+The trap of the week — and the one a reviewer will look for — is **reading the standard error as the standard
+deviation of the data**. It is tempting because both are "spreads" with the same units, and for a proportion
+the two even look similar in size. But they answer different questions:
+
+- The **data SD** ($s = 6.0$ for Strand B) answers: *how spread out are the individual observations?*
+- The **standard error** ($\operatorname{SE}(\bar X) = 1.0$) answers: *how spread out is my estimate across
+  repeated samples?*
+
+If you report $6.0$ where you meant $1.0$, you have inflated your uncertainty sixfold and described students
+when you meant to describe an average. The fix is mechanical and worth saying out loud every time:
+$\operatorname{SE}(\bar X) = s/\sqrt n$, **not** $s$. The $\sqrt n$ is the whole difference.
+
+Two adjacent slips, also on this week's watch-list, round out the trap (these are convention risks 1 and 2):
+
+- **Statistic vs parameter.** Do not call $\hat p$ by the name $p$, or $\bar x$ by the name $\mu$. The hat or
+  bar means "computed from a sample"; the bare Greek letter means "fixed unknown in the world." Every
+  estimate should name the parameter it estimates: $\hat p = 0.65$ estimates $\theta$; $\bar x = 8.0$
+  estimates $\mu$.
+- **Estimator vs estimate.** Only the **estimator** (the random rule, capital/hat) has a sampling
+  distribution and therefore a standard error. The **estimate** (the one number) does not vary — it already
+  happened. When you say "$\hat p$ is approximately normal," you mean the estimator; when you say
+  "$\hat p = 0.65$," you mean the estimate. Say which.
+
+Finally, a quiet assumption that must not stay silent: every standard error here presumes the sample was
+drawn **independently and at random** from the target population (risk 14). If students were sampled in
+clusters, or the same student appears twice, $\operatorname{SE} = s/\sqrt n$ understates the true sampling
+variability. Name the assumption; do not let it ride unstated.
+
+## Low-stakes self-checks (ungraded)
+
+Work these for yourself — they are practice, not graded. No points, no due date, no key.
+
+1. In one sentence each, define **estimator** and **estimate**, and say which one has a standard error.
+2. For Strand A ($\hat p = 0.65$, $n = 40$), recompute $\operatorname{SE}(\hat p)$ from the formula. What
+   does the resulting $0.0754$ describe — the spread of the 40 pass/fail outcomes, or the spread of $\hat p$
+   across repeated studies?
+3. For Strand B ($s = 6.0$, $n = 36$), which number is the data spread and which is the standard error of the
+   mean? By exactly what factor do they differ, and why is it that factor?
+4. A survey of $n = 400$ finds $\hat p = 0.50$. Compute $\operatorname{SE}(\hat p)$. If a second survey uses
+   $n = 100$ with the same $\hat p$, how should its standard error compare, and by what factor?
+5. Fill in the blank without computing: "The standard error is the standard deviation of the ____, not of the
+   ____." Then name what is fixed, what is random, and what is observed in $\operatorname{SE}(\bar X) = 1.0$.
+6. True or false, and explain: "A larger sample makes the reading-gain data less variable." (Watch the
+   $\sqrt n$.)
+
+## Reading and source pointer
+
+For this week, read the **MIT OCW 18.05** treatment of **estimators and the standard error** — the material
+that frames the standard error as the standard deviation of an estimator's sampling distribution and
+introduces the estimator-vs-estimate language. That source grounds the *shape* of the week: which ideas come
+first, the level of notation, and the reading vocabulary. It is licensed CC BY-NC-SA 4.0.
+
+*These notes are the course's own synthesis, grounded in but not copied from the sources.* The reading-fluency
+study and all numbers here are synthetic and seed-set (`set.seed(35103)`); they are illustrative, not drawn
+from any source.
+
+## Formula-verification status
+
+**verified: false.** The formulas and every numeric value on this page are **drafted, synthetic, and not
+independently checked**; the course **math/statistics gate is BLOCKED**. The load-bearing values on this page
+are the two standard errors — $\operatorname{SE}(\hat p) = \sqrt{0.65 \cdot 0.35 / 40} \approx 0.0754$ and
+$\operatorname{SE}(\bar X) = 6/\sqrt{36} = 1.0$ — along with the transfer-survey
+$\operatorname{SE}(\hat p) \approx 0.0245$ at $n = 200$. All are drafted "as if computed" and synthetic
+(`set.seed(35103)`). Do not treat any value here as a confirmed reference until the human/source sign-off in
+`_state/notation_ledger.md` §5 is complete. Rendering or linting cleanly is **not** a correctness check — a
+wrong formula renders perfectly.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week asks the natural follow-up question. You now have a standard error — a measure of how much an
+estimator varies — but variability is only half the story of a *good* estimator. **Week 4 asks what makes one
+estimator better than another: bias, variance, and MSE.** You will see that an estimator can be tightly
+clustered (small variance) yet systematically off (biased), and that the honest way to compare estimators is
+through mean squared error, $\operatorname{MSE} = \operatorname{Var} + \operatorname{Bias}^2$ — the
+decomposition that ties this week's spread to next week's accuracy.
+
+## See also
+
+- [Week 2 — Sampling distributions & simulation](week-02-sampling-distributions-and-simulation.qmd) — where you
+  first watched an estimator's sampling distribution take shape by simulation.
+- [Week 4 — Bias, variance & MSE](week-04-bias-variance-mse.qmd) — evaluating estimators by accuracy, not just
+  spread.
+- [Notation glossary](../resources/notation-glossary.qmd) — the parameter / statistic / estimator / estimate
+  discipline in one place.
+- [Inference reference](../resources/inference-reference.qmd) — the four inferential lenses side by side.

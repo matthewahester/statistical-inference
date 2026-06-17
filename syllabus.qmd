@@ -1,0 +1,154 @@
+---
+title: "Syllabus (public companion)"
+subtitle: "Orientation and course shape — Blackboard is authoritative for graded specifics"
+toc: true
+---
+
+::: {.callout-important}
+This public page is an **orientation companion** to the syllabus, not the operational syllabus itself. It
+describes the *shape* of the course in qualitative terms. It carries no numeric grade weights, no due dates,
+and no submission rules. For everything that counts toward your grade — exact weights, deadlines, policies,
+and submissions — **Blackboard (the LMS) is authoritative**. If this page and Blackboard ever disagree,
+follow Blackboard.
+:::
+
+## Course description
+
+Statistical Inference treats inference as the disciplined process of **learning from data under
+uncertainty**. We observe a sample but want to say something responsible about a larger process, population,
+parameter, or claim. The course builds the reasoning and the tools for that: sampling distributions and
+simulation, estimators and standard errors, bias and variance, likelihood and maximum likelihood estimation,
+confidence intervals, hypothesis tests and p-values, error rates and power, the bootstrap, randomization and
+permutation tests, Bayesian updating, and the connection from inference to decisions. The course is
+deliberately pluralistic — frequentist, likelihood-based, simulation-based, and Bayesian — with the emphasis
+always on what each method conditions on, what it claims, what it assumes, and how its conclusions should be
+communicated.
+
+## Who it is for
+
+This course assumes a prior probability course **and** a prior introductory statistics course, or comparable
+preparation: you should be comfortable with random variables, expectation, variance, common distributions,
+conditional probability, the normal distribution, and basic statistical summaries. It uses algebra,
+summation, functions, derivatives, and basic integrals, and asks you to read mathematical notation carefully
+and say what it means in words. **Prior R experience is helpful but not required** — simulation and
+computational examples are scaffolded. The main expectation is willingness to work carefully through
+examples, run and read code, and explain inferential conclusions in words.
+
+## Learning outcomes
+
+By the end of the course, a successful student will be able to:
+
+- Explain the inferential problem and distinguish parameters, statistics, estimators, estimates, standard
+  errors, and sampling distributions.
+- Use simulation to approximate a sampling distribution and reason about sampling variability.
+- Evaluate estimators using bias, variance, mean squared error, consistency, and practical interpretability.
+- Use likelihood to compare parameter values, and compute and interpret maximum likelihood estimates.
+- Construct and interpret confidence intervals without treating them as probability statements about a fixed
+  parameter.
+- Conduct and interpret hypothesis tests — test statistics, p-values, significance levels, Type I and Type II
+  error, and power — and explain common misinterpretations.
+- Use bootstrap methods, and randomization/permutation tests, to estimate uncertainty and weigh evidence
+  under a null model.
+- Explain the structure of Bayesian inference (prior, likelihood, posterior, posterior prediction) and
+  compare frequentist, likelihood-based, simulation-based, and Bayesian statements.
+- Use simple loss functions or decision rules to connect inference to action.
+- Communicate inferential conclusions carefully — assumptions, uncertainty, limitations, and consequences.
+
+## Weekly rhythm
+
+This is a lecture/activity course meeting three days a week, and each day has a settled role:
+
+- **Monday — inferential concept + checkpoint.** We introduce a major inferential idea, work definitions and
+  examples, and close with a short checkpoint.
+- **Wednesday — derivation, computation, or simulation.** We work technical examples, derive key results, or
+  use simulation to investigate sampling variability and uncertainty.
+- **Friday — quiz / inference case.** A short quiz on recent material, then an applied inference case — a
+  method comparison, or a critique of an inferential conclusion.
+
+This rhythm is the *plan*; the authoritative weekly schedule, including any shifts, lives in Blackboard.
+
+## Assessment shape (indicative — not a contract)
+
+The table below conveys the **relative emphasis** of each graded category in qualitative terms only. It is
+**not** a grading contract: it carries no percentages and no point values, and the actual weights live in
+Blackboard.
+
+| Category | Rough emphasis |
+|----------|----------------|
+| Inference checkpoints | small |
+| Weekly quizzes | small |
+| Homework | the largest single category |
+| Inference labs | small–moderate |
+| Midterm | moderate |
+| Project | small–moderate |
+| Final | moderate |
+
+Read this as a picture of *where the weight sits*: regular homework is the backbone of the grade, the two
+exams carry moderate weight, the labs and project sit in the middle, and the smaller pieces — checkpoints and
+quizzes — add up around them. For the exact weighting, consult Blackboard.
+
+## Software and reproducibility
+
+We use **R** (through RStudio or Posit Cloud) and **Quarto** to simulate, resample, and report inference.
+Computation supports the reasoning rather than replacing it: you read, edit, and run code; interpret output;
+and write short written conclusions. Every analysis is written so it can be reproduced — a single Quarto
+file, a fixed random seed, and recorded session information — so the same code yields the same result. Setup
+instructions are on the [R · Quarto setup](resources/r-quarto-setup.qmd) page.
+
+## AI use (summary)
+
+Generative AI tools may be used as a **study and workflow aid** — to explain a concept a second way, generate
+practice problems, help debug your own simulation code, or walk through a similar example. They may **not**
+produce work you submit as your own, complete your homework or project explanations, fabricate calculations,
+or replace your responsibility to understand the reasoning, and they are **prohibited on quizzes and exams**
+unless explicitly allowed.
+
+Because inference is highly sensitive to assumptions and conditioning, AI output must be checked carefully —
+many wrong inferential explanations come from confusing a parameter with a statistic, treating a confidence
+interval as a posterior probability, assuming independence without justification, or misreading a p-value.
+Whenever you use AI on a graded written assignment, lab, or project component, include a brief **AI Use Note**
+with three labeled lines:
+
+| Field | What to record |
+|-------|----------------|
+| Tool | which assistant you used (with approximate date or version) |
+| Purpose | what you used it for |
+| Verification | how you checked, tested, revised, or validated the output |
+
+**Verification** is the load-bearing line: recompute a result, check assumptions, run a simulation, compare
+to class notes, verify the conditioning statement, or rewrite the explanation in your own words after
+checking it. You are responsible for every line of code and every sentence of interpretation you submit. The
+full policy lives in Blackboard.
+
+## Materials
+
+You will need:
+
+- *MIT OpenCourseWare 18.05, Introduction to Probability and Statistics* — the free primary course materials,
+  **CC BY-NC-SA 4.0**, at
+  [ocw.mit.edu](https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/).
+- *Statistical Inference via Data Science: A ModernDive into R and the Tidyverse*, 2nd ed. (Ismay, Kim &
+  Valdivia) — a free supplement, **CC BY-NC-SA 4.0**, at [moderndive.com/v2](https://moderndive.com/v2/),
+  used for simulation-based inference and reproducible R workflows.
+- *Introduction to Modern Statistics*, 2nd ed. (Çetinkaya-Rundel & Hardin) — a free optional review source,
+  **CC BY-SA 3.0**, at [openintro-ims.netlify.app](https://openintro-ims.netlify.app/).
+- **R, RStudio or Posit Cloud, and Quarto** — for the inference labs and reproducible reports.
+- **Blackboard (the LMS)** — for all graded work, dates, and announcements.
+- A **non-graphing scientific calculator** for in-class quizzes; most computation is done in R.
+
+*Not used in this course:* Cengage, WebAssign, MyLab, or any paid homework platform.
+
+## Where things live
+
+Keep the two homes of the course straight:
+
+- **Blackboard (the LMS)** is the **operational** home: graded inference checkpoints, quizzes, homework,
+  inference labs, the midterm, the project, the final, all due dates, all submissions, and all grades. It is
+  authoritative.
+- **This public site** is the **public notes** home: weekly notes, labs as study material, resources, and
+  orientation pages. It is ungraded.
+
+::: {.callout-note}
+This companion exists to orient you. Whenever a graded specific is at stake — a weight, a deadline, a policy —
+go to Blackboard, which is authoritative.
+:::

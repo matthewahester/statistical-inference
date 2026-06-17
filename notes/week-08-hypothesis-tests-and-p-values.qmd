@@ -1,0 +1,362 @@
+---
+title: "Week 8 — Hypothesis tests & p-values"
+subtitle: "How surprising is our data under a null model?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Null hypothesis significance testing; p-values — supports test statistics, p-values, and their misinterpretations; ModernDive Ch 9 — the simulation reading of a p-value"
+toc: true
+---
+
+## The week question
+
+Suppose someone proposes a specific, skeptical model for how the data were generated — a *null model* — and
+your sample looks a bit different from what that model predicts. How do you decide whether the difference is
+the kind of thing that happens routinely under the null, or the kind of thing that would be genuinely
+surprising if the null were true? That single question is the engine of a hypothesis test.
+
+This week we make that question precise. We write the skeptical model as a null hypothesis $H_0$, summarize
+the sample with a **test statistic**, compute how far into the tail of the null model our statistic falls,
+and report that tail probability as a **$p$-value**. The hard part is not the arithmetic — it is being
+disciplined about *what the $p$-value is a probability of*. It is a probability about the data under $H_0$,
+not a probability about $H_0$ itself, and not a measure of how big the effect is. Getting that conditioning
+right is the whole skill.
+
+## Why this matters
+
+The hypothesis-test machinery is the single most widely used — and most widely misread — inferential tool in
+science. A $p$-value sits in the abstract of an enormous number of papers, and a large share of the
+controversy about reproducibility comes down to people reading a $p$-value as something it is not. So this is
+not a niche computation; it is a piece of scientific literacy.
+
+It also closes a loop we opened last week. A confidence interval gives you a *range* of parameter values
+consistent with the data; a hypothesis test takes a single proposed value and asks whether the data are
+consistent with *it*. The two are deeply related — a value sits inside a confidence interval roughly when a
+test would not reject it — but they answer different questions and are reported differently. Holding both in
+mind, and keeping straight what each conditions on, is the difference between using these tools and being used
+by them.
+
+Finally, this week sets up the next two. Once you can run a test, the immediate follow-up questions are: how
+often does this decision rule make a mistake, and what does a mistake cost? That is Week 9. The $p$-value is
+the input to a decision; the error rates are the properties of the decision rule. Keeping the *evidence* (the
+$p$-value) separate from the *decision* (reject or not, at some threshold) is a theme that runs from here to
+the end of the course.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- State a null and alternative hypothesis for a proportion and for a mean, and say which one is the model you
+  compute *under*.
+- Build a test statistic by standardizing an estimate against its null-model standard error, and explain why
+  the standard error uses the null value, not the sample value.
+- Compute and read a one-sided and a two-sided $p$-value as a tail probability under $H_0$, and interpret it
+  in a sentence that names the conditioning.
+- Explain, in plain words, why a $p$-value is **not** $P(H_0\text{ true})$, **not** an effect size, and why
+  we say "fail to reject," never "accept" or "prove."
+- Recognize a *borderline* result and describe responsibly what it does and does not license.
+
+## Core vocabulary
+
+Hold these symbols and their meanings firmly; the misreadings this week all come from blurring them.
+
+- **Null hypothesis $H_0$** — a specific, fully-specified model for the data-generating process, here
+  $H_0:\theta = 0.5$. It is the model you compute *under*. "Fully specified" matters: it pins down a number,
+  so you can calculate.
+- **Alternative hypothesis $H_a$** — the claim you would entertain if the null looks untenable, here
+  $H_a:\theta > 0.5$. A one-sided alternative ($>$) points in a single direction; a two-sided alternative
+  ($\neq$) allows either.
+- **Test statistic $T$ (here $Z$)** — a number computed from the sample that measures how far the data fall
+  from what $H_0$ predicts, in standard-error units. It is a **statistic** — a function of the random sample —
+  so it has a sampling distribution *under $H_0$*.
+- **Null standard error $\operatorname{SE}_0$** — the standard error of the estimator computed *as if $H_0$
+  were true*. For a proportion that means using the null value $p_0$, not the sample value $\hat p$, inside
+  $\sqrt{p_0(1-p_0)/n}$.
+- **$p$-value** — $P(T\text{ as or more extreme}\mid H_0)$. A tail probability of the test statistic *under
+  the null model*. The conditioning bar is doing all the work: it is computed assuming $H_0$.
+- **Significance level $\alpha$** — a threshold, chosen *before* seeing the data, for how small a $p$-value
+  must be before you reject $H_0$. It is a decision rule, not a property of the evidence; Week 9 unpacks it.
+- **Reject / fail to reject** — the two possible verdicts. You either reject $H_0$ or you *fail to reject* it.
+  You never "accept" it and you never "prove" it.
+
+A note on the parameter–statistic–estimate discipline that governs the whole course: $\theta$ and $p_0 = 0.5$
+are **parameters / fixed numbers** — $H_0$ is a statement about the fixed, unknown $\theta$. $\hat p = X/n$ is
+an **estimator** (a random variable with a sampling distribution); $\hat p = 0.65$ is the **estimate** (one
+realized number). $Z$ is a statistic. The $p$-value is a probability computed over the sampling distribution
+of $Z$, holding $\theta = 0.5$ fixed. Nothing in a $p$-value is a probability about $\theta$.
+
+## Concept development
+
+### From a null model to a test statistic
+
+A hypothesis test starts by taking the skeptic seriously enough to compute with. The skeptic says: the true
+pass rate is exactly a coin flip, $\theta = 0.5$. That is the null hypothesis $H_0:\theta = 0.5$. The program
+hopes the intervention does better than a coin flip, which gives the one-sided alternative
+$H_a:\theta > 0.5$. Notice the asymmetry built into the logic: we compute *under* $H_0$, never under $H_a$.
+The null is the model we can calculate with because it pins $\theta$ to a single number; the alternative is a
+direction, not a specific model.
+
+Next we need a number that measures how far the data fall from the null's prediction. The estimator is the
+sample proportion $\hat p = X/n$, with $X \sim \text{Binomial}(n,\theta)$ under random sampling. Under $H_0$,
+$\hat p$ has expected value $0.5$ and, by the central limit theorem, an approximately normal sampling
+distribution. Standardizing $\hat p$ against the null gives the test statistic
+
+$$
+Z \;=\; \frac{\hat p - p_0}{\operatorname{SE}_0}, \qquad
+\operatorname{SE}_0 \;=\; \sqrt{\frac{p_0(1-p_0)}{n}}.
+$$
+
+The detail that trips people up — and the one to fix in your head now — is that the standard error here uses
+the **null value $p_0 = 0.5$**, not the sample value $\hat p = 0.65$. The whole computation lives inside the
+hypothetical "if $H_0$ were true." Under that hypothetical, the variance of $\hat p$ is $p_0(1-p_0)/n$, so
+that is the SE we standardize by. (Last week's confidence-interval SE used $\hat p$, because there we were not
+assuming any particular $\theta$. Different question, different SE — name which world you are computing in.)
+
+### Reading the tail: the $p$-value
+
+Once we have $Z$, the $p$-value answers a sharp question: *if $H_0$ were true, how often would we see a test
+statistic as extreme as the one we got, or more extreme?* For the one-sided alternative $H_a:\theta > 0.5$,
+"more extreme" means "even larger," so
+
+$$
+p_{\text{one-sided}} \;=\; P(Z \ge z \mid H_0),
+$$
+
+where $z$ is the observed value of the statistic. For a two-sided alternative $H_a:\theta \neq 0.5$, extreme
+in either direction counts, so we double the one-sided tail (for a symmetric null distribution):
+$p_{\text{two-sided}} = 2\,P(Z \ge |z| \mid H_0)$.
+
+Every symbol in that probability is conditioned on $H_0$. The $p$-value is the long-run frequency of getting
+data this extreme *in a world where the null holds*. It is emphatically **not** the probability the null
+holds, and it carries no information about the *size* of the departure — only about how unusual the data are
+under the null (Risk 6). A small $p$-value says "these data would be surprising if $H_0$ were true," which is
+evidence against $H_0$. It does not say "$H_0$ is probably false" and it does not say "the effect is large."
+
+### Borderline results and the language of verdicts
+
+A test ends in a verdict, but the verdict is coarse — much coarser than the $p$-value itself. If we adopt a
+conventional threshold like $\alpha = 0.05$, then a $p$-value below it leads us to **reject $H_0$**, and a
+$p$-value above it leaves us **unable to reject $H_0$**. Notice the careful phrasing: we never *accept* the
+null and we never say the data *prove* anything (Risk 7). Failing to reject means only that the data are not
+surprising enough, under $H_0$, to overturn it — not that $H_0$ is true. Absence of strong evidence against a
+claim is not evidence for it.
+
+This matters most for *borderline* results, which is exactly where our running example lands. A one-sided
+$p$ of about $0.029$ and a two-sided $p$ of about $0.057$ straddle the $0.05$ line: the same data "reject" or
+"fail to reject" depending on a single arbitrary choice (one-sided vs two-sided) made before the analysis.
+That fragility is the teaching point of the whole week. A $p$-value near the threshold is not a clean signal;
+it is a reminder that the threshold is a convention, that the evidence is genuinely middling, and that the
+honest report is the $p$-value and its conditioning — not a binary verdict dressed up as a discovery.
+
+## Worked examples
+
+### Worked example — the reading-fluency study (a proportion)
+
+Recall the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`; it stands in for a
+campus reading-intervention study and is not real student data). In Strand A, $n = 40$ students were assessed
+and $x = 26$ reached the reading-competency threshold, giving the estimate $\hat p = 26/40 = 0.65$. The
+program's question is whether students do "better than a coin flip," so we test
+
+$$
+H_0:\theta = 0.5 \quad\text{versus}\quad H_a:\theta > 0.5.
+$$
+
+**The model.** Treat the $40$ pass/not-pass outcomes as independent draws with common success probability
+$\theta$, so $X \sim \text{Binomial}(40,\theta)$. This independence-and-common-rate assumption is exactly the
+sampling assumption the test needs, and it is worth stating out loud rather than leaving silent (Risk 14): if
+the students were clustered (say, same classroom) the assumption could fail and the SE would be wrong.
+
+**The computation.** Under $H_0$, the null standard error uses $p_0 = 0.5$:
+
+$$
+\begin{aligned}
+\operatorname{SE}_0 &= \sqrt{\frac{p_0(1-p_0)}{n}} = \sqrt{\frac{0.5 \cdot 0.5}{40}} = \sqrt{0.00625}
+  \approx 0.0791,\\[4pt]
+z &= \frac{\hat p - p_0}{\operatorname{SE}_0} = \frac{0.65 - 0.5}{0.0791} \approx 1.90.
+\end{aligned}
+$$
+
+The one-sided $p$-value is the upper tail of the standard normal beyond $1.90$:
+
+$$
+p_{\text{one-sided}} = P(Z \ge 1.90 \mid H_0) \approx 0.029,
+\qquad
+p_{\text{two-sided}} = 2\,P(Z \ge 1.90 \mid H_0) \approx 0.057.
+$$
+
+**The interpretation.** *If* the true pass rate were exactly $0.5$, a sample proportion of $0.65$ or higher
+(in the one-sided framing) would occur about $2.9\%$ of the time across repeated samples of $40$ students.
+That is the meaning of $p \approx 0.029$: a tail probability of the test statistic, conditioned on $H_0$,
+treating $\theta = 0.5$ as fixed and the sample as random. It is *not* a $2.9\%$ chance that the null is true,
+and it says nothing about whether the gap of $0.15$ above the coin-flip rate is large enough to matter to the
+program (Risk 6). The two-sided $p \approx 0.057$ would not reject at $\alpha = 0.05$. So the verdict flips
+across the threshold depending on the directional choice — a genuinely borderline result. The responsible
+summary is not "the intervention works" but: "the data are mildly surprising under the coin-flip null
+($p \approx 0.029$ one-sided, $0.057$ two-sided), enough to motivate a larger study, not enough to settle the
+question." And note carefully: we **fail to reject** at the two-sided $0.05$ line — we do not "accept" that
+$\theta = 0.5$ (Risk 7).
+
+Here is the same computation as static, non-executed R. It is teaching code; it is not run on this site.
+
+```r
+# Reading-fluency study, Strand A: test H0: theta = 0.5 vs Ha: theta > 0.5
+# Synthetic data, seed set; code shown for teaching, not executed here.
+set.seed(35103)
+
+n   <- 40
+x   <- 26
+p0  <- 0.5
+phat <- x / n                       # estimate: 0.65
+
+se0 <- sqrt(p0 * (1 - p0) / n)      # NULL-model SE, uses p0 = 0.5
+z   <- (phat - p0) / se0           # test statistic
+p_one <- 1 - pnorm(z)              # P(Z >= z | H0), one-sided
+p_two <- 2 * (1 - pnorm(abs(z)))   # two-sided
+
+c(se0 = se0, z = z, p_one = p_one, p_two = p_two)
+# se0 ~ 0.0791   z ~ 1.90   p_one ~ 0.029   p_two ~ 0.057
+
+# A simulation reading of the same p-value (ModernDive Ch 9 style):
+# generate many samples of size 40 UNDER H0 (theta = 0.5) and ask how
+# often phat lands at or above 0.65.
+sims  <- rbinom(100000, size = n, prob = p0) / n   # phat under H0
+p_sim <- mean(sims >= phat)        # ~ 0.029, the one-sided p-value, by simulation
+p_sim
+```
+
+The simulation block makes the definition concrete: the $p$-value is *literally* the fraction of null-world
+samples that are as extreme as ours. The normal-approximation $p \approx 0.029$ and the simulated fraction
+agree because $n = 40$ is large enough for the CLT to bite — the same equivalence ModernDive builds its whole
+simulation-based reading of testing on.
+
+### Worked example (transfer) — testing a mean against a null
+
+Now move the idea to a fresh context: a quality engineer at a small bakery wants the mean net weight of a
+"500 gram" loaf to be at least $500$ g. A sample of $n = 25$ loaves (synthetic; `set.seed(35103)`) has sample
+mean $\bar x = 503$ g and sample SD $s = 8$ g. The skeptical null is that the process is exactly on target,
+and the engineer worries about overfilling (a cost), so:
+
+$$
+H_0:\mu = 500 \quad\text{versus}\quad H_a:\mu > 500.
+$$
+
+**The model.** Treat the $25$ weights as independent draws from a distribution with mean $\mu$; by the CLT,
+$\bar X \approx \text{Normal}(\mu, \sigma^2/n)$, with $\sigma$ estimated by $s$. Because $n$ is small and
+$\sigma$ is estimated, the reference distribution is Student's $t$ with $n - 1 = 24$ degrees of freedom rather
+than the normal — that is the one structural difference from the proportion case.
+
+**The computation.** The standard error of the mean is $\operatorname{SE}(\bar X) = s/\sqrt{n} = 8/\sqrt{25} =
+1.6$ g. (Here the SE does not depend on $\mu$, so there is no separate "null SE" subtlety — but it is still
+the SD of the *estimator*, not of the data; the data SD is $8$, the estimator's SE is $1.6$, Risk 3.) The
+test statistic and its tail are
+
+$$
+\begin{aligned}
+t &= \frac{\bar x - \mu_0}{\operatorname{SE}(\bar X)} = \frac{503 - 500}{1.6} \approx 1.88,\\[4pt]
+p_{\text{one-sided}} &= P(T_{24} \ge 1.88 \mid H_0) \approx 0.036.
+\end{aligned}
+$$
+
+**The interpretation.** If the process truly delivered a mean of exactly $500$ g, a sample mean of $503$ g or
+heavier would arise about $3.6\%$ of the time in samples of $25$ loaves. The conditioning is identical in
+spirit to the proportion case: the probability is computed under $H_0$, over the sampling distribution of
+$\bar X$, holding $\mu = 500$ fixed. It is again *not* the probability the process is on target, and it does
+not by itself say the $3$ g overfill is economically meaningful — that is a practical-importance judgment
+distinct from statistical significance (Risk 7). Like the reading study, this result is borderline: it
+rejects at a one-sided $0.05$ but is the kind of middling evidence that should prompt a confirmatory sample,
+not a process overhaul. The transfer lesson is that the *recipe* — null model, standardize, read the tail,
+interpret the conditioning — is the same whether the parameter is a proportion or a mean; only the SE formula
+and the reference distribution change.
+
+## A common mistake
+
+The defining error of this week is reading the $p$-value as the probability that the null hypothesis is true
+(Risk 6). It is tempting: $p \approx 0.029$ *feels* like "there's a $2.9\%$ chance the coin-flip explanation
+is right." It is not. The $p$-value is $P(\text{data as or more extreme}\mid H_0)$ — the probability flows
+*from* the hypothesis *to* the data, not the other way around. $P(H_0\mid\text{data})$ is a completely
+different quantity (a Bayesian posterior, which needs a prior; that is Week 12), and the two are not
+interchangeable. In our frequentist frame $\theta$ is a *fixed* number, so "the probability $H_0$ is true" is
+not even a quantity the framework will compute — $\theta$ either equals $0.5$ or it does not.
+
+Two close cousins of this mistake round out the week's trap. First, treating the $p$-value as an *effect size*
+— reading a smaller $p$ as "a bigger effect." A tiny $p$ can come from a large sample with a trivial
+departure, and a large $p$ can hide a big departure that the study was too small to detect. The $p$-value
+mixes effect size and sample size together; it is not a measure of magnitude. Report the estimate and its
+interval for magnitude; report the $p$-value for surprise-under-the-null. Second, saying you "accept $H_0$" or
+that a non-significant result "proves there is no effect" (Risk 7). The correct verdict is always *fail to
+reject*: the data were not surprising enough under $H_0$ to overturn it, which is a statement about the
+evidence, not a confirmation of the null. Keep all three straight — not a probability about $H_0$, not an
+effect size, never "accept" — and you have the conditioning discipline this week is built to teach.
+
+## Low-stakes self-checks (ungraded)
+
+These are self-check only — no points, no submission. Work them, then check your reasoning against the note.
+
+1. In the reading-fluency test, why does $\operatorname{SE}_0$ use $p_0 = 0.5$ rather than $\hat p = 0.65$?
+   What would change if you used $\hat p$ instead, and which question would that answer?
+2. Write one sentence interpreting $p \approx 0.029$ that *correctly* names what is conditioned on, what is
+   random, and what is held fixed. Then write a sentence that is a *common misreading*, and say which rule it
+   breaks.
+3. The same data give one-sided $p \approx 0.029$ and two-sided $p \approx 0.057$. Explain to a classmate why
+   the verdict at $\alpha = 0.05$ flips between them, and why this makes the result "borderline."
+4. A friend says "$p = 0.04$, so there's only a $4\%$ chance the null is true, and the effect is big." Identify
+   the two distinct errors in that sentence.
+5. In the bakery transfer example, the data SD is $8$ but the SE is $1.6$. Explain the difference in one
+   sentence, and say which one belongs in the denominator of the test statistic and why.
+6. Suppose a much larger reading study ($n = 4000$) found $\hat p = 0.51$ with a very small $p$-value. Would a
+   small $p$-value there mean a large effect? Explain.
+
+## Reading and source pointer
+
+The spine for this week is **MIT OCW 18.05, *Introduction to Probability and Statistics* (Spring 2022)** —
+the readings on **null hypothesis significance testing and $p$-values**, which ground the test-statistic /
+tail-probability machinery and, just as importantly, the catalog of $p$-value misinterpretations. For the
+*simulation reading* of a $p$-value — generating many datasets under $H_0$ and counting how often they are as
+extreme as yours — see **ModernDive (Ismay, Kim & Valdivia), Chapter 9** on hypothesis testing, which is the
+shape behind the simulation block in the worked example. If you want a lighter calibration of the same ideas
+(test, $p$-value, significance), *Introduction to Modern Statistics* (Çetinkaya-Rundel & Hardin) covers them
+at an introductory level.
+
+These notes are the course's own synthesis, grounded in but not copied from the sources.
+
+## Formula-verification status
+
+**verified: false.** The formulas and every numeric value on this page are **drafted, synthetic, and not
+independently checked.** The load-bearing items — $\operatorname{SE}_0 = \sqrt{0.5\cdot 0.5/40} \approx
+0.0791$, the test statistic $z = (0.65 - 0.5)/0.0791 \approx 1.90$, the one-sided $p \approx 0.029$ and
+two-sided $p \approx 0.057$ for the reading-fluency study, and the transfer values ($\operatorname{SE} = 1.6$,
+$t \approx 1.88$, $p \approx 0.036$) — are drafted "as if computed" from synthetic data (`set.seed(35103)`)
+and have **not** been confirmed against an independent source or re-derivation. The course **math/statistics
+gate is BLOCKED**: do not treat any value here as a confirmed reference until the human/source sign-off in
+`../_state/notation_ledger.md` §5 is complete. Render and lint are not correctness checks; a wrong formula
+renders perfectly.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week we stop asking "how surprising is this data?" and start asking "how often is this decision rule
+wrong?" Week 9 turns the threshold $\alpha$ into a Type I error rate, introduces the Type II error rate
+$\beta$ and **power** $= 1 - \beta$, and asks what the *consequences* of each kind of mistake are. The
+borderline reading-fluency result becomes the case study: a decision rule that rejects at one-sided $0.05$ but
+not two-sided will be wrong at different rates, and weighing those error rates against their costs is where
+the $p$-value finally connects to a decision.
+
+## See also
+
+- [Week 7 — Confidence intervals (midterm)](week-07-confidence-intervals-and-midterm.qmd) — the interval
+  whose "is this value inside?" question is the dual of this week's test.
+- [Week 9 — Error rates, power & decisions](week-09-error-rates-power-decisions.qmd) — how often the decision
+  rule is wrong, and what a mistake costs.
+- [Notation glossary](../resources/notation-glossary.qmd) — the parameter / statistic / estimator / estimate
+  discipline and the $p$-value definition.
+- [Inference reference](../resources/inference-reference.qmd) — the four lenses side by side, including the
+  $p$-value vs posterior-probability contrast.

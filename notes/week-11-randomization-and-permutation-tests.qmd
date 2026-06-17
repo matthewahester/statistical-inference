@@ -1,0 +1,219 @@
+---
+title: "Week 11 — Randomization & permutation tests"
+subtitle: "Testing a claim by shuffling labels under a null of no effect"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "ModernDive (Ismay, Kim & Valdivia), Ch 9 — Hypothesis Testing — supports building a null distribution by relabeling"
+  - "MIT OCW 18.05 — Resampling and null distributions — supports the randomization framing"
+toc: true
+---
+
+## The week question
+
+A reading intervention is given to one group of students and withheld from another, and the treated group
+reads faster on average — a difference of $3.0$ words per minute. But random chance shuffles people into
+groups, and even with no real effect one group will usually come out a little ahead. So how surprising is a
+$3.0$-point gap if the intervention does *nothing* — and how do we measure that surprise without assuming a
+formula?
+
+This week answers the question the way Week 8 did — "how surprising is the data under a null?" — but with the
+simulation engine of Week 10 instead of a theoretical sampling distribution. The **permutation test** builds
+the null distribution directly: if the treatment label truly does nothing, then which students got labeled
+"treatment" is arbitrary, so we *re-shuffle the labels* thousands of times and watch how big a group
+difference chance alone produces. Where the bootstrap resampled one sample to measure uncertainty, the
+permutation test relabels two groups to enact a null hypothesis.
+
+## Why this matters
+
+Randomization tests matter because they make the logic of a hypothesis test physical and assumption-light.
+Week 8's test relied on a normal approximation and a standard-error formula; the permutation test relies on a
+single, often-defensible idea — **exchangeability** under the null. If the treatment has no effect, the two
+groups are just two arbitrary labels stuck on one pool of students, and any reassignment of those labels is as
+plausible as the one we observed. That premise *is* the null model, and simulating from it needs no
+distributional assumptions at all.
+
+It also matters because randomization is the inferential partner of *experimental design*. The reason we can
+even entertain "labels are exchangeable under the null" is that the experiment assigned students to groups at
+random in the first place. The test mirrors the design: random assignment in the world justifies random
+relabeling in the computer. That tight link between how data are collected and how they are analyzed is one of
+the course's recurring themes, and it is nowhere cleaner than here.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- State the null hypothesis of a permutation test as **exchangeability of labels** (no group effect) and
+  explain why random assignment justifies it.
+- Build a null distribution by repeatedly shuffling group labels and recomputing the test statistic.
+- Compute a permutation **p-value** as the fraction of shuffles giving a statistic as or more extreme than the
+  observed one.
+- Compare a permutation p-value with a theory-based test and interpret agreement.
+- Distinguish a permutation test from a bootstrap: what is held fixed, what is shuffled or resampled, and what
+  question each answers.
+- Carry the permutation idea to a new statistic, such as a difference in proportions.
+
+## Core vocabulary
+
+- **Permutation (randomization) test** — a test that builds the null distribution by reassigning group labels
+  at random many times.
+- **Exchangeability** — the null assumption that, with no group effect, any labeling of the pooled data is as
+  likely as any other.
+- **Observed statistic** — the test statistic computed on the real labeling (here, the difference in group
+  means, $d = 3.0$).
+- **Null (reference) distribution** — the distribution of the statistic over many random relabelings, assuming
+  no effect.
+- **Permutation p-value** — the proportion of relabelings whose statistic is as or more extreme than the
+  observed one.
+- **Two-sided** — counting extremeness in both directions (here, $|d^{*}| \ge |d_{\text{obs}}|$).
+
+## Concept development
+
+### 1. The null as a shuffling machine
+
+Start from the claim we want to test: the intervention has **no effect** on fluency speed. If that is true,
+then a student's reading speed would have been the same whether we had labeled them "treatment" or "control" —
+the label is inert. So the 36 observed speeds are just a fixed pool, and the split into a treatment group of
+18 and a control group of 18 is one arbitrary deal of the labels among many. To see what "chance alone" looks
+like, we **re-deal the labels**: randomly choose 18 of the 36 speeds to be "treatment," call the rest
+"control," and recompute the difference in group means. Do that thousands of times and the resulting spread of
+differences is exactly the null distribution — what the group gap would look like in a world where the
+treatment does nothing.
+
+### 2. The observed statistic and the p-value
+
+Against that null distribution we place the **observed** difference, $d_{\text{obs}} = 3.0$. The
+**permutation p-value** is the fraction of shuffled differences that are as or more extreme than $3.0$ — for a
+two-sided test, the fraction with $|d^{*}| \ge 3.0$. A small p-value means a gap of $3.0$ rarely happens by
+relabeling alone, so the data are surprising under "no effect"; a large p-value means chance shuffling
+produces gaps that big routinely, so $3.0$ is unremarkable. The logic is identical to Week 8 — surprise of the
+data under a null — but the null distribution is *simulated*, not derived.
+
+### 3. Permutation versus bootstrap: same engine, opposite questions
+
+These two simulation methods are easy to confuse because both involve drawing from the data. The difference is
+what they hold fixed and what they vary. The **bootstrap** (Week 10) resamples one sample *with replacement* to
+estimate how much an estimate would **vary** — a question about *uncertainty*, with no null hypothesis in
+sight. The **permutation test** keeps the pooled data fixed and **shuffles labels without replacement** to
+enact a *null hypothesis of no effect* — a question about *evidence against a claim*. Bootstrap: resample one
+group's data, measure spread. Permutation: relabel two groups, measure surprise. Keeping the two questions —
+"how variable?" versus "how surprising under no effect?" — separate is the whole point of putting them in
+adjacent weeks.
+
+## Worked examples
+
+### Worked example — permutation test for the fluency experiment
+
+We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`). The randomized
+experiment compares fluency speed (words per minute): the treatment group ($n_T = 18$) averages $9.5$, the
+control group ($n_C = 18$) averages $6.5$, so the observed difference is
+
+$$d_{\text{obs}} = 9.5 - 6.5 = 3.0 \text{ wpm}.$$
+
+We pool all 36 speeds, shuffle the 18/18 labeling 10,000 times, and recompute the mean difference each time:
+
+```r
+set.seed(35103)
+speed <- /* the 36 observed fluency speeds (18 treatment, 18 control) */
+group <- rep(c("T", "C"), each = 18)
+d_obs <- mean(speed[group == "T"]) - mean(speed[group == "C"])   # 3.0
+
+perm_diff <- replicate(10000, {
+  g <- sample(group)                                              # shuffle labels, no replacement
+  mean(speed[g == "T"]) - mean(speed[g == "C"])
+})
+mean(abs(perm_diff) >= abs(d_obs))                                # two-sided permutation p ~ 0.04
+```
+
+The null distribution of relabeled differences is centered at $0$ — as it must be, since under no effect the
+labels carry no information — and most shuffles land within a couple of points of zero. A gap of $3.0$ sits
+out in the tail: only about **4%** of relabelings produce a difference that large in absolute value, so the
+two-sided **permutation p-value is about $0.04$**. Read it carefully: *if the intervention did nothing*, a
+$3.0$-point gap (or larger) would arise from random assignment about 4% of the time. That is fairly surprising —
+modest evidence of a real effect — and, exactly like Week 8's proportion test, it is borderline rather than
+overwhelming, which is the honest texture of real inference.
+
+### Worked example — cross-check with theory, and a transfer
+
+A theory-based two-sample test should roughly agree. With a pooled within-group SD of about $4.35$, the
+standard error of the difference is $\operatorname{SE}(d) = 4.35\sqrt{1/18 + 1/18} \approx 1.45$, giving
+$t = 3.0 / 1.45 \approx 2.07$ and a two-sided $p \approx 0.046$ — essentially the permutation result. When the
+simulated and theoretical p-values agree like this, each reassures us about the other. Now a **transfer**: to
+test whether two ad designs differ in click-through, pool the clicks-and-non-clicks, shuffle the "design A /
+design B" labels thousands of times, and compute the fraction of shuffles whose *difference in proportions* is
+as extreme as observed — the identical relabeling logic applied to a difference in proportions rather than
+means.
+
+## A common mistake
+
+The most common error is blurring the permutation test into the bootstrap — shuffling *with* replacement, or
+resampling within each group instead of relabeling across them. The mechanisms answer different questions, and
+mixing them produces a null distribution that means nothing. The permutation test's null is "the labels are
+exchangeable," so the correct operation is to reassign the *existing* labels among the *fixed* pooled values,
+**without replacement** — every shuffle uses each observation exactly once, just with a possibly different
+group tag. Resampling with replacement (the bootstrap move) does not enforce the no-effect null and so does not
+give a valid p-value for it.
+
+A second slip is forgetting what the p-value conditions on. A permutation p-value of $0.04$ is *the
+probability, under the null of no effect, of a difference as extreme as observed* — it is not the probability
+that the treatment works, and it is not a measure of how big the effect is. As always, a small p-value flags
+that the data are surprising under "no effect"; it is the start of a judgment about evidence and practical
+importance, not the end. And remember the assumption underneath: the relabeling logic is trustworthy because
+the experiment assigned students at random — without randomization in the design, exchangeability is a much
+shakier premise.
+
+## Low-stakes self-checks (ungraded)
+
+These are **ungraded self-checks** — no points, no submission.
+
+1. In one sentence, what null hypothesis does shuffling the group labels enact, and why is random assignment
+   what justifies it?
+2. The permutation null distribution is centered at $0$. Explain why it must be, in words.
+3. A classmate resamples *with* replacement inside each group to "permute." What did they actually compute, and
+   why is it not a permutation test?
+4. The permutation p-value was about $0.04$ and the $t$-test gave about $0.046$. What does their agreement tell
+   you?
+5. State the difference between the bootstrap (Week 10) and the permutation test in terms of what is held fixed
+   and what is varied.
+
+## Reading and source pointer
+
+Read **ModernDive Chapter 9 — Hypothesis Testing** alongside this note for the permutation/randomization
+workflow and the null-distribution picture, and see the **MIT OCW 18.05 material on resampling and null
+distributions** for the same idea framed against theory-based tests. These notes are the course's own
+synthesis, grounded in but not copied from the sources.
+
+## Formula-verification status
+
+**verified: false.** The permutation results on this page — the observed difference $d = 3.0$, the two-sided
+permutation p-value of about $0.04$, and the theory cross-check ($\operatorname{SE}(d) \approx 1.45$,
+$t \approx 2.07$, $p \approx 0.046$) — are **drafted, synthetic, and not independently checked**, and the
+transfer numbers are illustrative. The course **math/statistics gate is BLOCKED**: every value here is
+provisional, pending the human/source sign-off in `_state/notation_ledger.md` §5. Do not treat any result as a
+confirmed reference until that review is complete.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week we add the fourth and final lens. Instead of asking "how surprising is the data under a null?" the
+Bayesian approach treats the unknown parameter itself as uncertain, starts from a prior, and updates it with
+the likelihood into a posterior. We will return to the pass-rate study and watch a $\text{Beta}(2,2)$ prior
+become a $\text{Beta}(28,16)$ posterior — and meet the credible interval that finally makes the probability
+statement a confidence interval refused to.
+
+## See also
+
+- [Week 10 — Bootstrap inference](week-10-bootstrap-inference.qmd)
+- [Week 12 — Bayesian inference](week-12-bayesian-inference.qmd)
+- [Week 8 — Hypothesis tests & p-values](week-08-hypothesis-tests-and-p-values.qmd)
+- [Notation glossary](../resources/notation-glossary.qmd)
+- [Inference reference](../resources/inference-reference.qmd)

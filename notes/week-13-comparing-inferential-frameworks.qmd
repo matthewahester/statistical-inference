@@ -1,0 +1,212 @@
+---
+title: "Week 13 — Comparing inferential frameworks"
+subtitle: "Where the four lenses agree, and where they differ"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Comparison of Bayesian and frequentist inference — supports the side-by-side comparison"
+  - "Introduction to Modern Statistics (Cetinkaya-Rundel & Hardin) — lighter review of intervals versus tests"
+toc: true
+---
+
+## The week question
+
+We have now answered the same question — what is the reading-competency pass rate $\theta$? — four different
+ways: with a confidence interval and a p-value, with a likelihood and an MLE, with the bootstrap and a
+permutation test, and with a Bayesian posterior and a credible interval. The numbers came out strikingly close.
+So the question of the week is the question of the whole course: when the four lenses land on nearly the same
+numbers, what is each one actually *conditioning on*, what does each *claim*, and where does that quiet
+agreement hide a real difference in meaning?
+
+This is the synthesis week. Nothing new is computed; instead we put the four frameworks on one table and read
+across the rows. The goal is the course's thesis made concrete — not "which framework is right," but a working
+fluency in what each treats as fixed versus random, what each assumes, and what kind of sentence each licenses.
+That fluency is what lets you choose a method for a problem and explain it honestly.
+
+## Why this matters
+
+It matters because the frameworks' numerical agreement is seductive and their conceptual differences are easy
+to lose. A one-sided p-value of $0.029$ and a posterior probability $P(\theta \le 0.5 \mid x) \approx 0.025$
+look almost identical, and a sloppy reader concludes "the p-value is the probability the null is true after
+all." It is not — the agreement is a numerical coincidence of this particular problem, and the two quantities
+condition on different things. Seeing the agreement *and* refusing to collapse the distinction is the mark of
+someone who understands inference rather than just running it.
+
+It also matters for practice. Real problems push you toward one lens or another: a regulated decision with a
+controlled error rate wants the frequentist test; a problem with genuine prior information and a need for a
+"probability the parameter exceeds a threshold" wants the Bayesian posterior; a statistic with no clean formula
+wants the bootstrap; a randomized experiment with minimal assumptions wants the permutation test. Knowing what
+each conditions on is how you match the tool to the question — and how you read someone else's analysis
+critically.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Lay the frequentist, likelihood, simulation-based, and Bayesian analyses of one parameter side by side.
+- For each framework, state what is treated as fixed versus random, what is assumed, and what the conclusion
+  claims.
+- Explain why a one-sided p-value and a posterior tail probability can be numerically close yet conceptually
+  different.
+- Distinguish a confidence interval from a credible interval in both number and meaning.
+- Choose a framework appropriate to a problem and justify the choice by what it conditions on.
+- Communicate a multi-framework conclusion responsibly, naming assumptions and the limits of each lens.
+
+## Core vocabulary
+
+- **Conditioning** — what a framework holds fixed and treats as given when it computes; the hinge of the whole
+  comparison.
+- **Frequentist** — treats $\theta$ as fixed and the data as random; claims are about long-run behavior of
+  procedures (coverage, error rates).
+- **Likelihood** — ranks parameter values by how well they explain the observed data; the engine shared by the
+  others.
+- **Simulation-based** — builds reference or resampling distributions by computer (bootstrap, permutation),
+  with minimal distributional assumptions.
+- **Bayesian** — treats $\theta$ as uncertain with a prior; claims are posterior probabilities about $\theta$
+  given the data.
+- **Numerical agreement vs. conceptual identity** — two methods printing the same number do not thereby make
+  the same claim.
+
+## Concept development
+
+### 1. The same question, four answers
+
+Hold the pass-rate study fixed: $x = 26$ passes in $n = 40$, $\hat p = 0.65$. Each framework processes that
+single dataset differently. The **frequentist** anchors on the fixed $\theta$ and the sampling distribution of
+$\hat p$, producing the 95% confidence interval $(0.502,\ 0.798)$ and, against $H_0:\theta = 0.5$, a one-sided
+$p \approx 0.029$. The **likelihood** view reports the value the data most support, $\hat\theta_{\text{MLE}} =
+0.65$, and compares hypotheses by likelihood ratios — $\theta = 0.65$ explains the data better than
+$\theta = 0.5$, by a ratio you can read off the curve from Week 5. The **simulation-based** view gets the same
+interval by bootstrapping and tests the same kind of claim by randomization, leaning on resampling rather than
+a normal formula. The **Bayesian** view starts from a $\text{Beta}(2,2)$ prior and reports the posterior
+$\text{Beta}(28,16)$: a credible interval $(0.493,\ 0.766)$ and $P(\theta > 0.5 \mid x) \approx 0.975$.
+
+### 2. What each conditions on
+
+The deep differences are about **conditioning**. The frequentist conditions on a *fixed but unknown* $\theta$
+and lets the data be the random thing; its 95% is a property of the *interval-making procedure* across
+hypothetical repeated samples, and its p-value is computed *under $H_0$*. The Bayesian conditions on the
+*observed data* and lets $\theta$ be the uncertain thing; its 95% is *posterior probability about $\theta$*, and
+its "$P(\theta > 0.5)$" is a direct statement about the parameter. The likelihood view conditions on the data
+too but stops short of a probability over $\theta$ — it ranks values without normalizing. The simulation view
+inherits the conditioning of whichever question it answers (the bootstrap mirrors the frequentist interval; the
+permutation test mirrors the frequentist null). Naming the fixed-versus-random choice for each row is the entire
+content of the comparison.
+
+### 3. Near-agreement is not identity
+
+Now the trap. The frequentist one-sided $p \approx 0.029$ — the chance, *if $\theta = 0.5$*, of a sample
+proportion as high as $0.65$ — sits remarkably close to the Bayesian $P(\theta \le 0.5 \mid x) \approx 0.025$ —
+the *posterior probability that $\theta$ is at most $0.5$*. They are numerically almost the same here, and with
+a flat-ish prior and a roughly symmetric likelihood they often are. But they are answers to different
+questions: one is a tail probability of the *data* under a hypothesized parameter; the other is a tail
+probability of the *parameter* given the data. The coincidence is a property of this problem, not a law, and
+treating "$p = 0.029$" as "a 2.9% chance the null is true" remains exactly the misreading we have guarded
+against since Week 8. The frameworks can shake hands on the number and still disagree on what the number means.
+
+## Worked examples
+
+### Worked example — the four-lens table for the pass rate
+
+We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`), $x = 26$, $n = 40$,
+gathering the locked results into one view:
+
+| Lens | What it reports | Fixed vs. random | The claim |
+|---|---|---|---|
+| Frequentist | 95% CI $(0.502,\ 0.798)$; one-sided $p \approx 0.029$ vs $H_0:\theta=0.5$ | $\theta$ fixed; data random | 95% of such intervals cover $\theta$; data are surprising under $H_0$ |
+| Likelihood | $\hat\theta_{\text{MLE}} = 0.65$; likelihood ratio favors $0.65$ over $0.5$ | data fixed; $\theta$ ranked, not distributed | $0.65$ best explains the data; relative support, no probability over $\theta$ |
+| Simulation | bootstrap CI $\approx (0.50,\ 0.80)$; randomization mirrors the test | resample/relabel the data | same coverage / surprise, with minimal formula assumptions |
+| Bayesian | posterior $\text{Beta}(28,16)$; credible interval $(0.493,\ 0.766)$; $P(\theta>0.5)\approx 0.975$ | data fixed; $\theta$ random (has a posterior) | 95% posterior probability $\theta \in (0.49,\ 0.77)$; $\theta$ beats $0.5$ with prob $\approx 0.975$ |
+
+Read across: the **intervals nearly coincide** — frequentist $(0.502, 0.798)$ versus Bayesian $(0.493, 0.766)$
+— and the **tail quantities nearly coincide** — one-sided $p \approx 0.029$ versus $P(\theta \le 0.5 \mid x)
+\approx 0.025$. Yet the column "the claim" differs in every row. A reader who only sees the numbers thinks the
+four methods are interchangeable; a reader who reads the "fixed vs. random" and "claim" columns sees four
+different sentences that happen to use similar digits. The whole skill of the course lives in that second
+reading.
+
+### Worked example — the same comparison on the mean, and choosing a lens
+
+The contrast travels to the mean gain. Frequentist: the $t$-interval $(5.97,\ 10.03)$ from Week 7. Bootstrap:
+the percentile interval $(6.0,\ 10.0)$ from Week 10 — simulation agreeing with theory. A Bayesian with a vague
+prior on $\mu$ would report a posterior credible interval close to those numbers but meaning "95% posterior
+probability $\mu$ is in here." **Choosing** among them is a judgment about the problem: if a funder needs a
+controlled false-positive rate for an approval decision, lead with the frequentist test; if a teacher has real
+prior experience and wants "the probability the gain exceeds 5 points," lead with the Bayesian posterior; if
+the estimator were a median with no formula, lead with the bootstrap. The numbers may end up close; the right
+*framing* depends on what you can assume and what claim you need to make.
+
+## A common mistake
+
+The central mistake of the week is letting numerical agreement erase conceptual difference — most often by
+reading the frequentist p-value as a Bayesian posterior probability. Because $p \approx 0.029$ and
+$P(\theta \le 0.5 \mid x) \approx 0.025$ are nearly equal here, it is tempting to announce "there's about a 2.5%
+chance the null is true." That sentence is Bayesian, requires a prior, and is *not* what the p-value computed —
+the p-value conditioned on $H_0$ being true and asked about the data. The agreement is a feature of this problem
+(a weak prior, a symmetric-ish likelihood), not a license to swap the interpretations. When the numbers agree,
+state that they agree *and* that they answer different questions; never let the coincidence collapse the two
+claims into one.
+
+A second, subtler error is concluding that because the four lenses agreed here, the choice of framework never
+matters. It often does. With a strongly informative prior the Bayesian and frequentist intervals can diverge
+sharply; with a heavily skewed statistic the bootstrap and the normal-theory interval can part ways; with a
+tiny sample the asymptotic frequentist tools wobble while a carefully chosen Bayesian model stays coherent. The
+frameworks agreeing on an easy problem is reassuring, not a general theorem — the responsible move is to know
+*why* they agreed and to expect that harder problems will pull them apart.
+
+## Low-stakes self-checks (ungraded)
+
+These are **ungraded self-checks** — no points, no submission.
+
+1. For the pass-rate problem, name what each of the four frameworks treats as fixed and what it treats as
+   random.
+2. The one-sided p-value ($\approx 0.029$) and $P(\theta \le 0.5 \mid x)$ ($\approx 0.025$) are nearly equal.
+   Write one sentence each stating what they actually claim, making the difference explicit.
+3. A confidence interval $(0.502, 0.798)$ and a credible interval $(0.493, 0.766)$ are close. How do their
+   *interpretations* differ?
+4. Give one problem feature that would push you toward a Bayesian analysis and one that would push you toward a
+   permutation test, and say why.
+5. "The four methods agreed, so the framework you pick doesn't matter." Give a concrete case where that
+   conclusion fails.
+
+## Reading and source pointer
+
+Read the **MIT OCW 18.05 material comparing Bayesian and frequentist inference** alongside this note for the
+side-by-side of intervals and tests, and skim **Introduction to Modern Statistics** for a lighter review of how
+intervals and tests relate. These notes are the course's own synthesis, grounded in but not copied from the
+sources.
+
+## Formula-verification status
+
+**verified: false.** Every value gathered in the four-lens table — the frequentist CI $(0.502,\ 0.798)$ and
+one-sided $p \approx 0.029$, the MLE $0.65$, the bootstrap interval, and the Bayesian posterior
+$\text{Beta}(28,16)$ with credible interval $(0.493,\ 0.766)$ and $P(\theta>0.5 \mid x) \approx 0.975$ — is
+**drafted, synthetic, and carried unchanged from earlier weeks; none is independently checked**. The
+near-agreement of the one-sided $p$ ($\approx 0.029$) and $P(\theta \le 0.5 \mid x)$ ($\approx 0.025$) is part
+of the synthetic example and must itself be verified. The course **math/statistics gate is BLOCKED**: every
+value here is provisional, pending the human/source sign-off in `_state/notation_ledger.md` §5.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week we stop comparing in the abstract and *do* the comparison. The inference project asks you to take one
+question, apply at least two of these frameworks to it, lay out their assumptions and conclusions side by side,
+and write a responsible interpretation — the four-lens table of this week, turned into a reproducible piece of
+your own work.
+
+## See also
+
+- [Week 12 — Bayesian inference](week-12-bayesian-inference.qmd)
+- [Week 14 — Inference project workshop](week-14-inference-project-workshop.qmd)
+- [Week 8 — Hypothesis tests & p-values](week-08-hypothesis-tests-and-p-values.qmd)
+- [Notation glossary](../resources/notation-glossary.qmd)
+- [Inference reference](../resources/inference-reference.qmd)

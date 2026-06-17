@@ -1,0 +1,339 @@
+---
+title: "Week 2 — Sampling distributions & simulation"
+subtitle: "What would happen if we repeated the study?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Sampling distributions; the central limit theorem — supports the sampling-distribution idea; ModernDive Ch 7 (Sampling) — supports building it by simulation"
+toc: true
+---
+
+## The week question
+
+Last week you drew a single sample, computed a single number from it — the sample proportion
+$\hat p = 0.65$ — and called that number an *estimate* of a fixed unknown parameter $\theta$. A fair
+follow-up question is the one a skeptical reader always asks: **if you had run the study again, with a
+fresh sample of the same size, would you have gotten the same number?** Almost certainly not. So how much
+would the answer have moved around, and what does the pattern of all those imagined repeats look like?
+
+That pattern has a name: the **sampling distribution** of the estimator. This week's question is the engine
+of the whole course — *what would happen if we repeated the study?* — and the most honest way to answer it,
+before any formula, is to actually repeat it. Not in real life, but in simulation: have the computer draw
+thousands of fresh samples from a known process, compute the estimator on each one, and look at the
+histogram of results. The sampling distribution stops being an abstraction and becomes something you can
+*see*.
+
+## Why this matters
+
+Every inferential claim you will make for the rest of the term — a standard error, a confidence interval, a
+p-value, a posterior — is a statement about a sampling distribution, even when the words "sampling
+distribution" never appear. A standard error is its spread. A confidence interval is built from its shape. A
+p-value is a tail area of one. If you do not have a clear picture of what an estimator does *across* repeated
+samples, those later objects are just recipes; with that picture, they are consequences.
+
+The deeper reason to start here is conceptual hygiene. There is a sharp line between **one realized estimate**
+(a single number, $\hat p = 0.65$) and **the estimator that produced it** ($\hat p = X/n$, a random variable
+that takes a different value in every sample). Only the estimator — the random variable — has a sampling
+distribution. The number $0.65$ does not "vary"; it is what it is. Confusing the two is the single most common
+error in early inference, and it is the trap this week exists to defuse. Simulation makes the distinction
+concrete, because you literally watch the estimator land on a different value every time the study repeats.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Explain what a **sampling distribution** is — the distribution of an *estimator* (a statistic, viewed as a
+  random variable) across all possible samples of a fixed size from the same process.
+- Keep the **estimator vs. estimate** distinction explicit: which object has a sampling distribution, and which
+  is just one draw from it (Risk 2).
+- **Simulate** a sampling distribution in R by repeating a study many times and collecting the statistic from
+  each repeat, and read its center and spread off the simulated values.
+- State the **central limit theorem** result for a sample mean, $\bar X \approx \text{Normal}(\mu, \sigma^2/n)$,
+  and recognize that the simulated histogram of $\bar X$ should look approximately normal.
+- Name the **sampling assumption** (here, independent draws from one process) that every sampling-distribution
+  argument quietly relies on, rather than leaving it silent (Risk 14).
+
+## Core vocabulary
+
+- **Parameter** ($\theta$, $p$, $\mu$, $\sigma$): a fixed, unknown feature of the process or population. It
+  does not vary from sample to sample; it is the thing you are trying to learn about.
+- **Statistic / estimator** ($\hat p = X/n$, $\bar X$, $S$): a function of the random sample, and therefore
+  *itself a random variable*. Capital letters and hats signal "this is random; it has a distribution." An
+  estimator is a rule that turns whatever sample you get into a number.
+- **Estimate** ($\hat p = 0.65$, $\bar x = 8.0$): the single realized value the estimator produced from the
+  one sample you actually observed. Lowercase. It is a number, not a distribution.
+- **Sampling distribution:** the distribution of an estimator over all possible samples of size $n$ drawn from
+  the same process — equivalently, "what the histogram of the statistic would look like if you repeated the
+  study endlessly." It is a property of the **estimator**, never of a single estimate.
+- **Standard error** ($\operatorname{SE}$): the standard deviation *of the sampling distribution* — a preview
+  of next week. It measures how much the estimator bounces around, not how spread out the raw data are.
+- **Central limit theorem (CLT):** for a sample mean of independent draws with finite variance,
+  $\bar X \approx \text{Normal}(\mu, \sigma^2/n)$ as $n$ grows, regardless of the shape of the data
+  distribution.
+- **Simulation:** generating many synthetic samples from a *known* process on the computer, computing the
+  estimator on each, and using the collection as a stand-in for the (usually unknowable) exact sampling
+  distribution.
+
+All data on this page are **synthetic**, generated with `set.seed(35103)`; they stand in for a campus
+reading-fluency study and are not real student records.
+
+## Concept development
+
+### An estimator is a random variable; its distribution is the sampling distribution
+
+Hold the parameter fixed. In Strand A of the reading-fluency study, the parameter is $\theta$, the true
+probability that a student reaches the reading-competency threshold; it is an unknown constant. You take a
+sample of $n = 40$ students and count the number who pass, $X$. Because $X$ depends on *which* 40 students you
+happened to sample, $X$ is random, and so is the proportion estimator
+
+$$
+\hat p = \frac{X}{n}.
+$$
+
+The same symbol $\hat p$ does double duty. As a *rule* — $\hat p = X/n$, with $X$ random — it is the
+**estimator**, a random variable. As the *number* it produced from your one observed sample — $\hat p = 0.65$
+— it is the **estimate**. The estimator has a distribution; the estimate is one draw from it. When this week
+talks about a "sampling distribution," it always means the distribution of the estimator. Saying "the
+sampling distribution of $0.65$" is a category error: a fixed number has no distribution.
+
+What does that distribution look like, in principle? With $X \sim \text{Binomial}(40, \theta)$ and
+$\theta = 0.65$, the estimator $\hat p = X/40$ can only land on the values $0/40, 1/40, \dots, 40/40$, with
+binomial probabilities. Its center sits at $\theta$ and its spread is governed by $\sqrt{\theta(1-\theta)/n}$.
+At $\theta = 0.65$, $n = 40$, that spread is
+
+$$
+\sqrt{\frac{0.65 \cdot 0.35}{40}} = \sqrt{0.0056875} \approx 0.075.
+$$
+
+So even before simulating, we expect the histogram of $\hat p$ to be centered near $0.65$ with a standard
+deviation near $0.075$. The point of this week is not to take that on faith but to *watch it happen*.
+
+### Building the sampling distribution by simulation
+
+Here is the move that makes the abstract concrete. You cannot repeat a real study thousands of times. But you
+*can* tell the computer to draw thousands of fresh samples from a process with a known $\theta$, compute
+$\hat p$ on each, and pile the results into a histogram. That histogram is an empirical picture of the
+sampling distribution.
+
+The logic is a loop you can say in one breath: **draw a sample of size $n$ from the process; compute the
+statistic; record it; repeat many times.** Each repeat is one hypothetical "if we had run the study again."
+The collection of recorded statistics is the simulated sampling distribution. Its center estimates where the
+estimator is centered (here, near $\theta = 0.65$), and its spread estimates the standard error (here, near
+$0.075$).
+
+Two things are worth saying plainly. First, simulation does **not** create new information about the real
+study or shrink the uncertainty in $\hat p = 0.65$; it reveals how much $\hat p$ *would* vary, given the
+process. Second, it works only because we fixed a known $\theta$ to draw from. In a real analysis $\theta$ is
+unknown — which is exactly why, in later weeks, we approximate the sampling distribution differently (with a
+formula via the CLT in weeks 3 and 7, by resampling the data via the bootstrap in week 10). Simulation here is
+a teaching telescope: we point it at a known process to learn how the machinery behaves.
+
+### The central limit theorem: the sampling distribution of a sample mean
+
+The proportion case is one face of a far more general fact. Switch to Strand B, where the outcome is a
+reading-gain *score* and the parameter is the mean $\mu$. The estimator is the sample mean
+
+$$
+\bar X = \frac{1}{n}\sum_{i=1}^{n} X_i,
+$$
+
+again a random variable, because it is a function of the random sample. The **central limit theorem** tells us
+that for independent draws with finite variance, as $n$ grows,
+
+$$
+\bar X \;\approx\; \text{Normal}\!\left(\mu,\ \frac{\sigma^2}{n}\right),
+$$
+
+*whatever the shape of the individual $X_i$.* The sampling distribution of $\bar X$ is approximately normal,
+centered at the true mean $\mu$, with a spread that shrinks like $\sigma/\sqrt{n}$. This is why the normal
+curve shows up everywhere in inference: not because raw data are normal, but because *averages* are
+approximately normal once $n$ is moderate.
+
+In the observed Strand B cohort, $n = 36$, the sample mean is $\bar x = 8.0$, and the sample SD is $s = 6.0$,
+so the spread of the sampling distribution of $\bar X$ is estimated by
+
+$$
+\operatorname{SE}(\bar X) = \frac{s}{\sqrt{n}} = \frac{6.0}{\sqrt{36}} = \frac{6.0}{6} = 1.0.
+$$
+
+So we expect the sampling distribution of $\bar X$ to be roughly normal, centered near $\mu$ (which our one
+observed mean $\bar x = 8.0$ estimates) with a standard deviation near $1.0$. The simulation below confirms
+the bell shape; turning that spread of $1.0$ into the formal object called a *standard error* is exactly the
+hand-off to Week 3.
+
+## Worked examples
+
+### Worked example — the sampling distribution of $\hat p$ (reading-fluency study, Strand A)
+
+**The model.** Each of $n = 40$ students independently passes with probability $\theta = 0.65$, so
+$X \sim \text{Binomial}(40, 0.65)$ and the estimator is $\hat p = X/40$. We treat $\theta = 0.65$ as a
+*known* process to simulate from — this is the teaching telescope, not the real (unknown) world.
+
+**The computation.** Repeat the study $10{,}000$ times, each time drawing a fresh count of passers and
+converting it to a proportion, then look at the center and spread of the collected proportions. The code below
+is shown for study and is **not executed** on this site.
+
+```r
+set.seed(35103)                       # synthetic; reproducible
+
+n      <- 40
+theta  <- 0.65
+reps   <- 10000
+
+# Repeat the study: each draw is one hypothetical "run it again."
+x_counts <- rbinom(reps, size = n, prob = theta)   # number who pass, per repeat
+phat_sim <- x_counts / n                            # the estimator, per repeat
+
+mean(phat_sim)   # center of the sampling distribution  ~ 0.65  (near theta)
+sd(phat_sim)     # spread of the sampling distribution   ~ 0.075 (the SE)
+
+# A picture: the simulated sampling distribution of p-hat
+hist(phat_sim, breaks = 20,
+     main = "Simulated sampling distribution of p-hat (n = 40, theta = 0.65)",
+     xlab = "p-hat")
+abline(v = theta, lwd = 2)            # the true theta we drew from
+```
+
+**The interpretation.** The simulated proportions cluster around $0.65$, with a standard deviation near
+$0.075$ — exactly the values the formula predicted, $\sqrt{0.65 \cdot 0.35 / 40} \approx 0.075$. Read this
+carefully against what is fixed and what is random. The **parameter** $\theta = 0.65$ is fixed; it is the
+known process we drew from. The **estimator** $\hat p$ is random, and the histogram *is* its sampling
+distribution. The one **estimate** from the real study, $\hat p = 0.65$, is a single draw that would sit
+somewhere inside this histogram. The histogram is not a statement that "$\hat p$ has a 95% chance of being
+near $0.65$"; it is the long-run frequency pattern of the estimator across repeated sampling from a fixed
+process. What is *assumed* throughout — and must be stated, not left silent — is that the 40 students are
+independent draws with the same pass probability. If passing were contagious among classmates, or the sample
+were not representative, this sampling distribution would be the wrong picture.
+
+### Worked example — the sampling distribution of $\bar X$ for a second measure (transfer)
+
+**A fresh context.** Move off the running study to a new measure: suppose a tutoring center records the time
+(in minutes) it takes each student to finish a placement reading passage, and the per-student times follow a
+right-skewed process with mean $\mu = 12$ minutes and SD $\sigma = 4$ minutes. The individual times are *not*
+normal — they are skewed. The question: what is the sampling distribution of the sample mean $\bar X$ for
+samples of $n = 36$ students?
+
+**The computation.** Draw $10{,}000$ samples of $36$ skewed times, average each sample, and look at the
+distribution of those averages. We use `colMeans` over a matrix so each column is one repeated study.
+
+```r
+set.seed(35103)                       # synthetic; reproducible
+
+n     <- 36
+reps  <- 10000
+mu    <- 12
+sigma <- 4
+
+# Skewed per-student times via a gamma with mean = 12, sd = 4
+shape <- (mu / sigma)^2               # = 9
+rate  <- mu / sigma^2                 # = 0.75
+draws <- matrix(rgamma(n * reps, shape = shape, rate = rate),
+                nrow = n, ncol = reps)
+
+xbar_sim <- colMeans(draws)           # the estimator X-bar, one value per repeat
+
+mean(xbar_sim)   # ~ 12   (near mu)
+sd(xbar_sim)     # ~ 4 / sqrt(36) = 0.667  (the SE, = sigma / sqrt(n))
+
+hist(xbar_sim, breaks = 30,
+     main = "Simulated sampling distribution of X-bar (n = 36, skewed data)",
+     xlab = "sample mean (minutes)")
+```
+
+**The interpretation.** Two things happen, and both are the CLT in action. The *individual* times are
+skewed, but the histogram of the $10{,}000$ sample **means** is approximately a symmetric bell, centered near
+$\mu = 12$ with spread near $\sigma/\sqrt{n} = 4/6 \approx 0.667$. Averaging has washed out the skew and
+delivered the normal shape promised by $\bar X \approx \text{Normal}(\mu, \sigma^2/n)$. Note what this does and
+does not say: the *sample means* are approximately normal, not the raw times. The conditioning is again on
+independent draws from one process. This transfer example is the same logic as Strand B of the running study,
+where $n = 36$, $s = 6.0$, and the SE comes out to $1.0$ — the only difference is the numbers and the measure.
+The shape of the reasoning travels.
+
+## A common mistake
+
+The week's trap is **confusing the estimator with the estimate** (Risk 2), and the language gives it away.
+You will hear — and may be tempted to write — "the sampling distribution of $0.65$." There is no such thing. A
+fixed number has no distribution; it does not vary. What has a sampling distribution is the *estimator*
+$\hat p = X/n$, the random rule, viewed across all the samples you might have drawn. The number $0.65$ is one
+realized draw from that distribution.
+
+A close cousin of the mistake is reading the spread of the *data* as the spread of the *estimator*. In the
+transfer example the individual times have SD $\sigma = 4$, but the sample mean's sampling distribution has SD
+$\approx 0.667$. Those are different objects: the SD of the data describes how spread out individual students
+are; the standard error describes how spread out the *estimator* is across repeated studies. They differ by a
+factor of $\sqrt{n}$, and conflating them is the seed of next week's most common error.
+
+The third, quieter mistake is leaving the **sampling assumption silent** (Risk 14). Every claim on this page —
+the center at $\theta$, the spread at $\sqrt{\theta(1-\theta)/n}$, the CLT's normal shape — rests on the draws
+being independent and from one common process. State that assumption out loud every time. If it fails (a
+clustered sample, dependence between students, a biased recruiting process), the sampling distribution you
+drew is not the one your real study lives in, and the inference built on it inherits the flaw.
+
+## Low-stakes self-checks (ungraded)
+
+These are practice only — no points, no submission, nothing to turn in.
+
+1. In one sentence, say which of these has a sampling distribution and which does not: the estimator
+   $\hat p = X/40$, the estimate $\hat p = 0.65$, the parameter $\theta$. Explain why.
+2. The simulated sampling distribution of $\hat p$ (Strand A) came out centered near $0.65$ with SD near
+   $0.075$. Which of those two numbers is a preview of the *standard error*, and which is the center?
+3. In the transfer example the individual times have SD $4$ but the sample means have SD $\approx 0.667$. By
+   what factor do they differ, and where does that factor come from?
+4. The raw placement times were *skewed*, yet the histogram of sample means looked *normal*. Name the result
+   that explains this, and state what must be true about the draws for it to apply.
+5. A classmate writes, "the simulation proves $\theta = 0.65$." Correct the statement: what does the
+   simulation actually reveal, and what does the value $0.65$ depend on?
+6. If you increased $n$ from $40$ to $160$ in the proportion simulation, would the sampling distribution of
+   $\hat p$ get wider or narrower, and by roughly what factor? (Hint: $\sqrt{\theta(1-\theta)/n}$.)
+
+## Reading and source pointer
+
+Read **MIT OCW 18.05 — Introduction to Probability and Statistics (Spring 2022)** on **sampling distributions
+and the central limit theorem** for the theory spine: what a sampling distribution is, and why a sample mean
+is approximately normal. Pair it with **ModernDive (Ismay, Kim & Valdivia), Ch 7 — Sampling** for the
+simulation-first way of building a sampling distribution by repeating a study in R and reading its center and
+spread. For a lighter calibration on sampling variability, *Introduction to Modern Statistics* (Çetinkaya-Rundel
+& Hardin) covers the same intuition at a gentler pace.
+
+These notes are the course's own synthesis, grounded in but not copied from the sources.
+
+## Formula-verification status
+
+**verified: false.** The math gate for this course is **BLOCKED**. The load-bearing formulas and numbers on
+this page — the spread of $\hat p$, $\sqrt{0.65 \cdot 0.35 / 40} \approx 0.075$; the CLT statement
+$\bar X \approx \text{Normal}(\mu, \sigma^2/n)$; the Strand B values $\bar x = 8.0$, $s = 6.0$,
+$\operatorname{SE}(\bar X) = 6/\sqrt{36} = 1.0$; and the transfer SE $\sigma/\sqrt{n} = 4/6 \approx 0.667$ —
+are **drafted, synthetic** (`set.seed(35103)`), and **not independently checked**. The simulated outputs shown
+as comments (means near $0.65$ and $12$; SDs near $0.075$ and $0.667$) are drafted expected values, not
+executed results. Do not treat any value here as a confirmed reference until the human/source sign-off in
+`_state/notation_ledger.md` §5 is complete.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week turns the *spread* of the sampling distribution you simulated here into a single, named quantity: the
+**standard error**. Where this week you watched $\hat p$ scatter with SD near $0.075$ and $\bar X$ scatter with
+SD $1.0$, Week 3 names those spreads $\operatorname{SE}(\hat p)$ and $\operatorname{SE}(\bar X) = s/\sqrt{n}$,
+shows how to compute them from a single sample without simulating, and pins down what they do and do not
+measure.
+
+## See also
+
+- [Week 1 — What statistical inference is](week-01-what-statistical-inference-is.qmd) — sample vs. population
+  vs. parameter, and why $\hat p = 0.65$ estimates $\theta$.
+- [Week 3 — Estimators & standard errors](week-03-estimators-and-standard-errors.qmd) — naming the spread of
+  this week's sampling distribution as the standard error.
+- [Lab 2 — Simulating sampling distributions](../labs/lab-02-simulating-sampling-distributions.qmd) — the
+  companion hands-on lab where you run the simulations above yourself.
+- [Notation glossary](../resources/notation-glossary.qmd) — the parameter / statistic / estimator / estimate
+  discipline in one place.
+- [Inference reference](../resources/inference-reference.qmd) — the four inferential lenses side by side.

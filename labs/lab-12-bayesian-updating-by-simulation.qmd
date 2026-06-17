@@ -1,0 +1,114 @@
+---
+title: "Lab 12 — Bayesian updating by simulation"
+subtitle: "Turning a prior into a posterior and reading a credible interval"
+page_mode: software_lab_week
+week_contract: software_note_lab
+source_mode: source-informed
+verified: false
+toc: true
+---
+
+> **Purpose.** This lab is the hands-on companion to
+> [Week 12 — Bayesian inference](../notes/week-12-bayesian-inference.qmd). The note develops the Beta–Binomial
+> conjugate update; here you draw the prior and posterior, sample from the posterior, and read its mean,
+> credible interval, and the posterior probability that the pass rate beats one-half.
+
+## The idea
+
+A Bayesian analysis starts from a prior distribution for the unknown $\theta$ and updates it with the data into
+a posterior. For a proportion with a Beta prior, the update is arithmetic — add successes to the first shape
+parameter and failures to the second — so the posterior for the reading-fluency study's $26$ passes in $40$ is
+a $\text{Beta}(28, 16)$. This lab draws the prior and posterior on one plot, samples from the posterior to make
+the abstract distribution tangible, and reads the summaries the note reported: the posterior mean, a 95%
+credible interval, and $P(\theta > 0.5 \mid x)$.
+
+## Goal
+
+Update a $\text{Beta}(2,2)$ prior with $x = 26$ successes in $n = 40$ to the $\text{Beta}(28,16)$ posterior;
+plot both; and read the posterior mean ($\approx 0.636$), the 95% credible interval ($\approx (0.493, 0.766)$),
+and $P(\theta > 0.5 \mid x)$ ($\approx 0.975$), confirming the closed-form values by simulation.
+
+## Setup
+
+Open R and a fresh Quarto document; fix the seed (the posterior summaries are exact via `qbeta`/`pbeta`, but we
+also draw posterior samples, which use the seed).
+
+```r
+set.seed(35103)
+a <- 2; b <- 2          # Beta(2, 2) prior, centered at 0.5
+x <- 26; n <- 40        # 26 passes out of 40
+A <- a + x              # 28
+B <- b + (n - x)        # 16  -> posterior Beta(28, 16)
+```
+
+## Steps
+
+### Step 1 — draw the prior and the posterior
+
+Plot the two Beta densities on the same axes to *see* the update: a broad prior pulled into a narrower
+posterior concentrated near $0.64$.
+
+```r
+theta <- seq(0, 1, by = 0.001)
+plot(theta, dbeta(theta, a, b), type = "l", lty = 2,
+     main = "Prior Beta(2,2) and posterior Beta(28,16)",
+     xlab = expression(theta), ylab = "density")
+lines(theta, dbeta(theta, A, B), lty = 1)
+legend("topright", c("prior", "posterior"), lty = c(2, 1))
+```
+
+### Step 2 — read the posterior summaries (closed form)
+
+For a $\text{Beta}(A, B)$ the mean is $A/(A+B)$, and `qbeta`/`pbeta` give the credible interval and tail
+probability exactly.
+
+```r
+A / (A + B)                       # posterior mean        ~ 0.636
+(A - 1) / (A + B - 2)             # posterior mode        ~ 0.643
+qbeta(c(0.025, 0.975), A, B)      # 95% credible interval ~ (0.493, 0.766)
+1 - pbeta(0.5, A, B)              # P(theta > 0.5 | x)    ~ 0.975
+```
+
+### Step 3 — confirm by sampling from the posterior
+
+Draw many posterior values and recompute the same summaries; they should match the closed-form numbers,
+confirming what `rbeta` is doing.
+
+```r
+post <- rbeta(100000, A, B)       # posterior samples
+mean(post)                         # ~ 0.636
+quantile(post, c(0.025, 0.975))    # ~ (0.493, 0.766)
+mean(post > 0.5)                    # ~ 0.975
+```
+
+## Verify
+
+- **The picture.** The posterior is narrower than the prior and peaks near $0.64$ — the data sharpened a vague
+  belief into a focused one. The posterior mean $0.636$ sits just below the MLE $0.65$ because the
+  $\text{Beta}(2,2)$ prior nudged it toward $0.5$.
+- **Closed form equals simulation.** The `rbeta` sample mean, interval, and `mean(post > 0.5)` match the
+  `qbeta`/`pbeta` values. If they do not, raise the number of posterior draws or check the shape parameters.
+- **The credible statement.** You can say "given the data and the $\text{Beta}(2,2)$ prior, there is about a
+  95% probability that $\theta$ is between $0.49$ and $0.77$" — a probability statement about $\theta$ that the
+  Week-7 confidence interval could not make. Hold that contrast.
+
+## AI use note
+
+| Field | What to record |
+|-------|----------------|
+| Tool | which assistant you used, with approximate date or version |
+| Purpose | what you used it for (e.g. explaining `qbeta`, debugging the density plot) |
+| Verification | how you checked it: confirmed the conjugate update by hand (28 = 2 + 26), matched the simulated summaries to `qbeta`/`pbeta`, or restated the credible-interval claim correctly |
+
+Verification is the load-bearing line: an AI can produce the plot, but you confirm the posterior is
+$\text{Beta}(28,16)$ and that a credible interval is *not* a confidence interval.
+
+## See also
+
+- [Week 12 — Bayesian inference](../notes/week-12-bayesian-inference.qmd)
+- [Week 13 — Comparing inferential frameworks](../notes/week-13-comparing-inferential-frameworks.qmd)
+- [Lab 6 — Likelihood & MLE curves](lab-06-likelihood-and-mle-curves.qmd)
+- [Inference reference](../resources/inference-reference.qmd)
+
+*The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only. All numbers are synthetic and `verified: false`; the math gate is blocked pending sign-off.*

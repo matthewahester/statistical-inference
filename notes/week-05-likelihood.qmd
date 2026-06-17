@@ -1,0 +1,348 @@
+---
+title: "Week 5 — Likelihood"
+subtitle: "Which parameter values make the data we saw most plausible?"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Likelihood — supports the likelihood function, the log-likelihood, and comparing parameter values"
+toc: true
+---
+
+## The week question
+
+So far the course has gone in one direction: fix a parameter, then ask how a statistic behaves. Given
+$\theta$, the sample proportion $\hat p$ has a sampling distribution; given $\mu$, the sample mean $\bar X$
+has one too. This week we turn the arrow around. We hold the data we actually observed *fixed*, and we ask
+the inverse question:
+
+> **Given the data we saw, which values of the parameter would have made those data most plausible?**
+
+That single change of viewpoint is the **likelihood**. It is the bridge between the probability model you
+were handed and the estimation you want to do — and it is the engine under almost everything that follows
+(the MLE next week, much of confidence-interval and test machinery after that, and the Bayesian update at the
+end). It is also the home of one of the course's sharpest traps: the likelihood is a function *of the
+parameter*, and it is **not** a probability distribution over the parameter. Getting that distinction right
+is most of the week.
+
+## Why this matters
+
+Up to now you have had estimates handed to you — $\hat p = 0.65$, $\bar x = 8.0$ — as natural summaries.
+But *why* are they natural? "Take the sample proportion" is a recipe, not a justification. The likelihood
+supplies the justification. It scores every candidate parameter value by how well it would have predicted
+the data you actually got, and it lets you compare two candidates head to head: is $\theta = 0.65$ a better
+explanation of "26 of 40 passed" than $\theta = 0.5$ is, and by how much?
+
+That move — *rank parameter values by the plausibility they lend the observed data* — is one of the most
+general ideas in statistics. It does not care whether the model is a coin-flip proportion, a Normal mean, or
+a Poisson rate; the same recipe applies. It is also the quantity a Bayesian multiplies by a prior, so the
+likelihood is the one object shared across the frequentist, likelihood, and Bayesian lenses this course
+keeps in play. Learn to read a likelihood curve and you can read most of the rest of the course.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Write the **likelihood** $L(\theta)$ for a sample as the probability of the observed data viewed as a
+  function of the parameter, and explain why constants that do not depend on $\theta$ can be dropped.
+- Derive and use the **log-likelihood** $\ell(\theta) = \log L(\theta)$, and say why we work on the log
+  scale.
+- Compare two parameter values with a **likelihood ratio**, and state in words what that ratio does and
+  does not claim.
+- State clearly, and defend, that $L(\theta)$ is a **function of $\theta$**, not a distribution over
+  $\theta$ — so areas under it carry no probability meaning (Risk 4).
+- Recognize the same construction for a **Normal mean** and a **Poisson rate**, not just a proportion.
+
+## Core vocabulary
+
+Keep the **parameter vs statistic vs estimator vs estimate** discipline from the
+[notation glossary](../resources/notation-glossary.qmd) in view; it does real work this week.
+
+- **Parameter** $\theta$ — a fixed unknown number (here, the true pass probability). It does not vary and
+  does not get a hat.
+- **Data / sample** — the observed outcomes, held fixed once collected. For the proportion strand,
+  $x = 26$ passes out of $n = 40$, modeled as $X \sim \text{Binomial}(40, \theta)$.
+- **Likelihood** $L(\theta)$ — the probability of the observed data, **read as a function of $\theta$ with
+  the data fixed**. Notation: $L(\theta) = p(x \mid \theta)$, but with $x$ frozen and $\theta$ free. It need
+  not integrate to 1 over $\theta$, and usually does not.
+- **Log-likelihood** $\ell(\theta) = \log L(\theta)$ — the natural log of the likelihood. Same maximizer,
+  friendlier algebra.
+- **Likelihood ratio** $L(\theta_1)/L(\theta_0)$ — how many times more plausible the observed data are
+  under $\theta_1$ than under $\theta_0$. A relative measure of fit, not a probability.
+- **Estimator / estimate** — unchanged from earlier weeks: $\hat p = X/n$ is the estimator (a random
+  variable with a sampling distribution); $\hat p = 0.65$ is the estimate (one realized number). The
+  likelihood is the tool we will use next week to *justify* such an estimate.
+
+One symbol caution carried forward from the [notation glossary](../resources/notation-glossary.qmd):
+$L$ always denotes the **likelihood** in this course. A decision loss, when it appears in Week 9 and Week 12,
+is written $\operatorname{Loss}(\theta, a)$ — never $L$.
+
+## Concept development
+
+### From "given $\theta$, what is the chance of the data?" to "given the data, score each $\theta$"
+
+The binomial model says: if the true pass probability is $\theta$, the probability of seeing exactly $x$
+passes in $n$ independent trials is
+
+$$
+p(x \mid \theta) = \binom{n}{x}\,\theta^{x}(1-\theta)^{n-x}.
+$$
+
+Read left to right with $\theta$ fixed, this is a probability *distribution over the data* $x$ — sum it over
+all $x$ from $0$ to $n$ and you get $1$. The likelihood reads the **same formula** the other way: fix the
+data at what you observed, and let $\theta$ vary. For our slice, $n = 40$ and $x = 26$ (these are
+synthetic; seed set, `set.seed(35103)`), so
+
+$$
+L(\theta) = \binom{40}{26}\,\theta^{26}(1-\theta)^{14}, \qquad 0 \le \theta \le 1.
+$$
+
+The conditioning has flipped. Nothing about the data is random anymore — we *saw* 26 passes. What varies is
+the candidate explanation $\theta$. $L(0.65)$ answers "how probable were these exact data if the truth were
+$\theta = 0.65$?" and $L(0.50)$ answers the same question for $\theta = 0.50$. We compare those numbers.
+
+### Dropping the constant: $L(\theta) \propto \theta^{26}(1-\theta)^{14}$
+
+The factor $\binom{40}{26}$ does not depend on $\theta$. It scales the whole curve up or down by the same
+amount at every $\theta$, so it cannot change *where* the curve is high or *how many times* higher one point
+is than another. For comparing parameter values — which is the entire job of the likelihood — it is dead
+weight, and we drop it:
+
+$$
+L(\theta) \;\propto\; \theta^{26}(1-\theta)^{14}.
+$$
+
+The symbol $\propto$ ("proportional to") is doing the bookkeeping: we are keeping everything that depends on
+$\theta$ and discarding a positive constant that does not. This is exactly why the **height** of a
+likelihood curve is not meaningful on its own — only ratios of heights, and the location of the peak, carry
+information. (The same $\propto$ discipline returns in Week 12, where the dropped constant is the Bayesian
+evidence $p(x)$; we will name it there too.)
+
+### The log-likelihood: why we take logs
+
+Products of small numbers are awkward — they underflow numerically and they are painful to differentiate.
+The logarithm turns the product into a sum, is strictly increasing (so it has its maximum at the *same*
+$\theta$), and makes the calculus clean. Taking logs of the proportional form:
+
+$$
+\begin{aligned}
+\ell(\theta) &= \log L(\theta) \\
+             &= \text{const} + 26\ln\theta + 14\ln(1-\theta).
+\end{aligned}
+$$
+
+The "const" collects $\ln\binom{40}{26}$ and any other $\theta$-free terms; like the constant above, it
+shifts the curve vertically without moving its peak. Two features matter for next week. First, $\ell$ is
+**concave** here — it rises, reaches a single interior maximum, and falls — so there is one best $\theta$.
+Second, the maximizer is where the slope $\ell'(\theta)$ is zero; we will solve $\ell'(\theta) = 0$ in
+Week 6 and find it lands at $\theta = 26/40 = 0.65$, the sample proportion. This week we only need to *see*
+that the curve peaks near $0.65$; deriving the exact maximizer is the MLE, which is next week's job.
+
+### Comparing two values with a likelihood ratio
+
+The likelihood's natural use is comparison. Suppose the program's old benchmark was "no better than a coin
+flip," $\theta = 0.50$, and we want to weigh it against $\theta = 0.65$, where the curve is tallest. Form the
+ratio on the proportional form:
+
+$$
+\frac{L(0.65)}{L(0.50)}
+= \frac{0.65^{26}(0.35)^{14}}{0.50^{26}(0.50)^{14}}.
+$$
+
+On the log scale this is a difference, $\ell(0.65) - \ell(0.50)$, which is the easier thing to compute and
+report. Whatever the exact value (we leave it symbolic — the math gate is blocked, see below), the *reading*
+is what to lock in: a ratio greater than 1 means the observed data are that-many-times more plausible under
+$\theta = 0.65$ than under $\theta = 0.50$. It is a statement about **how well each parameter value predicts
+the data we saw**. It is **not** the probability that $\theta = 0.65$, nor the probability that
+$\theta = 0.50$; the likelihood assigns no probabilities to parameter values at all.
+
+## Worked examples
+
+### Worked example — the reading-fluency study: the likelihood for the pass proportion
+
+**The study (synthetic; seed set).** A campus reading-intervention program records whether each of $n = 40$
+students reached a reading-competency threshold. We observed $x = 26$ passes, so the estimate is
+$\hat p = 26/40 = 0.65$. These are the locked Strand A numbers; they are synthetic and `verified: false`.
+
+**The model.** Treat the 40 pass/not-pass outcomes as independent with a common pass probability $\theta$,
+so $X \sim \text{Binomial}(40, \theta)$. The independence-and-common-$\theta$ assumption is an assumption,
+not a fact — it would fail if, say, students worked in pairs or the threshold drifted across the cohort.
+Naming that assumption is part of doing the inference honestly.
+
+**The likelihood.** With the data fixed at $x = 26$,
+
+$$
+L(\theta) = \binom{40}{26}\,\theta^{26}(1-\theta)^{14} \;\propto\; \theta^{26}(1-\theta)^{14},
+\qquad
+\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta).
+$$
+
+**The computation — a likelihood curve.** The cleanest way to *see* a likelihood is to evaluate it on a grid
+of candidate $\theta$ values and plot it. The visual plan for this week (`wk05`, the likelihood curve) is
+exactly this picture. Here is the static R that produces it. The code is shown as teaching; it is not executed here.
+
+```r
+# Week 5 — likelihood curve for the reading-fluency pass proportion
+# Synthetic data; seed set per course convention. Code is shown, not executed.
+set.seed(35103)
+
+n <- 40      # students
+x <- 26      # passes  -> p-hat = 0.65
+
+# A grid of candidate parameter values theta in (0, 1)
+theta <- seq(0.01, 0.99, by = 0.001)
+
+# Likelihood L(theta) = P(X = 26 | theta), read as a function of theta.
+# dbinom() with x and n fixed and prob = theta varying IS the likelihood.
+L <- dbinom(x, size = n, prob = theta)
+
+# Log-likelihood: same maximizer, friendlier scale.
+loglik <- dbinom(x, size = n, prob = theta, log = TRUE)
+
+# Where is the curve highest? (Previews next week's MLE.)
+theta[which.max(L)]            # ~ 0.65, the sample proportion
+# A head-to-head comparison via a likelihood ratio:
+dbinom(x, n, 0.65) / dbinom(x, n, 0.50)   # how many times more plausible the
+                                          # data are under theta = 0.65 vs 0.50
+
+plot(theta, L, type = "l",
+     xlab = expression(theta), ylab = expression(L(theta)),
+     main = "Likelihood for the pass proportion (n = 40, x = 26)")
+abline(v = 0.65, lty = 2)      # peak near the sample proportion
+abline(v = 0.50, lty = 3)      # the 'coin flip' benchmark for comparison
+```
+
+**The interpretation.** The curve rises from near zero, peaks close to $\theta = 0.65$, and falls away on
+both sides; values far from $0.65$ make "26 of 40" much less plausible. The peak sitting at the sample
+proportion is not a coincidence — it is the fact Week 6 will prove. The dashed line at $0.65$ and the dotted
+line at $0.50$ set up the likelihood-ratio comparison: the data are more plausible under $\theta = 0.65$
+than under $\theta = 0.50$, which is *evidence favoring* the higher value. Two cautions on what we have
+**not** said. We have not said $\theta$ *is* $0.65$ — that is the next week's point estimate, and even then
+$0.65$ is the estimate, not the fixed parameter. And we have **not** said there is a 95% chance, or any
+chance, that $\theta$ lies in some range read off the area under this curve: $L(\theta)$ is a function of
+$\theta$, not a probability distribution over $\theta$, and its area is meaningless (Risk 4).
+
+### Worked example — transfer: the likelihood for a Normal mean and a Poisson rate
+
+The likelihood recipe does not depend on the binomial. Take a fresh context: a campus lab logs the **time in
+seconds** each of $m$ students takes to complete a short timed reading passage, and treats the times as
+independent draws $Y_1, \dots, Y_m \sim \text{Normal}(\mu, \sigma^2)$ with $\sigma$ known for illustration.
+Now $\mu$ — the true average completion time — is the parameter, and the data are the observed times.
+
+**Normal-mean likelihood.** Multiply the Normal densities at the observed values, then read the product as a
+function of $\mu$:
+
+$$
+\begin{aligned}
+L(\mu) &= \prod_{i=1}^{m}
+          \frac{1}{\sqrt{2\pi}\,\sigma}\exp\!\left(-\frac{(y_i-\mu)^2}{2\sigma^2}\right) \\
+\ell(\mu) &= \text{const} \;-\; \frac{1}{2\sigma^2}\sum_{i=1}^{m}(y_i - \mu)^2.
+\end{aligned}
+$$
+
+The "const" gathers every term free of $\mu$ (the $\sqrt{2\pi}\,\sigma$ factors and so on), and we drop it
+for the same reason as before. The shape is informative: $\ell(\mu)$ is a downward parabola in $\mu$, and
+maximizing it is the same as **minimizing the sum of squared deviations** $\sum (y_i - \mu)^2$ — which is
+largest plausibility exactly at $\mu = \bar y$, the sample mean. So for a Normal mean, the likelihood points
+at the average, just as for a proportion it points at the sample proportion. (We keep the data here generic;
+no locked Strand B numbers are asserted as fit on this page.)
+
+**Poisson-rate likelihood (a second transfer).** If instead we count the number of comprehension errors per
+passage and model the counts $K_1, \dots, K_m \sim \text{Poisson}(\lambda)$, the rate $\lambda$ is the
+parameter and
+
+$$
+\ell(\lambda) = \text{const} \;-\; m\lambda \;+\; \Big(\textstyle\sum_i k_i\Big)\ln\lambda,
+$$
+
+whose peak sits at $\lambda = \bar k$, the average count. **The point of the transfer:** three different
+models — binomial, Normal, Poisson — and the *same* three moves each time. Write the probability of the
+observed data, read it as a function of the parameter, drop the parameter-free constant, and look at the
+log. Where the log-likelihood peaks is the parameter value the data most favor. The construction is general;
+only the algebra changes.
+
+## A common mistake
+
+**The likelihood is a function of $\theta$, not a distribution over $\theta$ (Risk 4).** The curve from the
+first example *looks* like a bell-ish hump over $\theta$, and the temptation is to treat it like a
+probability density — to say "the area between $0.5$ and $0.7$ is most of the curve, so there's a high
+probability $\theta$ is in there," or to "normalize" it and read off chances. **Do not.** Three reasons,
+stated plainly:
+
+- $L(\theta)$ need not integrate to 1 over $\theta$, and generally does not. We even *threw away* the
+  constant $\binom{40}{26}$, which would change any "area." A quantity whose overall scale you discarded
+  cannot be a probability.
+- $\theta$ is a **fixed unknown**, not a random variable. In the likelihood/frequentist frame, $\theta$ has
+  no probability distribution to describe; it simply has one true value we are trying to learn about.
+- The likelihood's currency is **relative** — ratios of heights and the location of the peak. "$\theta=0.65$
+  makes the data twice as plausible as $\theta = 0.55$" is legitimate; "there is a 70% probability that
+  $\theta$ is near $0.65$" is not a likelihood statement at all.
+
+There *is* a tool that puts a genuine probability distribution on $\theta$ — the Bayesian **posterior** in
+Week 12 — and it is built by multiplying this very likelihood by a prior and *then* normalizing. That extra
+step is exactly what makes the posterior a distribution and keeps the bare likelihood from being one. Keep
+the two separate: the likelihood ranks parameter values; only the posterior assigns them probabilities.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — no points, no submission, no due date.
+
+1. In your own words, what does $L(0.65)$ measure, and what is held fixed when you compute it? What is held
+   fixed when you instead compute the sampling distribution of $\hat p$ at $\theta = 0.65$? (Name what is
+   random and what is fixed in each.)
+2. Explain why $\binom{40}{26}$ can be dropped from $L(\theta)$ without affecting *which* $\theta$ the data
+   most favor. What *would* change if you dropped a factor that depended on $\theta$?
+3. A classmate says, "the likelihood curve shows there's about a 95% chance $\theta$ is between $0.5$ and
+   $0.8$." Identify the error and rewrite the claim as a correct likelihood statement.
+4. Write the log-likelihood $\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta)$ and describe, in
+   words, its shape and roughly where it peaks. Why is the peak the same for $\ell$ and for $L$?
+5. For the Poisson transfer, $\ell(\lambda) = \text{const} - m\lambda + (\sum_i k_i)\ln\lambda$. Without
+   doing next week's calculus, argue from the structure why the most-favored $\lambda$ should be the average
+   count $\bar k$.
+
+## Reading and source pointer
+
+This week is grounded in **MIT OCW 18.05, *Introduction to Probability and Statistics* (Spring 2022)**,
+specifically its likelihood material (the readings introducing the likelihood function, the log-likelihood,
+and comparing parameter values, around readings 10–11). Read it for the shape of the idea — the flip from
+"probability of data given $\theta$" to "likelihood of $\theta$ given data," and the role of the
+log-likelihood. *These notes are the course's own synthesis, grounded in but not copied from the sources.*
+
+## Formula-verification status
+
+**`verified: false`.** The formulas and every numeric value on this page are **drafted, synthetic, and not
+independently checked**. The load-bearing items here — the likelihood
+$L(\theta) = \binom{40}{26}\theta^{26}(1-\theta)^{14} \propto \theta^{26}(1-\theta)^{14}$, the log-likelihood
+$\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta)$, the curve's peak near $\theta = 0.65$, the
+$\theta = 0.5$ vs $\theta = 0.65$ likelihood ratio, and the Normal-mean and Poisson-rate transfer
+likelihoods — all rest on the synthetic Strand A data ($n = 40$, $x = 26$, `set.seed(35103)`). The course
+**math gate is BLOCKED**: do not treat any value here as a confirmed reference until the human/source
+sign-off logged in `_state/notation_ledger.md` §5 is complete. Nothing on this page is release-ready.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, inference labs, the midterm, the project, and the final live in
+**Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and
+Blackboard ever disagree, follow Blackboard.
+
+## Looking ahead
+
+Next week we stop eyeballing the peak and find it exactly. Week 6 finds the single value that maximizes this
+likelihood: the **maximum likelihood estimate** (MLE). We set the score $\ell'(\theta) = 0$, solve it, and
+confirm what the curve already hinted — for the reading-fluency proportion, $\hat\theta_{\text{MLE}} = 0.65$,
+the sample proportion — and we do the same for the Normal mean. The likelihood you built this week is the
+object we will be climbing.
+
+## See also
+
+- [Week 4 — Bias, variance & MSE](week-04-bias-variance-mse.qmd) — how we judged estimators *before* we had
+  a principle for choosing them.
+- [Week 6 — Maximum likelihood estimation](week-06-maximum-likelihood-estimation.qmd) — finding the value
+  that maximizes the likelihood you built this week.
+- [Notation glossary](../resources/notation-glossary.qmd) — the parameter vs statistic vs estimator vs
+  estimate discipline, and the $L$-is-likelihood (not loss) convention.
+- [Inference reference](../resources/inference-reference.qmd) — the four lenses side by side, including where
+  the likelihood sits in each.

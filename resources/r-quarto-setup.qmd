@@ -1,0 +1,79 @@
+---
+title: "R · Quarto setup"
+subtitle: "Getting set up to run the simulation code"
+page-type: reference
+toc: true
+---
+
+The inference labs use **R** and **Quarto** to simulate sampling distributions, draw likelihood and posterior
+curves, build bootstrap intervals, and run randomization tests. This page gets you set up and explains the
+reproducibility conventions every lab uses. You need no prior R experience — the simulation work is scaffolded
+in the labs, and the code is explained as it goes.
+
+::: {.callout-note}
+On this site the R code in the notes and labs is **shown as static teaching code** — it is
+displayed, syntax-highlighted, but not executed in place. You run it yourself in your own R session, which is
+exactly how you will work on the labs.
+:::
+
+## Option A — Posit Cloud (nothing to install)
+
+The quickest start is the browser. Create a free account at [posit.cloud](https://posit.cloud), open a new
+project, and you have R, RStudio, and Quarto ready to use with nothing installed on your machine. This is the
+recommended path if you are new to R or working on a shared computer.
+
+## Option B — install locally
+
+To work offline, install two pieces:
+
+1. **R** — the language — from [cran.r-project.org](https://cran.r-project.org/).
+2. **RStudio Desktop** — the editor — from [posit.co/download/rstudio-desktop](https://posit.co/download/rstudio-desktop/).
+   Recent RStudio ships with **Quarto** built in; if you want the standalone tool, get it from
+   [quarto.org](https://quarto.org/docs/get-started/).
+
+Open RStudio, create a new Quarto document (`File → New File → Quarto Document`), and you are ready.
+
+## Running the lab code
+
+Each lab is a sequence of small R chunks. Copy a chunk into your Quarto document (or an R script), run it, and
+read the output against the lab's **Verify** section. The labs use only base R — `rbinom`, `rnorm`,
+`replicate`, `sample`, `quantile`, `dbinom`, `qbeta`, `pbeta`, and `optimize` — so there is nothing extra to
+install for the simulations.
+
+## Reproducibility conventions
+
+Three habits make your work reproducible, and the labs use all three:
+
+- **Fix the seed.** Begin with `set.seed(35103)` so every simulation returns the same numbers on every run.
+  This is what lets your output match the locked values in the notes — and what lets a reader confirm your
+  results.
+- **One Quarto file, top to bottom.** Keep the narrative, the code, and the output in a single `.qmd` that
+  renders start to finish without manual steps.
+- **Record session information.** End a report with `sessionInfo()` so the exact R and package versions are
+  part of the record.
+
+```r
+set.seed(35103)   # put this near the top, before any random draw
+# ... your simulation code ...
+sessionInfo()     # at the end, to capture versions
+```
+
+## If something goes wrong
+
+- **Numbers change every run.** You did not set the seed, or set it after a random draw. Move `set.seed(35103)`
+  above the simulation.
+- **A jittery histogram or interval.** Your number of repetitions is too small; push `replicate(...)` or the
+  bootstrap count to $10{,}000$.
+- **`could not find function`.** A typo in a base-R function name, or you are in a fresh session — re-run the
+  setup chunk.
+
+## A note on AI help
+
+You may use an AI assistant to explain a function or help debug your own code, but you must check what it
+produces — re-run it with the fixed seed, compare to the lab's Verify section, and include an **AI Use Note**
+(Tool / Purpose / Verification) on any graded work. Verification is the load-bearing line.
+
+---
+
+*This page is a study reference. For graded specifics — deadlines, submissions, and policies — **Blackboard
+(the LMS) is authoritative**.*

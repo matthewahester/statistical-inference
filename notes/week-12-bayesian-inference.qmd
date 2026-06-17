@@ -1,0 +1,228 @@
+---
+title: "Week 12 — Bayesian inference"
+subtitle: "Prior, likelihood, posterior, and posterior prediction"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Bayesian inference; conjugate priors; credible intervals — supports the prior-to-posterior update and the posterior summaries"
+toc: true
+---
+
+## The week question
+
+Every framework so far has treated the pass rate $\theta$ as a fixed unknown and asked what the data say about
+it. This week we ask a genuinely different question: what if we describe our *uncertainty about $\theta$
+itself* with a probability distribution, start from what we believed before seeing data, and let the data
+update that belief? How does a prior become a posterior — and what is the "95% probability about $\theta$"
+statement that a confidence interval kept refusing to make?
+
+This is the Bayesian lens, the fourth in the course. It is not a contradiction of the first three; it is a
+different choice about what gets a probability. Where the frequentist conditions on a fixed $\theta$ and treats
+the data as random, the Bayesian conditions on the *observed data* and treats $\theta$ as the uncertain thing.
+We return to the recurring pass-rate study and watch a $\text{Beta}(2,2)$ prior turn into a
+$\text{Beta}(28,16)$ posterior — and we finally meet the **credible interval**, which says exactly what the
+confidence interval could not.
+
+## Why this matters
+
+Bayesian inference matters because it answers the question people actually ask. When a stakeholder hears "95%
+confident the pass rate is between 0.50 and 0.80," what they *want* is "there's a 95% chance the pass rate is
+in that range" — and only the Bayesian credible interval can honestly deliver that, because only the Bayesian
+treats $\theta$ as having a probability distribution. Naming this difference precisely, after six weeks of
+guarding against it, turns a recurring trap into a clean conceptual fork.
+
+It matters too because the Bayesian update is the cleanest place in the course to see **the likelihood doing
+its job**. Bayes' rule literally multiplies the prior by the likelihood; the likelihood from Weeks 5–6 is the
+exact mechanism that carries the data's information into the posterior. And the **conjugate** Beta–Binomial
+pair makes the whole update arithmetic you can do by hand — prior counts plus data counts — which makes the
+abstract machinery concrete before any simulation is needed.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- State Bayes' rule for inference — posterior $\propto$ likelihood $\times$ prior — and name which term is
+  which.
+- Explain a prior as a probability distribution encoding belief about $\theta$ *before* the data, and
+  distinguish it from data.
+- Perform the Beta–Binomial conjugate update: a $\text{Beta}(a,b)$ prior and $x$ successes in $n$ trials give a
+  $\text{Beta}(a+x,\ b+n-x)$ posterior.
+- Summarize a posterior with its mean, mode, spread, and a **credible interval**, and state a posterior
+  probability such as $P(\theta > 0.5 \mid x)$.
+- Explain how a credible interval differs from a confidence interval, and why the prior is an assumption you
+  must justify.
+- Use the posterior to make a posterior-predictive statement about a future observation.
+
+## Core vocabulary
+
+- **Prior $\pi(\theta)$** — a probability distribution for $\theta$ before seeing the data.
+- **Likelihood $p(x \mid \theta)$** — the probability of the observed data as a function of $\theta$ (Weeks
+  5–6).
+- **Posterior $\pi(\theta \mid x)$** — the updated distribution for $\theta$ after the data.
+- **Evidence $p(x)$** — the normalizing constant that makes the posterior integrate to 1; dropped when we write
+  $\propto$.
+- **Conjugate prior** — a prior whose family is preserved by the update (Beta is conjugate to the Binomial).
+- **Credible interval** — an interval that contains $\theta$ with a stated *posterior probability* — a genuine
+  probability statement about $\theta$.
+- **Posterior predictive** — the distribution of a future observation, averaging the likelihood over the
+  posterior.
+
+## Concept development
+
+### 1. Bayes' rule for a parameter
+
+Bayesian inference treats $\theta$ as uncertain and updates a distribution for it. Bayes' rule says the
+posterior is proportional to the likelihood times the prior:
+
+$$\pi(\theta \mid x) \;=\; \frac{p(x \mid \theta)\,\pi(\theta)}{p(x)} \;\propto\; p(x \mid \theta)\,\pi(\theta).$$
+
+The denominator $p(x) = \int p(x \mid \theta)\,\pi(\theta)\,d\theta$ is the **evidence** — a constant in
+$\theta$ whose only job is to make the posterior a proper distribution. When we write $\propto$ we are dropping
+exactly that constant; we recover it at the end by requiring the posterior to integrate to 1 (Risk 13: always
+know which constant the $\propto$ hid). The prior $\pi(\theta)$ is a genuine *assumption* — a statement of
+belief before the data — and it is part of the model, to be chosen and defended, not read off the data.
+
+### 2. The Beta–Binomial conjugate update
+
+For the pass-rate study, the data are $x = 26$ successes in $n = 40$ trials, so the likelihood is
+$p(x \mid \theta) \propto \theta^{26}(1-\theta)^{14}$. Choose a $\text{Beta}(a,b)$ prior, whose density is
+$\pi(\theta) \propto \theta^{a-1}(1-\theta)^{b-1}$. Multiply:
+
+$$\pi(\theta \mid x) \;\propto\; \theta^{26}(1-\theta)^{14}\cdot \theta^{a-1}(1-\theta)^{b-1}
+\;=\; \theta^{(a+26)-1}(1-\theta)^{(b+14)-1}.$$
+
+That is the kernel of a $\text{Beta}(a+26,\ b+14)$. The posterior is in the same family as the prior — this is
+**conjugacy** — and the update is just **prior counts plus data counts**: add the successes to $a$ and the
+failures to $b$. There is no integral to do; the normalizing constant takes care of itself because we
+recognize the Beta shape.
+
+### 3. Reading the posterior
+
+A posterior is a full distribution, so it carries far more than a single number. From a $\text{Beta}(A,B)$ we
+read the **posterior mean** $A/(A+B)$, the **mode** $(A-1)/(A+B-2)$, the **spread** (its SD), a **credible
+interval** (a central 95% region, from the Beta quantiles), and any **posterior probability** such as
+$P(\theta > 0.5 \mid x)$ (an area under the posterior). Reporting only the mean and calling it "the answer"
+throws away the spread that makes the posterior honest (Risk 12) — the whole point of carrying a distribution
+is to show how much uncertainty remains.
+
+### 4. The credible interval, and the contrast with a CI
+
+A **credible interval** is the interval that contains $\theta$ with a stated posterior probability — a real
+"95% probability that $\theta$ is in here" statement, because in the Bayesian frame $\theta$ *has* a
+distribution. This is exactly the sentence a confidence interval forbade (Week 7, Risk 11). The two can be
+numerically close yet mean different things: the CI's 95% is coverage of a random procedure over repeated
+samples; the credible interval's 95% is posterior probability about $\theta$ given this one dataset. Week 13
+will lay the two side by side; this week, just hold the distinction firmly.
+
+## Worked examples
+
+### Worked example — updating the pass rate
+
+We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`) with $x = 26$ passes
+out of $n = 40$. Take a weakly informative prior $\theta \sim \text{Beta}(2,2)$ — symmetric, centered at
+$0.5$, mildly favoring middling rates over extremes. The conjugate update adds the $26$ successes and $14$
+failures:
+
+$$\theta \mid x \;\sim\; \text{Beta}(2 + 26,\ 2 + 14) \;=\; \text{Beta}(28,\ 16).$$
+
+```r
+set.seed(35103)
+a <- 2; b <- 2; x <- 26; n <- 40
+A <- a + x; B <- b + (n - x)              # Beta(28, 16)
+A / (A + B)                                # posterior mean   ~ 0.636
+(A - 1) / (A + B - 2)                       # posterior mode   ~ 0.643
+qbeta(c(0.025, 0.975), A, B)               # 95% credible interval ~ 0.493  0.766
+1 - pbeta(0.5, A, B)                        # P(theta > 0.5 | x)    ~ 0.975
+```
+
+The posterior $\text{Beta}(28,16)$ has **mean $\approx 0.636$**, **mode $\approx 0.643$**, **SD $\approx
+0.072$**, and a **95% credible interval of about $(0.493,\ 0.766)$**. We can say directly: *given the data and
+the $\text{Beta}(2,2)$ prior, there is about a 95% probability that the true pass rate lies between $0.49$ and
+$0.77$* — a sentence no confidence interval can make. And the posterior puts about **$97.5\%$** of its mass
+above $0.5$: $P(\theta > 0.5 \mid x) \approx 0.975$, a clean probabilistic read on "the rate beats a coin flip."
+Notice the posterior mean $0.636$ sits a touch below the MLE $0.65$ — the $\text{Beta}(2,2)$ prior pulled it
+gently toward $0.5$, which is what a prior is supposed to do when the data are not overwhelming.
+
+### Worked example — posterior prediction, and a transfer
+
+The posterior also lets us predict the *next* student. The **posterior-predictive** probability that a new
+student passes averages the likelihood over the posterior, which for the Beta–Binomial is just the posterior
+mean: $P(\text{next passes} \mid x) = A/(A+B) \approx 0.636$ — slightly less certain than plugging in the MLE,
+because it folds in our remaining uncertainty about $\theta$. A **transfer**: a lab tests a new assay on $12$
+samples and gets $9$ positives; with a flat $\text{Beta}(1,1)$ prior the posterior is
+$\text{Beta}(1+9,\ 1+3) = \text{Beta}(10,4)$, posterior mean $10/14 \approx 0.714$, and `qbeta` gives a 95%
+credible interval — the same prior-counts-plus-data-counts arithmetic on a different proportion.
+
+## A common mistake
+
+The headline error is treating the **prior as data** — slipping it in as if it were extra observations and
+then forgetting it was a choice. The prior is an *assumption*; it shapes the posterior, and a strong prior on
+thin data can dominate the answer. Honest Bayesian work states the prior, justifies it, and ideally checks how
+much the conclusion would change under a different reasonable prior. Our $\text{Beta}(2,2)$ is weak — worth
+only about two pretend successes and two pretend failures — so the $40$ real observations swamp it; but had we
+used a $\text{Beta}(50,50)$, the posterior would have barely moved off $0.5$, and we would owe the reader a
+defense of that strong belief.
+
+A second mistake is **reporting the posterior mean as "the answer"** and dropping everything else. The
+posterior is a distribution; its spread is information, not clutter. Saying "$0.636$" alone hides that the
+credible interval runs from $0.49$ to $0.77$ — a real range of plausibility. And the deepest mistake is
+**conflating the credible interval with a confidence interval**: they may print similar numbers, but the
+credible interval is a probability statement about $\theta$ given this data and prior, while the confidence
+interval is a coverage statement about a procedure over hypothetical repeated samples. Same digits, different
+claims — keep them apart.
+
+## Low-stakes self-checks (ungraded)
+
+These are **ungraded self-checks** — no points, no submission.
+
+1. State Bayes' rule for inference and label the prior, likelihood, posterior, and evidence. Which term does
+   $\propto$ drop?
+2. With a $\text{Beta}(2,2)$ prior and $x = 26$ of $n = 40$, write down the posterior and its mean without a
+   calculator. Why is the update "counts plus counts"?
+3. The posterior mean is $0.636$ but the MLE is $0.65$. Explain, in one sentence, why they differ and in which
+   direction.
+4. In plain words, what does "$P(\theta > 0.5 \mid x) \approx 0.975$" claim — and why can no confidence interval
+   make a comparable statement?
+5. A colleague uses a $\text{Beta}(50,50)$ prior on the same data and gets a posterior near $0.5$. What
+   happened, and what do they now owe the reader?
+
+## Reading and source pointer
+
+Read the **MIT OCW 18.05 material on Bayesian inference, conjugate priors, and credible intervals** alongside
+this note for the prior-to-posterior update and the Beta–Binomial machinery. These notes are the course's own
+synthesis, grounded in but not copied from the sources.
+
+## Formula-verification status
+
+**verified: false.** Every Bayesian result on this page — the posterior $\text{Beta}(28,16)$, its mean
+$\approx 0.636$, mode $\approx 0.643$, SD $\approx 0.072$, the 95% credible interval $\approx (0.493,\ 0.766)$,
+and $P(\theta > 0.5 \mid x) \approx 0.975$, plus the posterior-predictive $\approx 0.636$ and the
+$\text{Beta}(10,4)$ transfer — is **drafted, synthetic, and not independently checked**. The course
+**math/statistics gate is BLOCKED**: every value here is provisional, pending the human/source sign-off in
+`_state/notation_ledger.md` §5. Do not treat any result as a confirmed reference until that review is complete.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week we put all four lenses on the same table. We will take the one pass-rate question and answer it the
+frequentist way (a confidence interval and a p-value), the likelihood way (the MLE and a likelihood ratio), the
+simulation way (bootstrap and randomization), and the Bayesian way (this posterior and its credible interval) —
+and ask the real question of the course: where do they agree, where do they differ, and what does each one
+actually condition on and claim?
+
+## See also
+
+- [Week 11 — Randomization & permutation tests](week-11-randomization-and-permutation-tests.qmd)
+- [Week 13 — Comparing inferential frameworks](week-13-comparing-inferential-frameworks.qmd)
+- [Week 5 — Likelihood](week-05-likelihood.qmd)
+- [Notation glossary](../resources/notation-glossary.qmd)
+- [Inference reference](../resources/inference-reference.qmd)

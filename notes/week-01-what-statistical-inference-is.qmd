@@ -1,0 +1,318 @@
+---
+title: "Week 1 — What statistical inference is"
+subtitle: "Samples, populations, parameters, and responsible claims"
+page_mode: normal_week
+week_contract: public_note
+source_mode: source-informed
+verified: false
+readings:
+  - "MIT OCW 18.05 — Introduction to statistics; the inferential problem — supports the framing of inference as learning about an unknown parameter from a sample"
+toc: true
+---
+
+## The week question
+
+When you measure 40 students and 26 of them clear a reading-competency threshold, you can compute the
+fraction who passed in *that sample* — it is $26/40 = 0.65$. But the question the program actually cares
+about is not about those 40 students. It is about the unknown true pass rate for the larger process the
+study stands in for: students like these, under this intervention, going forward. The 40 are a window onto
+something you cannot see directly.
+
+So the week's question is the founding question of the whole course: **what can one observed sample
+responsibly say about an unknown quantity you never get to observe?** Inference is the disciplined process
+of answering that — of moving from "this is what I saw" to "this is what I can claim, and here is how
+uncertain that claim is." Everything in the next fourteen weeks is a different, careful way of making that
+move.
+
+## Why this matters
+
+Almost every honest data question is an inference question. A clinic reports that a treatment helped most
+of the patients in a trial; a pollster reports that a slim majority supports a campus policy; a teacher
+reports that more than half of a class met a standard. In each case the reported number is computed from a
+finite, particular sample, but the *interesting claim* is about a wider population or process that the
+sample only partially reveals.
+
+The danger is treating the sample number as if it were the truth. The 0.65 you computed is real and exact
+— it genuinely is the fraction in your 40. But it is not the true pass rate. If you ran the study again
+with 40 different students, you would almost certainly get a different fraction. The honest report keeps two
+things separate: the number you got, and the uncertainty about how far that number might sit from the truth.
+
+This course matters because that uncertainty is not decoration — it is the content. Saying "0.65" without
+saying how much it could have wobbled is not a smaller claim; it is a misleading one. And the course is
+**pluralistic**: there is more than one principled way to quantify the wobble and to decide what to conclude.
+You will learn four lenses — frequentist, likelihood, simulation, and Bayesian — and how each one frames the
+same uncertainty differently. Knowing what each lens conditions on, claims, and assumes is the real skill.
+
+## Learning goals
+
+By the end of this week you should be able to:
+
+- Distinguish a **population / process**, a **sample**, a **parameter**, and a **statistic**, and say which of
+  these is fixed, which is random, and which is observed.
+- Explain why the observed $\hat p = 0.65$ is an **estimate** of the unknown parameter $\theta$ and not
+  $\theta$ itself, and use the parameter-vs-statistic-vs-estimator-vs-estimate vocabulary precisely.
+- State the **inferential problem** in your own words: learning about an unknown parameter from a sample
+  drawn from a population or process.
+- Name the assumption an inference rests on — here, that the sample is drawn in a way that lets it speak for
+  the population (random sampling / independence) — rather than leaving it silent.
+- Preview the **four lenses** (frequentist, likelihood, simulation, Bayesian) and the role of **decisions**,
+  and say at a high level what each lens is trying to do.
+
+## Core vocabulary
+
+Keep these four words apart all term. The single most common error in applied statistics is sliding between
+them, and the course's central discipline is to never do that.
+
+- **Population / process.** The larger thing you actually want to know about — every student the program
+  serves, or the ongoing process that generates pass/not-pass outcomes under this intervention. You do not
+  observe all of it.
+- **Parameter** — a **fixed, unknown** number that summarizes the population or process. Greek letters. Here
+  $\theta$ is the **true pass rate**: the long-run proportion of students like these who would clear the
+  threshold. The parameter does not move and does not have a probability distribution — it just sits there,
+  unknown. Parameters never wear a "hat."
+- **Sample** — the data you actually collected: the $n = 40$ students, modeled as random variables
+  $X_1, \dots, X_n$ before you look and as observed values $x_1, \dots, x_n$ after. Capital letters are random;
+  lowercase are the realized values.
+- **Statistic / estimator** — a number computed *from the sample*, written as a function of the random sample,
+  so it is itself **random** before you collect data. The sample proportion $\hat p = X/n$ is a statistic; as a
+  rule for turning data into a guess about $\theta$, it is an **estimator**. An estimator has a **sampling
+  distribution** (week 2's whole subject).
+- **Estimate** — the one **realized number** the estimator produces from your actual sample: $\hat p = 0.65$.
+  The hat symbol does double duty — $\hat p$ names both the estimator (random) and its value (a fixed number
+  you got) — so always say which you mean.
+
+Compactly: $\theta$ is the truth (fixed, unknown); $\hat p$ as a recipe is the estimator (random); $\hat p =
+0.65$ is the estimate (the number in hand). The estimate is your best single guess at $\theta$; it is not
+$\theta$.
+
+## Concept development
+
+### The inferential problem, stated cleanly
+
+Inference reverses the usual direction of probability. In a probability course you are handed a model — say
+"each student passes independently with probability $\theta$" — and asked: given $\theta$, what outcomes are
+likely? Inference runs the arrow backward. You are handed the outcome (26 of 40 passed) and asked: given this
+data, what can I say about the unknown $\theta$?
+
+Write the model explicitly. Treat each student's pass/not-pass as an independent draw with the same unknown
+success probability $\theta$, so the count of passes is
+
+$$
+X \sim \text{Binomial}(n, \theta), \qquad n = 40.
+$$
+
+You observed $X = 26$. The parameter $\theta \in [0,1]$ is fixed and unknown; the count $X$ is the random
+thing that landed on 26 this time. The inferential problem is to use that one realized $X$ to learn about
+$\theta$ — to produce a point guess, a statement of uncertainty, and eventually a decision. Notice the
+model already carries an **assumption**: that the draws are independent and share one $\theta$ (Risk 14). If
+the 40 students were, say, all from one classroom that got extra tutoring, the assumption is shaky and so is
+everything built on it. Naming that assumption out loud is part of inference, not an afterthought.
+
+### Why the estimate is not the parameter
+
+The estimator $\hat p = X/n$ is a sensible recipe: the long-run pass rate is a proportion, so estimate it by
+the proportion you saw. Plug in your data:
+
+$$
+\hat p = \frac{x}{n} = \frac{26}{40} = 0.65.
+$$
+
+This 0.65 is exact and correct **as a description of your sample**. The slip to guard against is reading it as
+$\theta$. It is not. It is one realization of a random quantity. Had a few different students walked into the
+study, $X$ might have been 24 or 29, and $\hat p$ would have been $0.60$ or $0.725$. The parameter $\theta$
+would not have budged — only the estimate would. So:
+
+$$
+\hat p = 0.65 \;\text{ is an \textbf{estimate of} }\; \theta, \qquad \hat p \neq \theta.
+$$
+
+The entire rest of the course is about the gap between $\hat p$ and $\theta$: how big it typically is, how to
+report it honestly, and how different lenses describe it. Week 2 makes the gap concrete by asking what
+$\hat p$ would do across many repetitions; weeks 3–4 study how good an estimator $\hat p$ is; weeks 5–13 give
+you four ways to turn "I saw 0.65" into a defensible claim about $\theta$.
+
+### The four lenses, previewed
+
+You will meet four complementary ways to reason from the sample to $\theta$, plus the language of decisions.
+They are not rivals to be ranked; each conditions on different things and makes a different kind of claim.
+
+- **Frequentist** (weeks 3–4, 7–9). Treats $\theta$ as fixed and the *data* as random, and judges a procedure
+  by what it does over many hypothetical repetitions. A confidence interval and a $p$-value live here. A 95%
+  confidence interval is a *procedure* that captures the true $\theta$ in 95% of repeated samples — it is **not**
+  a 95% probability that the fixed $\theta$ lies in your one interval (Risk 5, week 7).
+- **Likelihood** (weeks 5–6). Asks, for the data you got, which values of $\theta$ make that data most
+  probable. The likelihood $L(\theta)$ is a function **of $\theta$**, not a probability distribution over
+  $\theta$ — you cannot read areas under it as probabilities (Risk 4, week 5).
+- **Simulation** (weeks 2, 10–11). Uses the computer to *generate* the sampling behavior directly —
+  resampling (bootstrap) or relabeling (permutation) — when formulas are hard or assumptions are unclear.
+- **Bayesian** (weeks 12–13). Treats $\theta$ itself as having a probability distribution that you *update*
+  from a prior to a posterior using the data. A Bayesian **credible** interval really is a probability statement
+  about $\theta$ — the opposite stance from a confidence interval, even when the two intervals come out
+  numerically close (Risk 11, weeks 12–13).
+- **Decisions** (weeks 9, 12). On top of any lens, you sometimes must *act* — accept a program, run a larger
+  study — and a good decision weighs the consequences of being wrong, not just the evidence.
+
+Keep this map in view: same question (what is $\theta$?), one running dataset (26 of 40), four principled
+answers that you will be able to read, compute, and compare by week 13.
+
+## Worked examples
+
+### Worked example — the reading-fluency study (the recurring slice)
+
+**The data.** A campus reading-comprehension program measures whether each student reaches a reading-competency
+threshold (pass / not pass). In the observed sample, $n = 40$ students were assessed and $x = 26$ passed. The
+data are **synthetic; seed set** (`set.seed(35103)`) — they stand in for a real program, not actual student
+records.
+
+**The model.** Treat the passes as a Binomial count with one unknown pass-rate parameter:
+
+$$
+X \sim \text{Binomial}(40, \theta), \qquad \theta = \text{the true (unknown) reading-competency pass rate.}
+$$
+
+**The computation.** The natural estimator of a proportion is the sample proportion, and its realized value is
+
+$$
+\hat p = \frac{x}{n} = \frac{26}{40} = 0.65.
+$$
+
+Here is the same arithmetic as static, non-executed R. Reading off the comment lines is enough — the code is
+shown to teach, not run.
+
+```r
+# Reading-fluency study, Strand A — synthetic; seed set (code is shown, not executed)
+set.seed(35103)
+
+n <- 40       # sample size
+x <- 26       # number of students who passed
+
+p_hat <- x / n
+p_hat
+# [1] 0.65     # the ESTIMATE of theta from this one sample, not theta itself
+
+# theta -- the true pass rate -- is fixed and UNKNOWN; it is not computed here.
+# 0.65 is one realized value of the random estimator p_hat = X / n.
+```
+
+**The interpretation.** In this sample, 65% of the assessed students cleared the threshold; that is a fact
+about the 40. The inferential claim is one step further: $0.65$ is your single best **estimate** of the
+unknown true pass rate $\theta$, conditional on the assumption that these 40 are a fair (random, independent)
+draw from the process you care about (Risk 14). The number you computed is fixed; what is random is the
+*sampling* that produced it; what is unknown and fixed is $\theta$. You may **not** yet say "the true pass
+rate is 0.65," nor "there is a 65% chance the true rate is above one-half" — those are claims this week's tools
+cannot support. All you can responsibly say is: *my best point estimate of $\theta$ is 0.65, and I do not yet
+know how far that estimate might sit from the truth.* Quantifying that distance is exactly what weeks 2 onward
+do.
+
+### Worked example — a campus-policy poll (transfer to a new context)
+
+**The setup.** Switch contexts to make sure the idea is about the *structure*, not the story. The student
+government wants to know what fraction of all enrolled students support a new late-night library policy. They
+cannot ask everyone, so they draw a sample and ask. Suppose they survey $n = 200$ students and $x = 118$ say
+they support the policy. The data here are illustrative for the transfer; the parameter of interest is a
+*different* proportion in a *different* population.
+
+**The model.** Let $\theta_{\text{pol}}$ be the true (unknown) proportion of *all* enrolled students who
+support the policy — the parameter. Model the count of supporters as
+
+$$
+X \sim \text{Binomial}(200, \theta_{\text{pol}}),
+$$
+
+assuming the 200 surveyed students are a random, independent sample of the student body (the same Risk-14
+assumption, in a new costume — a convenience sample of friends would break it).
+
+**The computation.**
+
+$$
+\hat p = \frac{x}{n} = \frac{118}{200} = 0.59.
+$$
+
+**The interpretation.** The poll's $\hat p = 0.59$ is the **estimate** of $\theta_{\text{pol}}$; it is not the
+true level of support. The parallel to the reading study is exact, and that is the point: a fixed unknown
+parameter (true support level), a random sample (the 200 surveyed), a statistic computed from it (the sample
+proportion), and one realized estimate (0.59). If the student government re-ran the poll next week with a
+fresh sample, $\hat p$ would shift even though $\theta_{\text{pol}}$ did not. Reporting "59% support the
+policy" as if it were the population truth — with no acknowledgment that another sample would give another
+number — is precisely the overclaim this course trains you to avoid. The honest one-sentence version names what
+is fixed ($\theta_{\text{pol}}$), what is random (the sampling), and what is assumed (a fair random sample).
+
+## A common mistake
+
+**The mistake: calling the estimate the parameter — reading $\hat p = 0.65$ as "the true pass rate is 0.65"**
+(Risk 1), and the silent twin of letting the sampling assumption go unstated (Risk 14).
+
+It is tempting because the words collapse so easily: you computed "the proportion who passed," so it feels
+natural to say "the pass rate is 0.65." But there are two different proportions hiding in that phrase. The
+*sample* proportion $\hat p = 0.65$ is an observed statistic; the *population* pass rate $\theta$ is a fixed
+unknown parameter. They are different objects with different symbols for a reason. The estimate is what you
+saw; the parameter is what you want to know; the whole discipline of inference lives in keeping them apart and
+measuring the distance between them.
+
+A related slip is to skip past the assumption that makes the estimate meaningful at all. The claim "0.65
+estimates $\theta$" only earns its keep if the 40 students were drawn in a way that lets them speak for the
+larger process — random sampling, independent outcomes, one shared $\theta$. If that is false (one tutored
+classroom, a self-selected volunteer group), the estimate may be far from $\theta$ in a direction you cannot
+detect from the data alone. So state the assumption out loud every time, rather than letting it ride silently.
+Throughout the course, after every number, name what is fixed, what is random, and what you assumed.
+
+## Low-stakes self-checks (ungraded)
+
+These are for your own practice — ungraded, no submission, no key. Work them, then check your reasoning against
+the vocabulary above.
+
+1. In the reading study, label each of these as a parameter, a statistic/estimator, or an estimate:
+   (a) $\theta$; (b) $\hat p = X/n$ as a recipe; (c) the number $0.65$; (d) $n = 40$. Which one is fixed and
+   unknown? Which one is random before you collect data?
+2. A classmate writes, "We found the true pass rate is 0.65." Rewrite the sentence so it correctly distinguishes
+   the estimate from the parameter, and add the clause that names the sampling assumption.
+3. The poll gave $\hat p = 0.59$ from 200 students. If the survey were repeated with a new random sample of 200,
+   would $\theta_{\text{pol}}$ change? Would $\hat p$ change? Explain in one sentence each.
+4. Match each lens to its one-line job: frequentist, likelihood, simulation, Bayesian. Which lens makes a
+   probability statement *about $\theta$ itself*, and which keeps $\theta$ fixed and treats the *data* as random?
+5. Without computing anything new, say in words why "0.65" alone is an incomplete answer to "what is the true
+   pass rate?" — what is the missing ingredient the rest of the course supplies?
+
+## Reading and source pointer
+
+For this week, read the introductory framing of statistics and the inferential problem in **MIT OCW 18.05,
+*Introduction to Probability and Statistics* (Spring 2022)** — the opening treatment of what statistics is and
+the move from a probability model to learning about an unknown parameter from data. For the lighter
+calibration of the population-vs-sample and parameter-vs-statistic distinction, **Introduction to Modern
+Statistics (IMS), 2nd ed.** (its early chapters on data and sampling) is a useful companion.
+
+These notes are the course's own synthesis, grounded in but not copied from the sources.
+
+## Formula-verification status
+
+**verified: false.** The math/statistics correctness gate for this course is **BLOCKED**. The load-bearing
+values on this page — the estimate $\hat p = 26/40 = 0.65$ from the reading-fluency study, the model
+$X \sim \text{Binomial}(40, \theta)$, and the transfer-poll estimate $\hat p = 118/200 = 0.59$ — are
+**drafted and synthetic** (`set.seed(35103)`) and have **not** been independently checked. Do not treat any
+number here as a confirmed reference. The page stays at draft until a human/source sign-off is recorded in
+`_state/notation_ledger.md` §5; until then nothing on this page is certified correct.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
+prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
+quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
+which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
+follow Blackboard.
+
+## Looking ahead
+
+Next week we make the gap between $\hat p$ and $\theta$ concrete by asking: **what would happen to $\hat p$ if
+we repeated the study many times?** You will simulate drawing many samples of size 40 (with `set.seed(35103)`)
+and watch the collection of $\hat p$ values form a **sampling distribution** — the bridge from "the one number
+I got" to "how much that number wobbles." That sampling distribution is the engine behind standard errors,
+confidence intervals, and tests in the weeks that follow.
+
+## See also
+
+- [Week 2 — Sampling distributions and simulation](week-02-sampling-distributions-and-simulation.qmd) — what
+  $\hat p$ does across many repeated samples.
+- [Notation glossary](../resources/notation-glossary.qmd) — the parameter / statistic / estimator / estimate
+  discipline in one place.
+- [Inference reference](../resources/inference-reference.qmd) — the four lenses (frequentist, likelihood,
+  simulation, Bayesian) side by side.
