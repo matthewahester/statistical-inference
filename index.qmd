@@ -1,10 +1,15 @@
 ---
-title: "Statistical Inference"
-subtitle: "Likelihood, simulation, and decisions — learning from data under uncertainty"
+pagetitle: "Statistical Inference"
 toc: false
 ---
 
-![](assets/hero.png){.course-hero-img fig-alt="Course identity hero for Statistical Inference — a deep-blue crystal cluster surrounded by inference graphics including the inferential problem (sample to parameter), a likelihood curve, a confidence interval, a hypothesis test, a sampling distribution, a Bayesian update, bootstrap resampling, a randomization test, and a decisions-and-loss table, with the course title."}
+![](assets/hero-web.webp){.course-hero-img fig-alt="Course identity hero for Statistical Inference — a deep-blue crystal cluster surrounded by inference graphics including the inferential problem (sample to parameter), a likelihood curve, a confidence interval, a hypothesis test, a sampling distribution, a Bayesian update, bootstrap resampling, a randomization test, and a decisions-and-loss table, with the course title."}
+
+# Statistical Inference {.course-landing-title}
+
+::: {.course-landing-subtitle}
+Likelihood, simulation, and decisions — learning from data under uncertainty
+:::
 
 > Inference is not a collection of formulas for confidence intervals and hypothesis tests. It is a
 > disciplined way to connect data, probability models, assumptions, uncertainty, evidence, and decisions —
