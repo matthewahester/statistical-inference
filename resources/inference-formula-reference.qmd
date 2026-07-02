@@ -1,0 +1,355 @@
+---
+title: "Inference formula reference"
+subtitle: "One page of recognition cards for the estimation, testing, and Bayesian machinery used all term"
+page_mode: reference
+week_contract: reference
+source_mode: source-informed
+toc: true
+---
+
+## What this page is
+
+This is a recognition card, not a new lesson. Each section below states one procedure's recipe in symbols,
+then walks it once against the MAC Study's locked sample numbers so you can see the recipe actually run.
+Nothing here is derived from scratch — the derivations live in the week notes (especially Weeks 4, 6, 9, and
+12); this page exists so you can look a formula up mid-lab or mid-note without losing your place. Every
+number below is carried over unchanged from the week that first established it, so if a number here and a
+number in a week note ever look different, treat that as a flag to recheck, not two independent facts.
+
+As the rest of the course does throughout, keep two kinds of numbers straight: the MAC Study's *sample data
+in hand* (x̄ = 49.8, s = 15.2, n = 36 visit durations; p̂ = 0.38, n = 100 usage-survey respondents) is what
+every recipe below actually plugs in. A *hypothetical "true" population value* (μ = 48, σ = 15, π = 0.35)
+appears only where a recipe needs a stipulated truth to teach against — the Week 9 power calculation and the
+Week 4 bias/variance demonstration — and is flagged as hypothetical each time it appears.
+
+## Standard errors
+
+The standard error of an estimator is the standard deviation of its sampling distribution — how much the
+estimator would bounce around from sample to sample of the same size, drawn the same way.
+
+| Estimator | Standard error formula | MAC Study value |
+|---|---|---|
+| Sample mean x̄ (σ known) | SE(x̄) = σ/√n | σ = 15, n = 36 → SE(x̄) = 15/6 = **2.5** |
+| Sample proportion p̂ | SE(p̂) = sqrt( p̂(1 − p̂) / n ) | p̂ = 0.38, n = 100 → SE(p̂) = sqrt(0.38 × 0.62 / 100) = sqrt(0.002356) ≈ **0.0485** |
+
+$$
+\mathrm{SE}(\bar x) = \frac{\sigma}{\sqrt n}, \qquad
+\mathrm{SE}(\hat p) = \sqrt{\frac{\hat p (1-\hat p)}{n}}
+$$
+
+Weeks 2 through 9 treat σ ≈ 15 as known for the visit-duration thread — a "known-σ" teaching simplification
+standard at this level, stated explicitly whenever it is used. Week 10's bootstrap instead uses the sample
+SD s = 15.2 directly (bootstrap SE ≈ s/√n ≈ 15.2/6 ≈ 2.53), a deliberately close-but-not-identical value to
+the known-σ SE of 2.5 — a teaching point about estimated vs. known SE, not a discrepancy to resolve.
+
+## Bias, variance, and MSE decomposition
+
+Three ways to describe how an estimator misses the parameter it targets, and the identity linking them.
+
+$$
+\mathrm{Bias}(\hat\theta) = E[\hat\theta] - \theta, \qquad
+\mathrm{MSE}(\hat\theta) = \mathrm{Var}(\hat\theta) + \mathrm{Bias}(\hat\theta)^2
+$$
+
+Week 4's derivation (full detail there) works two examples against the MAC Study, using the **hypothetical
+true** μ = 48, σ = 15 as the stipulated truth a real analyst would never actually know:
+
+- **The (n − 1) divisor.** The "natural" variance estimator that divides by n instead of (n − 1) has
+  E[(1/n)Σ(xᵢ − x̄)²] = ((n−1)/n)σ² = (35/36)(225) = 218.75, so its bias is 218.75 − 225 = **−6.25**. This is
+  the standard motivation for why the sample variance divides by (n − 1), not n.
+- **A shrinkage estimator.** θ̂ = 0.9x̄, compared against the unbiased x̄, both targeting the hypothetical true
+  μ = 48: Bias(θ̂) = 0.9(48) − 48 = **−4.8**; Var(θ̂) = 0.9² × Var(x̄) = 0.81 × 6.25 = **5.0625** (using
+  Var(x̄) = SE(x̄)² = 2.5² = 6.25); MSE(θ̂) = 5.0625 + (−4.8)² = 5.0625 + 23.04 = **28.1025**. The unbiased
+  x̄'s own MSE is just its variance, MSE(x̄) = Var(x̄) = **6.25** — far smaller. Here shrinkage is a clearly
+  bad trade; the lesson is the decomposition, not that shrinkage is always bad.
+
+## Likelihood and the MLE recipe
+
+The likelihood L(θ) is the joint density/mass of the *observed, fixed* data, viewed as a function of the
+unknown parameter θ. It is not a probability distribution over θ.
+
+$$
+L(\theta) = \prod_{i=1}^n f(x_i \mid \theta), \qquad
+\ell(\theta) = \ln L(\theta), \qquad
+\hat\theta_{\text{MLE}} = \arg\max_\theta \ell(\theta)
+$$
+
+**Recipe:** (1) write the joint density/mass of the data as a function of θ; (2) take the log to turn the
+product into a sum; (3) differentiate with respect to θ and set equal to zero; (4) solve for θ̂ and confirm
+it is a maximum.
+
+Week 5 compares the Binomial likelihood kernel πᵏ(1−π)ⁿ⁻ᵏ at three candidate values of π, using the small
+illustrative pilot batch (n = 5, k = 2 used the MAC — deliberately kept small for by-hand arithmetic, and
+distinct from the full n = 100 survey):
+
+| π | Kernel π²(1 − π)³ |
+|---|---|
+| 0.2 | 0.04 × 0.512 = **0.02048** |
+| 0.4 | 0.16 × 0.216 = **0.03456** |
+| 0.6 | 0.36 × 0.064 = **0.02304** |
+
+π = 0.4 is highest of the three, foreshadowing the Week 6 result. Week 6 derives the MLE in closed form for
+both families used all term:
+
+- **Binomial:** π̂_MLE = k/n = 2/5 = **0.4**.
+- **Normal, σ known:** μ̂_MLE = x̄, using a different small pilot batch of five visit durations (52, 46, 58,
+  41, 53 minutes): (52+46+58+41+53)/5 = 250/5 = **50**.
+
+## Confidence interval recipe
+
+$$
+\hat\theta \pm z^{*} \cdot \mathrm{SE}(\hat\theta)
+$$
+
+**Recipe:** (1) compute the point estimate; (2) compute its standard error; (3) pick a confidence level and
+its z\* (z\* = 1.96 for 95%); (4) form estimate ± z\* × SE. Week 7 applies this to both threads:
+
+- **CI for μ:** 49.8 ± 1.96(2.5) = 49.8 ± 4.9 → **(44.9, 54.7)**.
+- **CI for π:** 0.38 ± 1.96(0.0485) = 0.38 ± 0.0951 → **(0.285, 0.475)**.
+
+Remember the convention-risk flag from Week 7: a 95% CI's "95%" describes the long-run behavior of the
+*procedure* across repeated samples, never "a 95% probability the parameter is in this particular interval."
+
+## Test-statistic and p-value recipe
+
+$$
+z = \frac{\hat\theta - \theta_0}{\mathrm{SE}(\hat\theta)}, \qquad
+p = P(\text{data this extreme or more} \mid H_0 \text{ true})
+$$
+
+**Recipe:** (1) state H₀ and Hₐ and pick α in advance; (2) compute the test statistic (estimate minus null
+value, divided by SE); (3) convert the test statistic to a p-value using the sampling distribution under
+H₀; (4) compare p to α and state the conclusion in terms of the data, never in terms of "P(H₀ true)."
+
+Week 8 tests H₀: μ = 45 against Hₐ: μ ≠ 45, using last year's campus baseline (45 minutes) as the null value
+against this term's sample (x̄ = 49.8, SE = 2.5):
+
+$$
+z = \frac{49.8 - 45}{2.5} = 1.92, \qquad p = 2\bigl(1 - \Phi(1.92)\bigr) \approx 2(0.0274) = \mathbf{0.0548}
+$$
+
+This fails to reject H₀ at α = 0.05 — a deliberately borderline result. As Week 8 stresses, this p-value is
+P(data this extreme or more extreme | H₀ true), never P(H₀ true).
+
+## Power recipe
+
+$$
+\text{Power} = 1 - \beta = P(\text{reject } H_0 \mid H_a \text{ true, for a specific alternative})
+$$
+
+**Recipe:** (1) find the critical value of the estimator under H₀ at the chosen α; (2) ask how likely the
+estimator is to fall beyond that critical value if a *specific* alternative were true instead; (3) that
+probability is the power against that alternative.
+
+Week 9 computes power for a one-sided test of H₀: μ = 45 against the **hypothetical** alternative μ = 50, at
+α = 0.05:
+
+$$
+\text{critical } \bar x = 45 + 1.645(2.5) = 49.11, \qquad
+\text{Power} = P(\bar x > 49.11 \mid \mu = 50) = P(Z > -0.355) = \Phi(0.355) \approx \mathbf{0.639}
+$$
+
+so β ≈ 0.361. The alternative μ = 50 here is a stipulated hypothetical, used only to illustrate the
+calculation — never claimed as a known fact about the MAC-visiting population.
+
+## Bootstrap percentile-CI recipe
+
+**Recipe:** (1) resample n observations **with replacement** from the observed sample, many times (thousands
+of resamples); (2) compute the statistic of interest (e.g. the mean) on each resample, building up a
+bootstrap distribution; (3) take that bootstrap distribution's standard deviation as an estimated SE, or take
+its 2.5th and 97.5th percentiles directly as a percentile CI.
+
+Week 10 applies this to the n = 36 visit-duration sample (x̄ = 49.8, s = 15.2), using the sample SD directly
+rather than the known σ = 15:
+
+$$
+\mathrm{SE}_{\text{boot}} \approx \frac{s}{\sqrt n} = \frac{15.2}{6} \approx 2.53, \qquad
+49.8 \pm 1.96(2.53) \approx \mathbf{(44.84,\ 54.76)}
+$$
+
+This interval sits close to, but is not identical to, the Week 7 CI of (44.9, 54.7) — the point of the
+comparison is that the bootstrap's estimated SE (from s) tracks the known-σ SE (2.5) closely without
+requiring σ to be known in advance.
+
+## Permutation-test recipe
+
+**Recipe:** (1) pool both groups' data together, ignoring group labels; (2) reshuffle the pooled data into
+two groups of the original sizes, uniformly at random, and recompute the difference in group means; (3)
+repeat many times to build a null distribution of differences under "no real group effect"; (4) the
+permutation p-value is the fraction of shuffled differences at least as extreme as the one actually observed.
+
+Week 11 applies this to the two-group workshop comparison: workshop group n₁ = 20 (mean = 52.4 min,
+SD = 10 min) vs. control group n₂ = 20 (mean = 45.1 min, SD = 10 min), observed difference = **7.3 minutes**.
+A normal-approximation cross-check gives
+
+$$
+\mathrm{SE}_{\text{diff}} = \sqrt{\frac{10^2}{20} + \frac{10^2}{20}} = \sqrt{10} \approx 3.162, \qquad
+z = \frac{7.3}{3.162} \approx 2.31, \qquad p \approx \mathbf{0.021}
+$$
+
+Week 11's simulated permutation p-value is reported as closely matching this approximation (≈ 0.02), as
+expected when the two groups' sizes and spreads are this close to equal.
+
+## Beta-Binomial Bayesian update recipe
+
+$$
+\pi(\theta) \sim \mathrm{Beta}(a, b) \ \longrightarrow\ \pi(\theta \mid \text{data}) \sim
+\mathrm{Beta}(a + k,\ b + n - k)
+$$
+
+**Recipe:** (1) state a Beta(a, b) prior on the proportion π; (2) observe k successes in n trials; (3) the
+posterior is exactly Beta(a + k, b + n − k) — the Beta family is conjugate to the Binomial, so no numerical
+integration is needed; (4) summarize the posterior with its mean, variance, or a credible interval.
+
+Week 12 updates a Beta(a = 3, b = 7) prior (prior mean 3/10 = 0.30, representing the MAC director's belief
+before this term's survey) using the full survey's n = 100, k = 38:
+
+$$
+\mathrm{Beta}(3, 7) \ \longrightarrow\ \mathrm{Beta}(3+38,\ 7+62) = \mathrm{Beta}(41, 69)
+$$
+
+Posterior mean = 41/110 ≈ **0.373**. Posterior variance = (41 × 69) / (110² × 111) ≈ 0.002106, so posterior
+SD ≈ **0.0459**. A normal-approximation 95% credible interval is
+
+$$
+0.373 \pm 1.96(0.0459) \approx \mathbf{(0.283,\ 0.463)}
+$$
+
+Keep π(θ) (the Bayesian prior/posterior density) visually and verbally distinct from π (the population
+proportion itself) and from L(θ) (the likelihood, a function of θ but not a density over θ) — context
+disambiguates, but the distinction is worth restating every time all three appear together.
+
+## In R
+
+The chunks below are shown as teaching reference only — they are not executed in this build (`#| eval:
+false`), are base-R only, and use `set.seed(35103)` wherever a simulation is involved, so they are
+reproducible when a student runs them in their own session. The R distribution-function family follows a
+consistent prefix + root naming pattern: `d`-root gives a density/mass (height of the curve), `p`-root gives
+a cumulative probability (area to the left), `q`-root gives a quantile (the x-value for a given cumulative
+probability — the inverse of `p`-root), and `r`-root generates random draws. The root itself names the
+distribution (`norm`, `binom`, `beta`, and so on).
+
+```{r}
+#| label: se-and-ci
+#| eval: false
+set.seed(35103)
+
+# Standard errors
+se_xbar <- 15 / sqrt(36)                 # SE(x-bar), known sigma = 15
+p_hat   <- 0.38
+se_phat <- sqrt(p_hat * (1 - p_hat) / 100)
+
+# z* for a 95% CI comes from the standard normal quantile function
+z_star <- qnorm(0.975)                   # q-root: quantile for a given cumulative probability
+
+ci_mu <- 49.8 + c(-1, 1) * z_star * se_xbar
+ci_pi <- p_hat + c(-1, 1) * z_star * se_phat
+```
+
+```{r}
+#| label: p-value-and-power
+#| eval: false
+set.seed(35103)
+
+# p-value for z = 1.92, two-sided
+z_stat  <- (49.8 - 45) / 2.5
+p_value <- 2 * (1 - pnorm(z_stat))        # p-root: cumulative probability up to z_stat
+
+# Power against the hypothetical alternative mu = 50
+crit_xbar <- 45 + qnorm(0.95) * 2.5
+power     <- 1 - pnorm(crit_xbar, mean = 50, sd = 2.5)
+```
+
+```{r}
+#| label: likelihood-kernel
+#| eval: false
+set.seed(35103)
+
+# Binomial likelihood kernel at three candidate values of pi, n = 5, k = 2
+pis     <- c(0.2, 0.4, 0.6)
+kernels <- dbinom(2, size = 5, prob = pis)  # d-root: mass/density at the observed data
+
+# MLE by direct search over a fine grid (Week 6 derives the closed form pi-hat = k/n)
+grid       <- seq(0.001, 0.999, by = 0.001)
+loglik     <- dbinom(2, size = 5, prob = grid, log = TRUE)
+mle_pi_hat <- grid[which.max(loglik)]
+```
+
+```{r}
+#| label: bootstrap-percentile-ci
+#| eval: false
+set.seed(35103)
+
+# Illustrative: bootstrap resampling from a stand-in sample with x-bar = 49.8, s = 15.2, n = 36
+visit_sample <- rnorm(36, mean = 49.8, sd = 15.2)  # a stand-in draw; the course's actual n=36 sample is fixed
+
+boot_means <- replicate(2000, {
+  resample <- sample(visit_sample, size = 36, replace = TRUE)  # resampling WITH replacement
+  mean(resample)
+})
+
+boot_ci <- quantile(boot_means, probs = c(0.025, 0.975))  # the percentile CI
+```
+
+```{r}
+#| label: permutation-test
+#| eval: false
+set.seed(35103)
+
+# Illustrative: permutation test for the workshop vs. control comparison
+workshop <- rnorm(20, mean = 52.4, sd = 10)
+control  <- rnorm(20, mean = 45.1, sd = 10)
+observed_diff <- mean(workshop) - mean(control)
+
+pooled <- c(workshop, control)
+n1     <- length(workshop)
+
+perm_diffs <- replicate(5000, {
+  shuffled <- sample(pooled)              # reshuffle the pooled data uniformly at random
+  mean(shuffled[1:n1]) - mean(shuffled[(n1 + 1):length(pooled)])
+})
+
+perm_p_value <- mean(abs(perm_diffs) >= abs(observed_diff))
+```
+
+```{r}
+#| label: beta-binomial-update
+#| eval: false
+set.seed(35103)
+
+# Beta(3, 7) prior updated by n = 100, k = 38
+a_prior <- 3; b_prior <- 7
+k <- 38; n <- 100
+
+a_post <- a_prior + k
+b_post <- b_prior + (n - k)
+
+post_mean <- a_post / (a_post + b_post)
+post_draws <- rbeta(10000, a_post, b_post)  # r-root: random draws from the posterior
+
+post_ci <- quantile(post_draws, probs = c(0.025, 0.975))  # simulation-based credible interval
+```
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
+
+## See also
+
+- [Notation glossary](notation-glossary.qmd) — every symbol used on this page (θ, θ̂, SE, L(θ), π(θ), and the
+  rest) defined in one place.
+- [R and Quarto setup](r-quarto-setup.qmd) — how to get the course's R and Quarto environment working before
+  running any of the chunks above yourself.
+- [Week 4 — Bias, variance, and mean squared error](../notes/week-04-bias-variance-and-mean-squared-error.qmd)
+- [Week 5 — Likelihood](../notes/week-05-likelihood.qmd)
+- [Week 6 — Maximum likelihood estimation](../notes/week-06-maximum-likelihood-estimation.qmd)
+- [Week 7 — Confidence intervals (+ midterm)](../notes/week-07-confidence-intervals-and-midterm.qmd)
+- [Week 8 — Hypothesis tests and p-values](../notes/week-08-hypothesis-tests-and-p-values.qmd)
+- [Week 9 — Error rates, power, and decisions](../notes/week-09-error-rates-power-and-decisions.qmd)
+- [Week 10 — Bootstrap inference](../notes/week-10-bootstrap-inference.qmd)
+- [Week 11 — Randomization and permutation tests](../notes/week-11-randomization-and-permutation-tests.qmd)
+- [Week 12 — Bayesian inference](../notes/week-12-bayesian-inference.qmd)

@@ -1,20 +1,23 @@
 # Statistical Inference — public Quarto course site (assembled undergraduate course materials).
-# Sibling of matthewhester.com; intended to live at /statistical-inference/ under that domain.
+# Sibling of matthewhester.com; lives at /statistical-inference/ under that domain.
 # Layout/theme aligned to the matthewhester.com course family (cosmo + styles.css, dark navbar,
 # floating sidebar, right-side TOC, MathML math). site-url set for the combined deploy; this
 # repo does not self-deploy (no CI here — the hub workflow assembles the courses).
 # Boundary: this is the PUBLIC surface. Private build state (_state/), source governance
-# (source_text/), assessment shadows (assessment_shadow/), run reports (run_reports/), and
+# (source_text/), run reports (run_reports/), assessment shadows (assessment_shadow/), and
 # accessibility evidence (accessibility/) are NOT rendered.
+#
+# Code is shown as teaching (```{r} with #| eval: false), base-R only, set.seed(35103),
+# reproducible when a student later runs it in their own session. Figures are static PNGs under
+# assets/figures/ (pre-rendered, not chunk-executed at build time).
 project:
   type: website
   output-dir: _site
-  # RENDER ALLOW-LIST (docs/08 §2 boundary hazard; docs/26 §6). Fails safe — only the public
-  # sections below render into _site/. Every private dir (_state/ underscore-skipped, plus
-  # source_text/, assessment_shadow/, run_reports/, accessibility/) is excluded.
-  # NOTE: a bare "*.qmd" matches RECURSIVELY in Quarto 1.8.26 and could leak nested private .qmd.
-  # List the three public root pages explicitly instead, and negate private dirs as
-  # belt-and-suspenders (docs/08 §2, docs/26 §6).
+  # RENDER ALLOW-LIST (boundary hazard). Fails safe — only the public sections below render into
+  # _site/. Every private dir (_state/ underscore-skipped, plus source_text/, run_reports/,
+  # assessment_shadow/, accessibility/) is excluded. A bare "*.qmd" matches RECURSIVELY in Quarto
+  # 1.8.26 and could leak nested private .qmd — list the three public root pages explicitly and
+  # negate private dirs as belt-and-suspenders.
   render:
     - index.qmd
     - syllabus.qmd
@@ -22,9 +25,10 @@ project:
     - notes/*.qmd
     - labs/*.qmd
     - resources/*.qmd
+    - "!_state/"
     - "!source_text/"
-    - "!assessment_shadow/"
     - "!run_reports/"
+    - "!assessment_shadow/"
     - "!accessibility/"
 
   resources:
@@ -58,35 +62,37 @@ website:
         contents:
           - href: notes/index.qmd
             text: "Notes overview"
-          - section: "Part I — The inferential problem (Wk 1–4)"
+          - section: "Part I — The inferential problem (Wk 1–3)"
             contents:
-              - href: notes/week-01-what-statistical-inference-is.qmd
+              - href: notes/week-01-what-is-statistical-inference.qmd
                 text: "1 — What statistical inference is"
               - href: notes/week-02-sampling-distributions-and-simulation.qmd
                 text: "2 — Sampling distributions & simulation"
               - href: notes/week-03-estimators-and-standard-errors.qmd
                 text: "3 — Estimators & standard errors"
-              - href: notes/week-04-bias-variance-mse.qmd
-                text: "4 — Bias, variance & MSE"
-          - section: "Part II — Likelihood & classical inference (Wk 5–9)"
+          - section: "Part II — Estimator quality & likelihood (Wk 4–6)"
             contents:
+              - href: notes/week-04-bias-variance-and-mean-squared-error.qmd
+                text: "4 — Bias, variance & MSE"
               - href: notes/week-05-likelihood.qmd
                 text: "5 — Likelihood"
               - href: notes/week-06-maximum-likelihood-estimation.qmd
                 text: "6 — Maximum likelihood estimation"
+          - section: "Part III — Classical inference (Wk 7–9)"
+            contents:
               - href: notes/week-07-confidence-intervals-and-midterm.qmd
                 text: "7 — Confidence intervals (midterm)"
               - href: notes/week-08-hypothesis-tests-and-p-values.qmd
                 text: "8 — Hypothesis tests & p-values"
-              - href: notes/week-09-error-rates-power-decisions.qmd
+              - href: notes/week-09-error-rates-power-and-decisions.qmd
                 text: "9 — Error rates, power & decisions"
-          - section: "Part III — Simulation-based inference (Wk 10–11)"
+          - section: "Part IV — Simulation-based inference (Wk 10–11)"
             contents:
               - href: notes/week-10-bootstrap-inference.qmd
                 text: "10 — Bootstrap inference"
               - href: notes/week-11-randomization-and-permutation-tests.qmd
                 text: "11 — Randomization & permutation tests"
-          - section: "Part IV — Bayesian inference & synthesis (Wk 12–15)"
+          - section: "Part V — Bayesian inference & synthesis (Wk 12–15)"
             contents:
               - href: notes/week-12-bayesian-inference.qmd
                 text: "12 — Bayesian inference"
@@ -94,7 +100,7 @@ website:
                 text: "13 — Comparing inferential frameworks"
               - href: notes/week-14-inference-project-workshop.qmd
                 text: "14 — Inference project workshop"
-              - href: notes/week-15-final-review-synthesis.qmd
+              - href: notes/week-15-final-review-and-synthesis.qmd
                 text: "15 — Final review & synthesis"
       - section: "Labs"
         href: labs/index.qmd
@@ -103,12 +109,14 @@ website:
             text: "Labs overview"
           - href: labs/lab-02-simulating-sampling-distributions.qmd
             text: "Lab 2 — Simulating sampling distributions"
-          - href: labs/lab-06-likelihood-and-mle-curves.qmd
-            text: "Lab 6 — Likelihood & MLE curves"
+          - href: labs/lab-06-likelihood-curves.qmd
+            text: "Lab 6 — Likelihood curves"
           - href: labs/lab-10-bootstrap-intervals.qmd
             text: "Lab 10 — Bootstrap intervals"
-          - href: labs/lab-12-bayesian-updating-by-simulation.qmd
-            text: "Lab 12 — Bayesian updating by simulation"
+          - href: labs/lab-11-randomization-tests.qmd
+            text: "Lab 11 — Randomization tests"
+          - href: labs/lab-12-simulating-the-posterior.qmd
+            text: "Lab 12 — Simulating the posterior"
       - section: "Resources"
         href: resources/index.qmd
         contents:
@@ -116,8 +124,8 @@ website:
             text: "Resources overview"
           - href: resources/notation-glossary.qmd
             text: "Notation glossary"
-          - href: resources/inference-reference.qmd
-            text: "Inference reference"
+          - href: resources/inference-formula-reference.qmd
+            text: "Inference formula reference"
           - href: resources/r-quarto-setup.qmd
             text: "R · Quarto setup"
   page-footer:
@@ -137,5 +145,4 @@ format:
     fontsize: 1.05em
     mainfont: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
     monofont: "JetBrains Mono, Consolas, Menlo, monospace"
-# Math renders as MathML/MathJax (accessible text), never as images (docs/05 P7; docs/08 §4).
-# R is shown as static, non-executed ```r fences in this diagnostic, so render is deterministic and R-free.
+# Math renders as MathML/MathJax (accessible text), never as images.

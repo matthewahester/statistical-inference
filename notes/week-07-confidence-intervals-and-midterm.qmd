@@ -1,236 +1,326 @@
 ---
-title: "Week 7 — Confidence intervals"
-subtitle: "What \"95% confident\" means — and what it does not"
+title: "Week 7 — Confidence intervals (+ midterm)"
+subtitle: "Turning a point estimate and a standard error into an honest range"
 page_mode: normal_week
 week_contract: public_note
 source_mode: source-informed
-verified: false
 readings:
-  - "MIT OCW 18.05 — Confidence intervals — supports interval construction and the coverage interpretation"
-  - "ModernDive (Ismay, Kim & Valdivia), Ch 8 — Bootstrapping and Confidence Intervals — supports the simulation-based interval framing"
+  - "MIT OCW 18.05 — confidence intervals — supports the procedure-based derivation and interpretation of a CI"
+  - "OpenIntro IMS — confidence intervals for a mean and a proportion — optional lighter review of the same idea"
 toc: true
 ---
 
+**A scheduling note before anything else: the midterm is Friday, Oct 9, in class, and covers first-half
+material — sampling distributions through confidence intervals.** Nothing on this page is graded. This note
+is study material only; the midterm itself, its coverage details, and any review guide Blackboard posts are
+handled there, not here (see **Public vs. graded** below).
+
 ## The week question
 
-We have a single estimate — the pass rate $\hat p = 0.65$, the mean gain $\bar x = 8.0$ — and we know from the
-last four weeks that another sample would have given a different number. So how do we report not just the
-estimate but an honest *range* of plausible parameter values, and what exactly does it mean to attach "95%
-confidence" to that range?
-
-This is the week the course's first half comes together. We have built estimators (Week 3), judged them (Week
-4), and used likelihood to find the value the data most support (Weeks 5–6). Now we wrap the estimate in an
-interval and — this is the part that trips up nearly everyone — we say precisely what the interval claims and,
-just as important, what it does *not* claim. The **midterm is this Friday, October 9, in class**; it covers
-sampling distributions through confidence intervals, which is exactly the arc from Week 1 to here. No graded
-content lives on this page — see Blackboard — but the ideas you consolidate this week are the ideas the
-midterm asks about.
+You have a point estimate — a single number like x̄ = 49.8 or p̂ = 0.38 — and a standard error that tells you
+roughly how much that number would jiggle from sample to sample. How do you turn those two ingredients into a
+*range* of plausible values for the unknown parameter, and — the harder question — what does that range
+actually mean once you have it?
 
 ## Why this matters
 
-A point estimate alone is a half-truth. Reporting "$\hat p = 0.65$" hides the fact that the sampling
-distribution of $\hat p$ has real width: a different 40 students would have landed somewhere else. A
-confidence interval is how we carry the standard error from Week 3 into the conclusion, so that the reader
-sees the uncertainty rather than a falsely precise single number. Every responsible inferential report —
-frequentist, and later we will see the Bayesian cousin — pairs an estimate with an interval.
-
-It matters even more because the confidence interval is the single most *misstated* object in statistics. The
-phrase "95% confident" sounds like "there is a 95% probability the parameter is in here," and that reading is
-wrong in the frequentist framework where $\theta$ is a fixed (if unknown) constant, not a random variable.
-Getting the interpretation right is not pedantry — it is the difference between a claim the procedure actually
-supports and one it does not. We will state the correct interpretation carefully, because Week 12 will
-introduce the *credible* interval, which makes exactly the probability statement a confidence interval cannot.
+A point estimate alone hides its own uncertainty. Reporting "the average MAC visit lasts 49.8 minutes"
+sounds precise, but it is a single draw from a noisy process; a different week's sample of the same size
+would almost certainly produce a different x̄. A confidence interval reports the estimate *and* a calibrated
+sense of how far off it might be, using exactly the standard error machinery built in Week 3. Confidence
+intervals are also the natural bridge into Week 8's hypothesis tests: both use the same standardized
+distance between an estimate and a reference value, just aimed at different questions ("what's plausible?"
+vs. "is this specific value rejectable?").
 
 ## Learning goals
 
 By the end of this week you should be able to:
 
-- Construct a 95% confidence interval for a proportion ($\hat p \pm z^{*}\,\operatorname{SE}$) and for a mean
-  ($\bar x \pm t^{*}\,\operatorname{SE}$), and say where every piece comes from.
-- State the **coverage** interpretation of a confidence interval — a property of the *procedure* over repeated
-  samples — and explain why "95% probability that $\theta$ is in this interval" is wrong in the frequentist
-  frame.
-- Explain how the confidence level, the standard error, and the sample size each change the interval's width.
-- Read an interval as a set of parameter values not ruled out by the data, and connect this to the likelihood
-  of Weeks 5–6.
-- Distinguish a confidence interval from a Bayesian credible interval *before* we build one, so the contrast
-  is ready for Week 12.
-- Carry the same interval logic to a new context, recognizing that "confidence" means coverage there too.
+- State the general form of a confidence interval: estimate ± (critical value) × SE(estimate).
+- Construct a 95% CI for a population mean μ (known σ case) and for a population proportion π, using the
+  sample facts already in hand from the MAC Study.
+- Explain, in words a non-statistician would accept, what "95% confidence" actually describes — a property
+  of the repeated-sampling *procedure*, not a probability statement about one specific interval.
+- Name and avoid the single most common CI misinterpretation.
+- Recognize how interval width depends on confidence level, standard error, and sample size.
 
 ## Core vocabulary
 
-- **Confidence interval (CI)** — an interval computed from data by a procedure that, used over and over,
-  contains the fixed parameter a stated fraction of the time (the confidence level).
-- **Confidence level** — that stated fraction (here 95%); it describes the *procedure*, not one interval.
-- **Coverage** — the long-run proportion of intervals (built this way) that contain the parameter.
-- **Critical value $z^{*}$ / $t^{*}$** — the multiplier that sets the interval's half-width; $z^{*} = 1.96$
-  for a 95% normal interval, $t^{*} = t_{n-1,\,0.975}$ for a mean with estimated $\sigma$.
-- **Margin of error** — the half-width $z^{*}\,\operatorname{SE}$ (or $t^{*}\,\operatorname{SE}$).
-- **Credible interval** — a Bayesian posterior interval that *does* carry a probability statement about
-  $\theta$; introduced in Week 12, named here only to keep it separate from a CI.
+- **Confidence interval (CI):** a range of values, computed from sample data, constructed so that the
+  *procedure* used to build it captures the true parameter a specified percentage of the time over repeated
+  sampling. A CI is a property of the procedure — never a probability statement about a single realized
+  interval.
+- **Confidence level:** the long-run success rate of the procedure (e.g., 95%), chosen in advance, not a
+  property discovered after seeing the data.
+- **Critical value:** the multiplier attached to the standard error, drawn from the reference distribution
+  (for a 95% CI under normal theory, 1.96 from the standard normal).
+- **Margin of error:** the "plus-or-minus" piece of the interval — critical value times SE(estimate).
+- **Coverage:** the actual long-run proportion of intervals (built the same way, over hypothetical repeated
+  samples) that contain the true parameter; for a correctly derived 95% procedure, coverage is 0.95.
 
 ## Concept development
 
-### 1. The shape of an interval: estimate ± margin
+### The general recipe
 
-A confidence interval for a parameter is built from three things we already have: the **estimate** (the center),
-the **standard error** (the sampling-distribution spread, from Week 3), and a **critical value** that turns a
-confidence level into a multiplier. The interval is
+Every confidence interval in this course has the same skeleton:
 
-$$\text{estimate} \;\pm\; (\text{critical value}) \times \operatorname{SE}.$$
+$$
+\text{estimate} \;\pm\; (\text{critical value}) \times SE(\text{estimate}).
+$$
 
-The logic is the sampling distribution. Because an estimator like $\hat p$ is, for a large enough sample,
-approximately $\text{Normal}\big(\theta,\ \operatorname{SE}^2\big)$, about 95% of samples produce an estimate
-within $1.96\,\operatorname{SE}$ of $\theta$. Turn that around: for about 95% of samples, the interval
-$\hat p \pm 1.96\,\operatorname{SE}$ reaches back and covers $\theta$. The interval moves from sample to sample;
-the parameter stays put. That asymmetry — random interval, fixed target — is the whole meaning of coverage.
+The "estimate" is whatever point estimator you are using (x̄ for μ, p̂ for π). The "critical value" comes from
+the sampling distribution of that estimator — under the normal approximations used through Week 9, a 95% CI
+uses **z\* = 1.96**, the value that leaves 2.5% of the standard normal distribution in each tail. The SE is
+exactly the standard error built in Week 3: SE(x̄) = σ/√n for a mean (known σ), SE(p̂) = √(p̂(1−p̂)/n) for a
+proportion.
 
-### 2. A confidence interval for a proportion
+Widening the confidence level (say, to 99%) increases the critical value (to about 2.576), which widens the
+interval — you buy more confidence by admitting a wider range of plausible values. Increasing n shrinks the
+SE, which narrows the interval for the *same* confidence level — more data buys precision without giving up
+confidence. These two levers (confidence level and sample size) are the only way to trade off width against
+reliability; there is no way to get a narrower interval at the same confidence level without more data (or a
+less variable population).
 
-For the pass-rate parameter $\theta$, the estimator is $\hat p$ and its standard error (Week 3) is
-$\operatorname{SE}(\hat p) = \sqrt{\hat p(1-\hat p)/n}$. With a 95% level the critical value is $z^{*} = 1.96$,
-so the **Wald interval** is
+### Why 1.96, and what "95%" is really describing
 
-$$\hat p \;\pm\; 1.96\,\sqrt{\frac{\hat p(1-\hat p)}{n}}.$$
+Under the normal approximation, a standardized estimate — like $(\bar{x}-\mu)/SE(\bar{x})$ — behaves like a
+standard normal variable across repeated samples. Exactly 95% of standard normal draws fall between −1.96
+and +1.96. So if you *always* build the interval x̄ ± 1.96·SE(x̄), then in 95% of hypothetical repeated
+samples the resulting interval will straddle the true (unknown) μ — because in 95% of samples, x̄ itself will
+have landed within 1.96 standard errors of μ.
 
-This is a large-sample interval: it leans on the normal approximation to the sampling distribution of $\hat p$,
-which is reasonable when $n\hat p$ and $n(1-\hat p)$ are both comfortably above about 10 (here $26$ and $14$ —
-acceptable, near the edge). The interval is a *set of plausible $\theta$ values*: every value inside is one the
-data do not strongly rule out, which is the same idea as the flat-topped region of the likelihood from Week 5.
+This is the crucial shift in perspective: before you draw the sample, the *interval's endpoints* are random
+(they depend on whatever x̄ you happen to get), while μ is fixed. The randomness lives entirely in the
+sampling procedure, not in the parameter. Once you actually draw one sample and compute one specific
+interval, like (44.9, 54.7), that interval either does or does not contain the true μ — there is no more
+randomness left to attach a 95% probability to. The 95% describes the *track record of the method*, evaluated
+across all the samples you didn't happen to draw.
 
-### 3. A confidence interval for a mean
+**Seeing "95%" as a track record, not a single-interval probability.** The figure below simulates exactly
+that repeated-sampling story: 30 hypothetical samples (n = 36, SE = 2.5), each producing its own 95% CI,
+built around a **stipulated hypothetical true value** μ = 47 (chosen only so the simulation has a known
+target to check against — the real MAC Study never learns the true μ, exactly as this course flags a
+hypothetical true value everywhere it is used as a teaching device).
 
-For the mean gain $\mu$, the estimator is $\bar X$ with $\operatorname{SE}(\bar X) = s/\sqrt n$. Because we
-estimate $\sigma$ by the sample SD $s$, the right multiplier comes from a **$t$ distribution** with $n-1$
-degrees of freedom rather than the normal, which slightly widens the interval to pay for not knowing $\sigma$:
+![**Repeated sampling, drawn (synthetic).** 30 simulated 95% CIs, each built the same way (n=36, SE=2.5)
+around a stipulated hypothetical true mean of 47 minutes. 29 of the 30 intervals happen to contain 47; one —
+labeled — misses it, purely from sampling
+variability.](../assets/figures/wk07_coverage_repeated_intervals.png){#fig-wk07-coverage fig-alt="Thirty horizontal line segments stacked vertically, each representing one simulated confidence interval, with a dashed vertical reference line at the hypothetical true value 47. Twenty-nine segments cross the reference line; one segment, labeled miss, sits entirely to the right of it and does not cross the line."}
 
-$$\bar x \;\pm\; t_{n-1,\,0.975}\,\frac{s}{\sqrt n}.$$
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Each horizontal segment is one simulated sample's 95% CI,
+all built by the identical procedure around a stipulated hypothetical true mean of 47 minutes. 29 of the 30
+simulated intervals happen to bracket 47; 1 misses entirely, landing too far to the right by chance. That is
+close to, but not exactly, the "95% of intervals contain the true value" claim — this is a finite simulation
+of 30 repetitions, and 29/30 = 96.7%, not a guarantee that exactly 95% of any specific batch will succeed.
+Both numbers (the theoretical 95% and this batch's 96.7%) are reported rather than treating one as simply
+replacing the other. *Synthetic instructional example; numbers are illustrative.*
+:::
 
-For large $n$ the $t$ multiplier is very close to $1.96$; for moderate $n$ it is a little larger. The
-structure is identical — center, multiplier, standard error — only the multiplier's source changes.
+### One-sample CIs for a mean and a proportion
 
-### 4. What changes the width
+For a population mean, with σ known (the Weeks 2–9 teaching simplification, stated explicitly each time it's
+used):
 
-Three levers set how wide an interval is. **Confidence level:** demanding 99% instead of 95% raises the
-critical value (to about $2.58$) and widens the interval — more confidence buys less precision. **Standard
-error:** anything that shrinks $\operatorname{SE}$ — chiefly a larger sample — narrows the interval, and
-because $\operatorname{SE}$ falls like $1/\sqrt n$, quartering the width takes sixteen times the data.
-**Variability in the data:** a larger $s$ (for a mean) or a $\hat p$ near $0.5$ (for a proportion) widens the
-interval. A wide interval is not a failure; it is an honest report that the data leave many parameter values
-in play.
+$$
+\bar{x} \;\pm\; z^{*} \cdot \frac{\sigma}{\sqrt{n}}.
+$$
+
+For a population proportion, using the estimated standard error (since π itself is exactly what's unknown):
+
+$$
+\hat{p} \;\pm\; z^{*} \cdot \sqrt{\frac{\hat{p}(1-\hat{p})}{n}}.
+$$
+
+Both formulas share the same shape — estimate plus-or-minus critical value times standard error — the only
+difference is which SE formula you plug in. This is the recipe applied twice below.
 
 ## Worked examples
 
-### Worked example — a 95% CI for the pass rate
+### Worked example — MAC Study: a 95% CI for mean visit duration
 
-We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)` — it stands in for a
-campus reading-intervention study, not real records). Of $n = 40$ students, $x = 26$ reached the competency
-threshold, so $\hat p = 26/40 = 0.65$. The standard error is
+Recall the visit-duration sample from Weeks 2–3: n = 36 recorded MAC visits, sample mean x̄ = 49.8 minutes,
+and — using the known-σ teaching simplification (σ ≈ 15) — SE(x̄) = σ/√n = 15/6 = 2.5.
 
-$$\operatorname{SE}(\hat p) = \sqrt{\frac{0.65 \times 0.35}{40}} = \sqrt{0.0056875} \approx 0.0754,$$
+Symbolically:
 
-and the 95% Wald interval is
+$$
+\bar{x} \;\pm\; 1.96 \cdot SE(\bar{x}).
+$$
 
-$$0.65 \;\pm\; 1.96 \times 0.0754 \;=\; 0.65 \pm 0.148 \;=\; (0.502,\ 0.798).$$
+Numerically:
 
-```r
+$$
+49.8 \;\pm\; 1.96(2.5) \;=\; 49.8 \;\pm\; 4.9 \;=\; (44.9,\; 54.7).
+$$
+
+**Interpretation:** if the MAC research team repeated this sampling process — draw n = 36 visits, compute x̄,
+build the interval x̄ ± 1.96·SE(x̄) — over and over, 95% of those intervals would contain the true mean visit
+duration μ. For this one sample, the interval happens to be (44.9, 54.7) minutes. You do not know whether
+*this particular* interval is one of the 95% that succeeded or one of the 5% that missed — you only know the
+procedure that generated it succeeds 95% of the time in the long run.
+
+![**Building the interval (synthetic).** The critical bounds 44.9 and 54.7 mark off the shaded middle 95% of
+the reference distribution centered at x̄ = 49.8, spread by SE = 2.5 — the picture behind "estimate ±
+1.96·SE."](../assets/figures/wk07_ci_construction.png){#fig-wk07-ci-construction fig-alt="A bell-shaped density curve centered at 49.8 minutes. Dashed vertical lines mark 44.9 and 54.7. The region between those two lines, covering the middle of the curve, is shaded; the two thin tails outside the dashed lines are unshaded."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The shaded region is the middle 95% of a curve centered
+at the sample mean 49.8 with spread SE = 2.5; its edges, 44.9 and 54.7, are exactly the CI's endpoints. The
+two thin unshaded tails (2.5% each) are the part of the reference distribution the interval deliberately
+excludes. *Synthetic instructional example; numbers are illustrative.*
+:::
+
+### Worked example — MAC Study: a 95% CI for the usage rate
+
+Recall the usage-rate survey: n = 100 students, k = 38 used the MAC at least once this week, p̂ = 0.38, and
+SE(p̂) = √(0.38 × 0.62 / 100) = √0.002356 ≈ 0.0485.
+
+Symbolically:
+
+$$
+\hat{p} \;\pm\; 1.96 \cdot SE(\hat{p}).
+$$
+
+Numerically:
+
+$$
+0.38 \;\pm\; 1.96(0.0485) \;=\; 0.38 \;\pm\; 0.0951 \;=\; (0.285,\; 0.475).
+$$
+
+**Interpretation:** the plausible range for the true proportion of students who use the MAC in a given week,
+at 95% confidence, runs from about 28.5% to 47.5%. That is a fairly wide interval — a reminder that even
+n = 100 leaves meaningful uncertainty about a proportion, especially one this close to the middle of the
+[0, 1] range where variability is largest.
+
+![**The margin of error, on a number line (synthetic).** p̂ = 0.38 sits at the center; the bracket spans the
+margin of error, ±0.095, giving the interval (0.285,
+0.475).](../assets/figures/wk07_margin_of_error_numberline.png){#fig-wk07-margin-of-error fig-alt="A horizontal number line from 0.15 to 0.60. A thick bracket runs from 0.285 to 0.475. A triangular marker sits at 0.38, the point estimate, at the center of the bracket."}
+
+```{r}
+#| label: wk07-ci-check
+#| eval: false
 set.seed(35103)
-x <- 26; n <- 40
-phat <- x / n                       # 0.65
-se   <- sqrt(phat * (1 - phat) / n) # ~ 0.0754
-phat + c(-1, 1) * 1.96 * se         # ~ 0.502  0.798
+
+# Mean CI: MAC visit duration (known-sigma teaching simplification)
+xbar <- 49.8
+se_mean <- 15 / sqrt(36)
+ci_mean <- xbar + c(-1, 1) * 1.96 * se_mean
+ci_mean
+
+# Proportion CI: MAC usage rate
+phat <- 0.38
+se_prop <- sqrt(phat * (1 - phat) / 100)
+ci_prop <- phat + c(-1, 1) * 1.96 * se_prop
+ci_prop
 ```
 
-Read it carefully. The interval $(0.502,\ 0.798)$ is a range of pass-rate values the data leave plausible:
-from "barely better than half" up to "about four in five." **The coverage statement is the procedure's, not
-this interval's:** if we repeated the whole study many times and built a 95% interval each time, about 95% of
-those intervals would contain the true $\theta$ — but for *this one* interval, $\theta$ is either inside or it
-is not, and we do not get to call that a probability. Notice too that $0.50$ sits just outside the lower end —
-a hint of the borderline hypothesis test in Week 8.
+**This chunk is shown but not executed on this page** (`eval: false`) — the figure below was produced by
+running exactly this computation separately (same seed, same formulas), reproduced as two number lines so
+you can check the chunk's `ci_mean` and `ci_prop` output against a real result:
 
-### Worked example — a 95% CI for the mean gain, and a transfer interval
+![**The scaffold's own output, reproduced (synthetic).** Running the `wk07-ci-check` chunk above produces
+`ci_mean = (44.90, 54.70)` and `ci_prop = (0.285, 0.475)` — exactly the two intervals already worked out by
+hand
+above.](../assets/figures/wk07_ci_check_reproduction.png){#fig-wk07-ci-check-repro fig-alt="Two stacked number-line panels. The top panel, labeled ci_mean, shows a bracket from 44.90 to 54.70 on a minutes scale. The bottom panel, labeled ci_prop, shows a bracket from 0.285 to 0.475 on a proportion scale."}
 
-The study also records a reading-gain score for a cohort of $n = 36$ students with $\bar x = 8.0$ points and
-$s = 6.0$, so $\operatorname{SE}(\bar X) = 6/\sqrt{36} = 1.0$. With $t_{35,\,0.975} \approx 2.03$,
+### Worked example — transfer: average commute time at a different campus
 
-$$8.0 \;\pm\; 2.03 \times 1.0 \;=\; (5.97,\ 10.03).$$
+*Synthetic; seed set.* Suppose a different campus's transportation office samples n = 49 students and asks
+how many minutes their one-way commute takes. The sample mean comes out to x̄ = 22 minutes, and (as a
+known-SD teaching simplification, mirroring the MAC Study's approach) the population SD is treated as
+σ = 10.5 minutes, so SE(x̄) = σ/√n = 10.5/7 = 1.5.
 
-So the data are consistent with an average gain anywhere from about $6$ to about $10$ points — useful to know
-before anyone announces "the program adds 8 points." Now a **transfer interval** in a fresh context: a county
-clerk samples $n = 200$ ballots and finds $\hat p = 0.46$ marked for a measure. With
-$\operatorname{SE} = \sqrt{0.46 \times 0.54 / 200} \approx 0.0352$, the 95% interval is
-$0.46 \pm 1.96 \times 0.0352 = (0.391,\ 0.529)$. Same recipe, different numbers — and because the interval
-straddles $0.50$, the data do not settle whether the measure is headed for a majority. "Confidence" means
-coverage in the ballot context exactly as it did for the pass rate.
+Symbolically, the same recipe applies:
+
+$$
+\bar{x} \;\pm\; 1.96 \cdot SE(\bar{x}).
+$$
+
+Numerically:
+
+$$
+22 \;\pm\; 1.96(1.5) \;=\; 22 \;\pm\; 2.94 \;=\; (19.06,\; 24.94).
+$$
+
+**Interpretation:** using this same procedure, the transportation office can report that they are 95%
+confident the true average one-way commute time for students at this campus lies between about 19.1 and 24.9
+minutes — again, "95% confident" describing the long-run success rate of the *method*, not a probability
+attached to this one already-computed interval. Note that this is an entirely separate, synthetic campus and
+sample, invented only to give the same CI recipe a second context — it has no connection to the MAC Study
+numbers.
+
+The same commute-time estimate also shows what "widening the confidence level" (from the general recipe,
+above) actually does to the interval: raising confidence from 95% to 99% keeps the point estimate fixed but
+uses the larger critical value z\* ≈ 2.576 instead of 1.96, which widens the bracket.
+
+![**Same estimate, wider bracket at higher confidence (synthetic).** The 95% CI (19.06, 24.94, width 5.88)
+and the 99% CI (18.14, 25.86, width 7.73) share the same point estimate x̄ = 22 but differ in width, because
+99% confidence uses a larger critical
+value.](../assets/figures/wk07_commute_ci_confidence_compare.png){#fig-wk07-commute-confidence-compare fig-alt="Two horizontal number-line brackets stacked vertically, both centered at 22 minutes. The top bracket, labeled 95 percent CI, spans from 19.06 to 24.94. The bottom bracket, labeled 99 percent CI, is visibly wider, spanning from 18.14 to 25.86."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Both brackets are centered at the same point estimate,
+22 minutes. The 95% bracket is (19.06, 24.94), width 5.88; the 99% bracket is (18.14, 25.86), width 7.73 —
+wider, because a higher confidence level uses a larger critical value (2.576 instead of 1.96) multiplying the
+same standard error. More confidence costs width, at a fixed sample size. *Synthetic instructional example;
+numbers are illustrative.*
+:::
 
 ## A common mistake
 
-The signature error of this week is reading a confidence interval as a probability statement about the
-parameter: "there is a 95% probability that $\theta$ is between $0.502$ and $0.798$." In the frequentist frame
-this is simply not what the interval says. The parameter $\theta$ is a fixed number; it does not have a
-probability of being anywhere. What is random is the *interval* — it would have come out differently with
-different data — and the 95% describes how often that random interval, generated again and again, would
-capture the fixed target. Once the data are in and the interval is computed, the capturing has either happened
-or it hasn't; there is no leftover 95% to assign to this particular interval.
-
-The cleanest fix is to put the randomness where it belongs in your sentence. Say "95% of intervals constructed
-this way contain the true pass rate," not "95% chance the pass rate is in this interval." If you genuinely want
-a "probability the parameter lies in a range" statement, you are asking a Bayesian question, and you will get
-the tool for it — the credible interval — in Week 12. Keep the two straight now and that week will be a
-clarification rather than a collision. A second, smaller slip: treating the interval's endpoints as the only
-two values that matter. The interval is a *set*; values near the center are better supported than values near
-the edges, exactly as the likelihood curve suggested.
+**The single most common CI misinterpretation: saying "there is a 95% probability that μ is in this specific
+interval (44.9, 54.7)."** This sounds natural but is not what a frequentist confidence interval means. Once
+the sample is drawn and the numbers 44.9 and 54.7 are computed, there is nothing left to be random — μ either
+is or is not between those two numbers, full stop, and no probability statement attaches to that fixed fact.
+The 95% belongs to the **procedure**: if you imagine repeating the sampling-and-interval-building process
+many times, 95% of the resulting intervals (which will differ from sample to sample) would contain the true
+μ. It is correct to say "we used a procedure that captures the true parameter 95% of the time"; it is
+incorrect to say "there's a 95% chance the true parameter is in this one interval we already built." This is
+the same style of care needed with p-values (Week 8) — in both cases, the randomness lives in the sampling
+process, not in the fixed (if unknown) parameter or in one already-observed result.
 
 ## Low-stakes self-checks (ungraded)
 
-These are **ungraded self-checks** — no points, no submission. Use them to test your grip on the ideas.
-
-1. Recompute the 95% CI for $\theta$ if the study had instead found $x = 26$ passes out of $n = 100$. Is the
-   interval wider or narrower, and why?
-2. A classmate writes "there is a 95% probability the true pass rate is between 0.502 and 0.798." Rewrite the
-   sentence so it states coverage correctly.
-3. Without recomputing, will a 99% interval for $\mu$ be wider or narrower than the 95% interval
-   $(5.97, 10.03)$? Which lever changed?
-4. The ballot interval was $(0.391, 0.529)$. In one sentence, what can and cannot the clerk responsibly say
-   about whether the measure will pass?
-5. Explain how a confidence interval is related to the likelihood curve from Week 5 — what do the values
-   inside the interval have in common?
+- Using the MAC usage-rate numbers, what would the 95% CI for π have been if the survey had used n = 400
+  instead of n = 100, with the same p̂ = 0.38? (Recompute SE(p̂) with the new n, then rebuild the interval.)
+- True or false, and explain why: "If I built a 99% CI instead of a 95% CI for the same MAC visit-duration
+  sample, the interval would be narrower." (Think about what changes in the critical value.)
+- In your own words, explain why the phrase "95% probability that μ is in this interval" is not a correct
+  description of a confidence interval, using the repeated-sampling idea from this week.
+- For the transfer example (commute times), what would the margin of error have been at 90% confidence
+  instead of 95%? (You'll need the 90% critical value, z\* ≈ 1.645, applied to the same SE = 1.5.)
 
 ## Reading and source pointer
 
-Read the **MIT OCW 18.05 material on confidence intervals** alongside this note for the frequentist
-construction and the coverage interpretation, and skim **ModernDive Chapter 8** for the simulation-based view
-of an interval, which Week 10's bootstrap will make concrete. These notes are the course's own synthesis,
-grounded in but not copied from the sources.
-
-## Formula-verification status
-
-**verified: false.** The interval formulas and every number on this page — $\operatorname{SE}(\hat p) \approx
-0.0754$, the 95% CI for $\theta$ of $(0.502,\ 0.798)$, the mean interval $(5.97,\ 10.03)$ with
-$t_{35,\,0.975} \approx 2.03$, and the ballot transfer interval $(0.391,\ 0.529)$ — are **drafted, synthetic,
-and not independently checked**. The course **math/statistics gate is BLOCKED**: every value here is
-provisional, pending the human/source sign-off recorded in `_state/notation_ledger.md` §5. Do not treat any
-result as a confirmed reference until that review is complete.
+This week's spine is **MIT OCW 18.05**'s treatment of confidence intervals, which grounds the
+procedure-based derivation and interpretation used above. As an optional lighter pass, **OpenIntro IMS**'s
+chapter on confidence intervals for a mean and a proportion covers the same ground at a gentler pace and is
+worth a look if the 18.05 treatment moves too quickly. These notes are the course's own synthesis, grounded
+in but not copied from the sources.
 
 ## Public vs. graded
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
-quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
-which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
-follow Blackboard.
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
+
+**On the midterm specifically:** the exam is Friday, Oct 9, in class, and covers first-half material —
+sampling distributions (Week 2) through confidence intervals (this week). Coverage details, format, and any
+review materials are posted in Blackboard, not here.
 
 ## Looking ahead
 
-Next week we keep the same pass-rate study but ask a different question: instead of "what range of $\theta$ is
-plausible?" we ask "is the data surprising under a *specific* claim, $\theta = 0.5$?" That is the hypothesis
-test, and you will see that the confidence interval and the test are two views of the same standard-error
-machinery — the value $0.50$ sitting just outside our interval is the first clue.
+Week 8 reuses this same standardized-distance idea — an estimate compared to a reference value, scaled by
+its standard error — but points it at a yes/no question instead of a range: is a specific hypothesized value
+of μ or π consistent with the data, or should it be rejected? The MAC Study's visit-duration sample (x̄ =
+49.8, SE = 2.5) returns immediately, tested against last year's campus baseline of 45 minutes.
 
 ## See also
 
-- [Week 6 — Maximum likelihood estimation](week-06-maximum-likelihood-estimation.qmd)
-- [Week 8 — Hypothesis tests & p-values](week-08-hypothesis-tests-and-p-values.qmd)
-- [Week 12 — Bayesian inference](week-12-bayesian-inference.qmd)
+- [Week 3 — Estimators and standard errors](week-03-estimators-and-standard-errors.qmd)
+- [Week 8 — Hypothesis tests and p-values](week-08-hypothesis-tests-and-p-values.qmd)
 - [Notation glossary](../resources/notation-glossary.qmd)
-- [Inference reference](../resources/inference-reference.qmd)
+- [Inference formula reference](../resources/inference-formula-reference.qmd)

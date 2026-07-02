@@ -1,348 +1,356 @@
 ---
 title: "Week 5 — Likelihood"
-subtitle: "Which parameter values make the data we saw most plausible?"
+subtitle: "The same data, viewed as a function of the unknown parameter"
 page_mode: normal_week
 week_contract: public_note
 source_mode: source-informed
-verified: false
 readings:
-  - "MIT OCW 18.05 — Likelihood — supports the likelihood function, the log-likelihood, and comparing parameter values"
+  - "MIT OCW 18.05 — likelihood — supports reframing observed data as a function of the parameter"
 toc: true
 ---
 
 ## The week question
 
-So far the course has gone in one direction: fix a parameter, then ask how a statistic behaves. Given
-$\theta$, the sample proportion $\hat p$ has a sampling distribution; given $\mu$, the sample mean $\bar X$
-has one too. This week we turn the arrow around. We hold the data we actually observed *fixed*, and we ask
-the inverse question:
-
-> **Given the data we saw, which values of the parameter would have made those data most plausible?**
-
-That single change of viewpoint is the **likelihood**. It is the bridge between the probability model you
-were handed and the estimation you want to do — and it is the engine under almost everything that follows
-(the MLE next week, much of confidence-interval and test machinery after that, and the Bayesian update at the
-end). It is also the home of one of the course's sharpest traps: the likelihood is a function *of the
-parameter*, and it is **not** a probability distribution over the parameter. Getting that distinction right
-is most of the week.
+You already know how to compute a probability once you're told a parameter value. If a coin has probability
+of heads $\pi = 0.5$, you can compute the probability of any sequence of flips. But an inference problem hands
+you the opposite situation: you have the data already in hand, and $\pi$ (or $\mu$, or whatever parameter
+governs the process) is the thing you don't know. This week's question is: **once the data are fixed, how do
+we use them to say which parameter values are more or less consistent with what we saw?** The tool is the
+**likelihood function**, $L(\theta)$, and the discipline of this week is learning to read it correctly —
+which is harder than it looks, because $L(\theta)$ looks almost exactly like a probability, and reading it
+as one is one of the most common errors in a first inference course.
 
 ## Why this matters
 
-Up to now you have had estimates handed to you — $\hat p = 0.65$, $\bar x = 8.0$ — as natural summaries.
-But *why* are they natural? "Take the sample proportion" is a recipe, not a justification. The likelihood
-supplies the justification. It scores every candidate parameter value by how well it would have predicted
-the data you actually got, and it lets you compare two candidates head to head: is $\theta = 0.65$ a better
-explanation of "26 of 40 passed" than $\theta = 0.5$ is, and by how much?
-
-That move — *rank parameter values by the plausibility they lend the observed data* — is one of the most
-general ideas in statistics. It does not care whether the model is a coin-flip proportion, a Normal mean, or
-a Poisson rate; the same recipe applies. It is also the quantity a Bayesian multiplies by a prior, so the
-likelihood is the one object shared across the frequentist, likelihood, and Bayesian lenses this course
-keeps in play. Learn to read a likelihood curve and you can read most of the rest of the course.
+Every estimation method you'll meet from here forward — maximum likelihood (Week 6), Bayesian updating
+(Week 12), and even some of the reasoning behind confidence intervals (Week 7) — leans on the likelihood
+function as the bridge between "the model" and "the data." Before you can maximize a likelihood, compare two
+likelihoods, or turn a likelihood into a posterior, you need a very precise sense of what $L(\theta)$ is and
+is not. Get the direction of the function backwards — treat it as a probability distribution over $\theta$
+instead of a function of $\theta$ for fixed data — and every formula you write down afterward will be
+formally fine but conceptually broken. This week exists to build that precision before Week 6 asks you to
+maximize it.
 
 ## Learning goals
 
 By the end of this week you should be able to:
 
-- Write the **likelihood** $L(\theta)$ for a sample as the probability of the observed data viewed as a
-  function of the parameter, and explain why constants that do not depend on $\theta$ can be dropped.
-- Derive and use the **log-likelihood** $\ell(\theta) = \log L(\theta)$, and say why we work on the log
-  scale.
-- Compare two parameter values with a **likelihood ratio**, and state in words what that ratio does and
-  does not claim.
-- State clearly, and defend, that $L(\theta)$ is a **function of $\theta$**, not a distribution over
-  $\theta$ — so areas under it carry no probability meaning (Risk 4).
-- Recognize the same construction for a **Normal mean** and a **Poisson rate**, not just a proportion.
+- State, in your own words, the difference between a probability (function of data, parameter fixed) and a
+  likelihood (function of the parameter, data fixed).
+- Write down the likelihood function for a Binomial setting, $L(\pi) \propto \pi^{k}(1-\pi)^{n-k}$, given
+  observed data $n$ and $k$.
+- Evaluate $L(\theta)$ at several candidate values of $\theta$ and compare them to say which value the data
+  favor more.
+- Explain why $L(\theta)$ does not need to integrate to 1 over $\theta$, and why that matters for what you're
+  allowed to conclude from it.
+- Name the common mistake of reading $L(\theta)$ as "the probability that $\theta$ is true" and say why it's
+  wrong.
 
 ## Core vocabulary
 
-Keep the **parameter vs statistic vs estimator vs estimate** discipline from the
-[notation glossary](../resources/notation-glossary.qmd) in view; it does real work this week.
-
-- **Parameter** $\theta$ — a fixed unknown number (here, the true pass probability). It does not vary and
-  does not get a hat.
-- **Data / sample** — the observed outcomes, held fixed once collected. For the proportion strand,
-  $x = 26$ passes out of $n = 40$, modeled as $X \sim \text{Binomial}(40, \theta)$.
-- **Likelihood** $L(\theta)$ — the probability of the observed data, **read as a function of $\theta$ with
-  the data fixed**. Notation: $L(\theta) = p(x \mid \theta)$, but with $x$ frozen and $\theta$ free. It need
-  not integrate to 1 over $\theta$, and usually does not.
-- **Log-likelihood** $\ell(\theta) = \log L(\theta)$ — the natural log of the likelihood. Same maximizer,
-  friendlier algebra.
-- **Likelihood ratio** $L(\theta_1)/L(\theta_0)$ — how many times more plausible the observed data are
-  under $\theta_1$ than under $\theta_0$. A relative measure of fit, not a probability.
-- **Estimator / estimate** — unchanged from earlier weeks: $\hat p = X/n$ is the estimator (a random
-  variable with a sampling distribution); $\hat p = 0.65$ is the estimate (one realized number). The
-  likelihood is the tool we will use next week to *justify* such an estimate.
-
-One symbol caution carried forward from the [notation glossary](../resources/notation-glossary.qmd):
-$L$ always denotes the **likelihood** in this course. A decision loss, when it appears in Week 9 and Week 12,
-is written $\operatorname{Loss}(\theta, a)$ — never $L$.
+- **Likelihood function, $L(\theta)$.** A function of the parameter $\theta$, built from data that are
+  already fixed/observed. For a Binomial count of $k$ successes in $n$ trials, $L(\pi) = \binom{n}{k}
+  \pi^{k}(1-\pi)^{n-k}$, or, dropping the constant $\binom{n}{k}$ that doesn't depend on $\pi$, the
+  **likelihood kernel** $\pi^{k}(1-\pi)^{n-k}$.
+- **Probability (for contrast).** A function of the data (or of an event), for a *fixed* parameter value.
+  "If $\pi = 0.4$, the probability of seeing exactly $k=2$ successes in $n=5$ trials" is a probability
+  statement — $\pi$ is fixed, the data are what varies.
+- **Likelihood kernel.** The part of the likelihood that depends on $\theta$; constants that don't involve
+  $\theta$ (like $\binom{n}{k}$ above) can be dropped because they don't affect which $\theta$ the data favor
+  most — they scale every value of $L(\theta)$ by the same amount.
+- **Log-likelihood, $\ell(\theta) = \ln L(\theta)$.** The natural log of the likelihood. Not derived in
+  detail until Week 6, but worth having the name now: taking logs turns products into sums, which is why it
+  shows up as soon as you start maximizing.
+- **Relative likelihood / likelihood comparison.** Comparing $L(\theta_1)$ to $L(\theta_2)$ for the *same*
+  fixed data tells you which of the two parameter values the data support more strongly — a comparison, not
+  an absolute probability statement about either value.
 
 ## Concept development
 
-### From "given $\theta$, what is the chance of the data?" to "given the data, score each $\theta$"
+### Two functions that look alike but point in opposite directions
 
-The binomial model says: if the true pass probability is $\theta$, the probability of seeing exactly $x$
-passes in $n$ independent trials is
+Start from the same underlying model in both directions. Suppose a single coin flip (or a single MAC-usage
+check, or any binary outcome) succeeds with probability $\pi$. If you fix $\pi$, you can ask: "what's the
+probability of this or that data outcome?" That's an ordinary probability question, and $\pi$ is a known
+constant while the data outcome is what's uncertain.
 
-$$
-p(x \mid \theta) = \binom{n}{x}\,\theta^{x}(1-\theta)^{n-x}.
-$$
+Now flip the roles. Suppose you've already run the study — the data are sitting in front of you, unchanging
+— and $\pi$ is what you don't know. You can still write down the exact same mathematical expression,
+$\pi^{k}(1-\pi)^{n-k}$, but now you're going to walk it as a function of $\pi$, holding $k$ and $n$ fixed at
+their observed values. That walked-as-a-function-of-$\pi$ object is the likelihood function, $L(\pi)$.
 
-Read left to right with $\theta$ fixed, this is a probability *distribution over the data* $x$ — sum it over
-all $x$ from $0$ to $n$ and you get $1$. The likelihood reads the **same formula** the other way: fix the
-data at what you observed, and let $\theta$ vary. For our slice, $n = 40$ and $x = 26$ (these are
-synthetic; seed set, `set.seed(35103)`), so
+Symbolically, for a Binomial count of $k$ successes in $n$ independent trials with success probability $\pi$:
 
-$$
-L(\theta) = \binom{40}{26}\,\theta^{26}(1-\theta)^{14}, \qquad 0 \le \theta \le 1.
-$$
+$$P(K = k \mid \pi) = \binom{n}{k}\pi^{k}(1-\pi)^{n-k}, \qquad k \text{ varies}, \ \pi \text{ fixed (probability)}$$
 
-The conditioning has flipped. Nothing about the data is random anymore — we *saw* 26 passes. What varies is
-the candidate explanation $\theta$. $L(0.65)$ answers "how probable were these exact data if the truth were
-$\theta = 0.65$?" and $L(0.50)$ answers the same question for $\theta = 0.50$. We compare those numbers.
+$$L(\pi) = \binom{n}{k}\pi^{k}(1-\pi)^{n-k}, \qquad \pi \text{ varies}, \ k \text{ (and } n\text{) fixed (likelihood)}$$
 
-### Dropping the constant: $L(\theta) \propto \theta^{26}(1-\theta)^{14}$
+The formula on the page is identical. What changed is which symbol you're allowed to move. This is the single
+idea the rest of the week builds on, and it is worth re-reading until it feels obvious, because almost every
+downstream mistake in likelihood-based reasoning traces back to forgetting which side of this contrast you're
+standing on.
 
-The factor $\binom{40}{26}$ does not depend on $\theta$. It scales the whole curve up or down by the same
-amount at every $\theta$, so it cannot change *where* the curve is high or *how many times* higher one point
-is than another. For comparing parameter values — which is the entire job of the likelihood — it is dead
-weight, and we drop it:
+**Seeing the contrast directly.** The same $n=5$ setup, drawn as two pictures side by side, makes the
+"which symbol moves" question impossible to miss:
 
-$$
-L(\theta) \;\propto\; \theta^{26}(1-\theta)^{14}.
-$$
+![**Same formula, opposite direction (synthetic).** Left: probability, with $\pi=0.4$ held fixed and the
+data outcome $k$ ranging over every possible value $0,\dots,5$ — a bar chart that sums to 1. Right:
+likelihood, with the observed $k=2$ held fixed and the parameter $\pi$ ranging continuously over $(0,1)$ — a
+curve that does not sum or integrate to
+1.](../assets/figures/wk05_prob_vs_likelihood.png){#fig-wk05-prob-vs-likelihood fig-alt="Two side-by-side panels. The left panel, titled Probability: pi equals 0.4 fixed, k varies, shows a bar chart of P(K=k) over k from 0 to 5, peaked at k=2, with bars summing to 1. The right panel, titled Likelihood: k equals 2 fixed, pi varies, shows a smooth curve of L(pi) over pi from 0 to 1, peaking near pi=0.4, with one point on the curve marked at pi=0.4."}
 
-The symbol $\propto$ ("proportional to") is doing the bookkeeping: we are keeping everything that depends on
-$\theta$ and discarding a positive constant that does not. This is exactly why the **height** of a
-likelihood curve is not meaningful on its own — only ratios of heights, and the location of the peak, carry
-information. (The same $\propto$ discipline returns in Week 12, where the dropped constant is the Bayesian
-evidence $p(x)$; we will name it there too.)
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Both panels use the exact same formula,
+$\binom{5}{k}\pi^{k}(1-\pi)^{5-k}$. The left panel fixes $\pi=0.4$ and varies $k$ across its six possible
+values — a genuine probability distribution, bars summing to 1. The right panel fixes the observed $k=2$
+and varies $\pi$ continuously — the likelihood function, a curve that does *not* sum or integrate to 1 (see
+the figure later in this section that shows this directly). The value $\pi=0.4$ that is one bar's condition
+on the left becomes one point on a continuous curve on the right — same number, two entirely different
+roles. *Synthetic instructional example; numbers are illustrative.*
+:::
 
-### The log-likelihood: why we take logs
+### Why $L(\theta)$ is not a probability distribution over $\theta$
 
-Products of small numbers are awkward — they underflow numerically and they are painful to differentiate.
-The logarithm turns the product into a sum, is strictly increasing (so it has its maximum at the *same*
-$\theta$), and makes the calculus clean. Taking logs of the proportional form:
+A probability distribution over a parameter $\theta$ would need to satisfy the basic rules of probability:
+non-negative values, and — for a continuous parameter — total area 1 when integrated over all possible
+$\theta$. $L(\theta)$ satisfies the first (it can't be negative, since it's built from probabilities or
+densities), but not the second. If you integrated $L(\pi) = \pi^{k}(1-\pi)^{n-k}$ over $\pi$ from 0 to 1, you
+would not, in general, get 1. There is no rule that forces it to.
 
-$$
-\begin{aligned}
-\ell(\theta) &= \log L(\theta) \\
-             &= \text{const} + 26\ln\theta + 14\ln(1-\theta).
-\end{aligned}
-$$
+![**The area under a likelihood curve is not 1 (synthetic).** The same MAC-Study pilot likelihood kernel
+$L(\pi)=\pi^2(1-\pi)^3$ from below, with the area under its own curve from $\pi=0$ to $\pi=1$ shaded and
+numerically integrated: the total is about $0.0167$, not
+1.](../assets/figures/wk05_not_a_density.png){#fig-wk05-not-a-density fig-alt="A single-humped curve over pi from 0 to 1, peaked near pi=0.4, with the entire area under the curve shaded. A label states the shaded area from 0 to 1 equals approximately 0.0167, not 1."}
 
-The "const" collects $\ln\binom{40}{26}$ and any other $\theta$-free terms; like the constant above, it
-shifts the curve vertically without moving its peak. Two features matter for next week. First, $\ell$ is
-**concave** here — it rises, reaches a single interior maximum, and falls — so there is one best $\theta$.
-Second, the maximizer is where the slope $\ell'(\theta)$ is zero; we will solve $\ell'(\theta) = 0$ in
-Week 6 and find it lands at $\theta = 26/40 = 0.65$, the sample proportion. This week we only need to *see*
-that the curve peaks near $0.65$; deriving the exact maximizer is the MLE, which is next week's job.
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The shaded region is the entire area under the MAC-Study
+pilot's likelihood kernel $L(\pi)=\pi^2(1-\pi)^3$, integrated over every possible $\pi$ from 0 to 1. That
+area comes out to about $0.0167$ — nowhere near 1. A genuine probability density over $\pi$ would have to
+integrate to exactly 1; this curve does not, which is the concrete reason $L(\pi)$ cannot be read as "the
+probability distribution of $\pi$." *Synthetic instructional example; numbers are illustrative.*
+:::
 
-### Comparing two values with a likelihood ratio
+This matters practically: you cannot ask "what fraction of the total likelihood sits between $\pi = 0.3$ and
+$\pi = 0.5$?" and interpret the answer as a probability that $\pi$ is in that range. The likelihood function
+supports *relative* statements — "$\theta_1$ is more consistent with the data than $\theta_2$," or later,
+"this is the single most likely value of $\theta$ given the data" — but not the *absolute* probability
+statements that a genuine distribution over $\theta$ would support. Building that kind of absolute statement
+about $\theta$ requires a prior distribution and Bayes' rule, which is exactly the machinery Week 12
+introduces. Until then, keep $L(\theta)$ and any future $\pi(\theta \mid \text{data})$ (the Bayesian
+posterior) visually and verbally distinct — this course flags that boundary every time it's relevant, and
+this is the first time it bites.
 
-The likelihood's natural use is comparison. Suppose the program's old benchmark was "no better than a coin
-flip," $\theta = 0.50$, and we want to weigh it against $\theta = 0.65$, where the curve is tallest. Form the
-ratio on the proportional form:
+### Reading a likelihood function as a comparison tool
 
-$$
-\frac{L(0.65)}{L(0.50)}
-= \frac{0.65^{26}(0.35)^{14}}{0.50^{26}(0.50)^{14}}.
-$$
-
-On the log scale this is a difference, $\ell(0.65) - \ell(0.50)$, which is the easier thing to compute and
-report. Whatever the exact value (we leave it symbolic — the math gate is blocked, see below), the *reading*
-is what to lock in: a ratio greater than 1 means the observed data are that-many-times more plausible under
-$\theta = 0.65$ than under $\theta = 0.50$. It is a statement about **how well each parameter value predicts
-the data we saw**. It is **not** the probability that $\theta = 0.65$, nor the probability that
-$\theta = 0.50$; the likelihood assigns no probabilities to parameter values at all.
+Because $L(\theta)$ isn't a probability distribution, the natural use of it isn't to read off a single number
+and interpret it in isolation — a lone value like $L(0.4) = 0.03456$ has no meaning by itself; it depends on
+units, sample size, and how the kernel was scaled. The natural use is **comparison**: evaluate $L(\theta)$ at
+two or more candidate values of $\theta$, using the same fixed data both times, and see which one is larger.
+A larger $L(\theta_1)$ than $L(\theta_2)$ means the observed data are more consistent with $\theta_1$ than with
+$\theta_2$ — nothing more, nothing less, but that "more consistent with" comparison is exactly the seed that
+Week 6 grows into a full estimation method: search over *all* possible $\theta$ and find the one that makes
+$L(\theta)$ largest. This week stops one step short of that maximization — the goal here is only to get
+comfortable computing and comparing $L(\theta)$ at a few candidate values, not yet to find the single best one.
 
 ## Worked examples
 
-### Worked example — the reading-fluency study: the likelihood for the pass proportion
+### Worked example — the MAC Study: a small pilot batch
 
-**The study (synthetic; seed set).** A campus reading-intervention program records whether each of $n = 40$
-students reached a reading-competency threshold. We observed $x = 26$ passes, so the estimate is
-$\hat p = 26/40 = 0.65$. These are the locked Strand A numbers; they are synthetic and `verified: false`.
+Before the full $n=100$ MAC-usage survey (Week 3's thread) was collected, the research team ran a small
+pilot: the first five survey responses came in, and $k = 2$ of the five students said they'd used the MAC at
+least once that week. This pilot batch is deliberately small and separate from the full survey — kept small
+on purpose so the likelihood arithmetic is tractable by hand.
 
-**The model.** Treat the 40 pass/not-pass outcomes as independent with a common pass probability $\theta$,
-so $X \sim \text{Binomial}(40, \theta)$. The independence-and-common-$\theta$ assumption is an assumption,
-not a fact — it would fail if, say, students worked in pairs or the threshold drifted across the cohort.
-Naming that assumption is part of doing the inference honestly.
+Let $\pi$ denote the (unknown) population proportion of students who use the MAC in a given week. With $n=5$
+trials and $k=2$ observed successes, the likelihood kernel is:
 
-**The likelihood.** With the data fixed at $x = 26$,
+$$L(\pi) \propto \pi^{k}(1-\pi)^{n-k} = \pi^{2}(1-\pi)^{3}$$
 
-$$
-L(\theta) = \binom{40}{26}\,\theta^{26}(1-\theta)^{14} \;\propto\; \theta^{26}(1-\theta)^{14},
-\qquad
-\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta).
-$$
+(The kernel drops the binomial coefficient $\binom{5}{2}=10$, since it's a constant that doesn't depend on
+$\pi$ and doesn't change which $\pi$ the data favor most — it would just scale every evaluation below by the
+same factor of 10.)
 
-**The computation — a likelihood curve.** The cleanest way to *see* a likelihood is to evaluate it on a grid
-of candidate $\theta$ values and plot it. The visual plan for this week (`wk05`, the likelihood curve) is
-exactly this picture. Here is the static R that produces it. The code is shown as teaching; it is not executed here.
+Now evaluate the kernel at three candidate values of $\pi$, treating $k=2$ and $n=5$ as fixed throughout:
 
-```r
-# Week 5 — likelihood curve for the reading-fluency pass proportion
-# Synthetic data; seed set per course convention. Code is shown, not executed.
+$$L(0.2) = (0.2)^2(0.8)^3 = (0.04)(0.512) = 0.02048$$
+
+$$L(0.4) = (0.4)^2(0.6)^3 = (0.16)(0.216) = 0.03456$$
+
+$$L(0.6) = (0.6)^2(0.4)^3 = (0.36)(0.064) = 0.02304$$
+
+Lay the three side by side: $L(0.2) = 0.02048$, $L(0.4) = 0.03456$, $L(0.6) = 0.02304$. Among these three
+candidate values, $\pi = 0.4$ has the largest likelihood — the observed pilot data ($k=2$ out of $n=5$, a
+sample proportion of $\hat\pi = 2/5 = 0.4$) are more consistent with $\pi = 0.4$ than with either $\pi = 0.2$
+or $\pi = 0.6$. Notice that $0.4$ is also just the sample proportion $k/n$ — that is not a coincidence, and
+Week 6 will show exactly why the sample proportion is the value that maximizes this likelihood over *every*
+possible $\pi$ in $[0,1]$, not just the three candidates checked here.
+
+```{r}
+#| label: mac-study-likelihood-kernel
+#| eval: false
 set.seed(35103)
 
-n <- 40      # students
-x <- 26      # passes  -> p-hat = 0.65
+# Small illustrative pilot batch: n = 5, k = 2 used the MAC.
+n <- 5
+k <- 2
 
-# A grid of candidate parameter values theta in (0, 1)
-theta <- seq(0.01, 0.99, by = 0.001)
+likelihood_kernel <- function(pi) {
+  pi^k * (1 - pi)^(n - k)
+}
 
-# Likelihood L(theta) = P(X = 26 | theta), read as a function of theta.
-# dbinom() with x and n fixed and prob = theta varying IS the likelihood.
-L <- dbinom(x, size = n, prob = theta)
-
-# Log-likelihood: same maximizer, friendlier scale.
-loglik <- dbinom(x, size = n, prob = theta, log = TRUE)
-
-# Where is the curve highest? (Previews next week's MLE.)
-theta[which.max(L)]            # ~ 0.65, the sample proportion
-# A head-to-head comparison via a likelihood ratio:
-dbinom(x, n, 0.65) / dbinom(x, n, 0.50)   # how many times more plausible the
-                                          # data are under theta = 0.65 vs 0.50
-
-plot(theta, L, type = "l",
-     xlab = expression(theta), ylab = expression(L(theta)),
-     main = "Likelihood for the pass proportion (n = 40, x = 26)")
-abline(v = 0.65, lty = 2)      # peak near the sample proportion
-abline(v = 0.50, lty = 3)      # the 'coin flip' benchmark for comparison
+candidates <- c(0.2, 0.4, 0.6)
+sapply(candidates, likelihood_kernel)
+# Compare to the sample proportion k/n = 0.4 — foreshadowing next week's MLE.
 ```
 
-**The interpretation.** The curve rises from near zero, peaks close to $\theta = 0.65$, and falls away on
-both sides; values far from $0.65$ make "26 of 40" much less plausible. The peak sitting at the sample
-proportion is not a coincidence — it is the fact Week 6 will prove. The dashed line at $0.65$ and the dotted
-line at $0.50$ set up the likelihood-ratio comparison: the data are more plausible under $\theta = 0.65$
-than under $\theta = 0.50$, which is *evidence favoring* the higher value. Two cautions on what we have
-**not** said. We have not said $\theta$ *is* $0.65$ — that is the next week's point estimate, and even then
-$0.65$ is the estimate, not the fixed parameter. And we have **not** said there is a 95% chance, or any
-chance, that $\theta$ lies in some range read off the area under this curve: $L(\theta)$ is a function of
-$\theta$, not a probability distribution over $\theta$, and its area is meaningless (Risk 4).
+Three isolated numbers only go so far. The shape of $L(\pi)$ **across every candidate value**, not just the
+three checked above, is what a likelihood curve shows directly — and it is the canonical picture for this
+week's idea, so it is worth building explicitly rather than only imagining it.
 
-### Worked example — transfer: the likelihood for a Normal mean and a Poisson rate
+**Figure — the MAC-Study pilot likelihood curve.** The code below evaluates the same kernel over a fine grid
+of $\pi$ values from 0 to 1 and plots the resulting curve. Shown as teaching code, not executed in this
+build (`eval: false`) — running it yourself is the point, and predicting its shape before you look is a
+useful check on your own understanding.
 
-The likelihood recipe does not depend on the binomial. Take a fresh context: a campus lab logs the **time in
-seconds** each of $m$ students takes to complete a short timed reading passage, and treats the times as
-independent draws $Y_1, \dots, Y_m \sim \text{Normal}(\mu, \sigma^2)$ with $\sigma$ known for illustration.
-Now $\mu$ — the true average completion time — is the parameter, and the data are the observed times.
+```{r}
+#| label: mac-study-likelihood-curve
+#| eval: false
+set.seed(35103)
 
-**Normal-mean likelihood.** Multiply the Normal densities at the observed values, then read the product as a
-function of $\mu$:
+# Same n = 5, k = 2 pilot batch as above, now evaluated over a fine grid of pi.
+n <- 5
+k <- 2
+pi_grid <- seq(0.01, 0.99, by = 0.01)
 
-$$
-\begin{aligned}
-L(\mu) &= \prod_{i=1}^{m}
-          \frac{1}{\sqrt{2\pi}\,\sigma}\exp\!\left(-\frac{(y_i-\mu)^2}{2\sigma^2}\right) \\
-\ell(\mu) &= \text{const} \;-\; \frac{1}{2\sigma^2}\sum_{i=1}^{m}(y_i - \mu)^2.
-\end{aligned}
-$$
+likelihood_curve <- dbinom(k, size = n, prob = pi_grid)   # proportional to the kernel above
 
-The "const" gathers every term free of $\mu$ (the $\sqrt{2\pi}\,\sigma$ factors and so on), and we drop it
-for the same reason as before. The shape is informative: $\ell(\mu)$ is a downward parabola in $\mu$, and
-maximizing it is the same as **minimizing the sum of squared deviations** $\sum (y_i - \mu)^2$ — which is
-largest plausibility exactly at $\mu = \bar y$, the sample mean. So for a Normal mean, the likelihood points
-at the average, just as for a proportion it points at the sample proportion. (We keep the data here generic;
-no locked Strand B numbers are asserted as fit on this page.)
+plot(pi_grid, likelihood_curve, type = "l",
+     xlab = expression(pi), ylab = expression(L(pi)),
+     main = "Likelihood curve: MAC-Study pilot (n = 5, k = 2)")
+abline(v = k / n, lty = 2)   # marks the peak at pi = 0.4, foreshadowing Week 6's MLE
+```
 
-**Poisson-rate likelihood (a second transfer).** If instead we count the number of comprehension errors per
-passage and model the counts $K_1, \dots, K_m \sim \text{Poisson}(\lambda)$, the rate $\lambda$ is the
-parameter and
+The figure below was produced by running exactly this computation separately (same $n=5$, $k=2$, same fine
+grid of $\pi$), so you can check your own prediction against a real result:
 
-$$
-\ell(\lambda) = \text{const} \;-\; m\lambda \;+\; \Big(\textstyle\sum_i k_i\Big)\ln\lambda,
-$$
+![**The MAC-Study pilot likelihood curve (synthetic).** $L(\pi)=\pi^2(1-\pi)^3$ over the full range
+$\pi \in (0,1)$, peaking at $\pi=0.4$. The three points already computed by hand above —
+$L(0.2)=0.02048$, $L(0.4)=0.03456$, $L(0.6)=0.02304$ — sit exactly on this curve, on the rising side, at the
+peak, and on the falling side,
+respectively.](../assets/figures/wk05_mac_likelihood_curve.png){#fig-wk05-mac-likelihood-curve fig-alt="A single-humped curve over pi from 0 to 1, rising from a low value near pi=0, peaking at pi=0.4 where a dashed vertical line is drawn, and falling back toward a low value near pi=1. Three points are marked on the curve at pi=0.2, pi=0.4, and pi=0.6, labeled with their L(pi) values 0.02048, 0.03456, and 0.02304."}
 
-whose peak sits at $\lambda = \bar k$, the average count. **The point of the transfer:** three different
-models — binomial, Normal, Poisson — and the *same* three moves each time. Write the probability of the
-observed data, read it as a function of the parameter, drop the parameter-free constant, and look at the
-log. Where the log-likelihood peaks is the parameter value the data most favor. The construction is general;
-only the algebra changes.
+**What this shows:** the three isolated numbers computed by hand above are all points on one continuous
+curve, and that curve makes visually obvious what the three numbers only suggested — $\pi=0.4$ is not just
+the tallest of three candidates, it is the single highest point anywhere on the curve (Week 6 makes that
+"single highest point" claim exact, by calculus, instead of by eye). *Synthetic instructional example;
+numbers are illustrative.*
+
+### Worked example — transfer: is this coin fair?
+
+*Synthetic; seed set.* Move to a fresh, unrelated context to check the idea transfers: assessing whether a
+coin is fair from a small number of flips. Suppose you flip a coin $n=4$ times (synthetic data, not part of
+the MAC Study) and observe $k=3$ heads. Let $\pi$ denote the true probability of heads for this particular
+coin. The likelihood kernel, exactly parallel to the MAC-Study case, is:
+
+$$L(\pi) \propto \pi^{k}(1-\pi)^{n-k} = \pi^{3}(1-\pi)^{1}$$
+
+Compare two candidate values: a "fair coin" hypothesis, $\pi = 0.5$, against the sample proportion,
+$\pi = 3/4 = 0.75$:
+
+$$L(0.5) = (0.5)^3(0.5)^1 = (0.125)(0.5) = 0.0625$$
+
+$$L(0.75) = (0.75)^3(0.25)^1 = (0.421875)(0.25) = 0.10546875$$
+
+$L(0.75) \approx 0.1055$ is noticeably larger than $L(0.5) = 0.0625$ — this small, synthetic sample of four
+flips is more consistent with $\pi = 0.75$ than with the fair-coin value $\pi = 0.5$. That does **not** mean
+you should conclude the coin is unfair; with only $n=4$ flips, the likelihood function is quite flat, and a
+value near 0.5 is still plausible. What the comparison licenses is a narrower claim: among the two candidate
+values checked, the data lean toward $\pi = 0.75$ over $\pi = 0.5$. Whether that lean is strong enough to
+act on is a question for later weeks (hypothesis testing, Week 8; confidence intervals, Week 7) — this week's
+job is only to compute and compare $L(\theta)$ correctly, not yet to decide how much evidence is "enough."
+
+![**The transfer coin-example likelihood curve (synthetic).** $L(\pi)=\pi^3(1-\pi)^1$ over
+$\pi \in (0,1)$ for the $n=4$, $k=3$ coin flips, peaking at the sample proportion $\pi=0.75$. The two
+compared candidates, $L(0.5)=0.0625$ and $L(0.75)\approx0.1055$, sit on the curve as marked
+points — $\pi=0.75$ is higher, but the curve is
+visibly flat and wide with only $n=4$ flips.](../assets/figures/wk05_coin_likelihood_curve.png){#fig-wk05-coin-likelihood-curve fig-alt="A single-humped curve over pi from 0 to 1, peaking at pi=0.75 where a dashed vertical line is drawn. Two points are marked on the curve at pi=0.5 and pi=0.75, labeled with their L(pi) values 0.0625 and 0.1055."}
+
+**What this shows:** the curve makes the "flat and wide" warning in the paragraph above literal — with only
+four flips, the likelihood does not fall off sharply away from its peak, so several values of $\pi$ besides
+$0.75$ still have a reasonably large likelihood. *Synthetic instructional example; numbers are illustrative.*
+
+```{r}
+#| label: transfer-coin-likelihood
+#| eval: false
+set.seed(35103)
+
+# Synthetic transfer example: n = 4 flips, k = 3 heads.
+n <- 4
+k <- 3
+
+likelihood_kernel <- function(pi) {
+  pi^k * (1 - pi)^(n - k)
+}
+
+candidates <- c(0.5, 0.75)
+sapply(candidates, likelihood_kernel)
+```
 
 ## A common mistake
 
-**The likelihood is a function of $\theta$, not a distribution over $\theta$ (Risk 4).** The curve from the
-first example *looks* like a bell-ish hump over $\theta$, and the temptation is to treat it like a
-probability density — to say "the area between $0.5$ and $0.7$ is most of the curve, so there's a high
-probability $\theta$ is in there," or to "normalize" it and read off chances. **Do not.** Three reasons,
-stated plainly:
-
-- $L(\theta)$ need not integrate to 1 over $\theta$, and generally does not. We even *threw away* the
-  constant $\binom{40}{26}$, which would change any "area." A quantity whose overall scale you discarded
-  cannot be a probability.
-- $\theta$ is a **fixed unknown**, not a random variable. In the likelihood/frequentist frame, $\theta$ has
-  no probability distribution to describe; it simply has one true value we are trying to learn about.
-- The likelihood's currency is **relative** — ratios of heights and the location of the peak. "$\theta=0.65$
-  makes the data twice as plausible as $\theta = 0.55$" is legitimate; "there is a 70% probability that
-  $\theta$ is near $0.65$" is not a likelihood statement at all.
-
-There *is* a tool that puts a genuine probability distribution on $\theta$ — the Bayesian **posterior** in
-Week 12 — and it is built by multiplying this very likelihood by a prior and *then* normalizing. That extra
-step is exactly what makes the posterior a distribution and keeps the bare likelihood from being one. Keep
-the two separate: the likelihood ranks parameter values; only the posterior assigns them probabilities.
+The single most common error at this stage is reading $L(\theta)$ as if it were a probability distribution
+over $\theta$ — for instance, saying "$L(0.4) = 0.03456$ means there's a 3.456% chance that $\pi = 0.4$." This
+is wrong on two counts. First, $L(\theta)$ generally does not integrate (or sum, for a discrete parameter grid)
+to 1 across all possible $\theta$, so its raw values are not probabilities in the ordinary sense — they don't
+even have a fixed scale, since dropping or keeping a multiplicative constant like $\binom{n}{k}$ changes every
+value without changing anything you're entitled to conclude. Second, and more fundamentally, making a genuine
+probability statement about $\theta$ requires a *prior* distribution over $\theta$ and Bayes' rule to combine
+it with the data — that's the posterior distribution $\pi(\theta \mid \text{data})$, introduced formally in
+Week 12, not the likelihood alone. Until then, the only sound reading of $L(\theta)$ is relative: it tells you
+which candidate values of $\theta$ are more or less consistent with the data you already have, not how
+probable any one of them is.
 
 ## Low-stakes self-checks (ungraded)
 
-These are for your own practice — no points, no submission, no due date.
-
-1. In your own words, what does $L(0.65)$ measure, and what is held fixed when you compute it? What is held
-   fixed when you instead compute the sampling distribution of $\hat p$ at $\theta = 0.65$? (Name what is
-   random and what is fixed in each.)
-2. Explain why $\binom{40}{26}$ can be dropped from $L(\theta)$ without affecting *which* $\theta$ the data
-   most favor. What *would* change if you dropped a factor that depended on $\theta$?
-3. A classmate says, "the likelihood curve shows there's about a 95% chance $\theta$ is between $0.5$ and
-   $0.8$." Identify the error and rewrite the claim as a correct likelihood statement.
-4. Write the log-likelihood $\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta)$ and describe, in
-   words, its shape and roughly where it peaks. Why is the peak the same for $\ell$ and for $L$?
-5. For the Poisson transfer, $\ell(\lambda) = \text{const} - m\lambda + (\sum_i k_i)\ln\lambda$. Without
-   doing next week's calculus, argue from the structure why the most-favored $\lambda$ should be the average
-   count $\bar k$.
+- In your own words, explain the difference between "the probability of the data given $\theta$" and "the
+  likelihood of $\theta$ given the data." What symbol is fixed in each, and what symbol varies?
+- Using the MAC-Study pilot ($n=5$, $k=2$), evaluate the likelihood kernel $\pi^2(1-\pi)^3$ at $\pi = 0.3$ and
+  at $\pi = 0.5$. Which of the two is more consistent with the pilot data? (Compare each to the three values
+  already worked above: $L(0.2)=0.02048$, $L(0.4)=0.03456$, $L(0.6)=0.02304$.)
+- For the transfer coin example ($n=4$, $k=3$), evaluate $L(0.9)$ and compare it to $L(0.75) \approx 0.1055$
+  computed above. Does the data favor $\pi = 0.9$ or $\pi = 0.75$ more?
+- Why can't you say "the area under $L(\theta)$ between $\pi=0.3$ and $\pi=0.5$ gives the probability that
+  $\pi$ is in that range"? Name the missing ingredient that would let you make a genuine probability
+  statement about $\theta$.
+- A classmate says, "the likelihood function shows all the probable values of $\pi$, weighted by how likely
+  each one is." Identify exactly what's wrong with that sentence, using this week's vocabulary.
 
 ## Reading and source pointer
 
-This week is grounded in **MIT OCW 18.05, *Introduction to Probability and Statistics* (Spring 2022)**,
-specifically its likelihood material (the readings introducing the likelihood function, the log-likelihood,
-and comparing parameter values, around readings 10–11). Read it for the shape of the idea — the flip from
-"probability of data given $\theta$" to "likelihood of $\theta$ given data," and the role of the
-log-likelihood. *These notes are the course's own synthesis, grounded in but not copied from the sources.*
-
-## Formula-verification status
-
-**`verified: false`.** The formulas and every numeric value on this page are **drafted, synthetic, and not
-independently checked**. The load-bearing items here — the likelihood
-$L(\theta) = \binom{40}{26}\theta^{26}(1-\theta)^{14} \propto \theta^{26}(1-\theta)^{14}$, the log-likelihood
-$\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta)$, the curve's peak near $\theta = 0.65$, the
-$\theta = 0.5$ vs $\theta = 0.65$ likelihood ratio, and the Normal-mean and Poisson-rate transfer
-likelihoods — all rest on the synthetic Strand A data ($n = 40$, $x = 26$, `set.seed(35103)`). The course
-**math gate is BLOCKED**: do not treat any value here as a confirmed reference until the human/source
-sign-off logged in `_state/notation_ledger.md` §5 is complete. Nothing on this page is release-ready.
+This week's development of the likelihood function follows MIT OCW 18.05's treatment of likelihood, used
+selectively as this course's primary spine — its framing of the likelihood function as a function of the
+parameter for fixed data, and the probability-vs-likelihood contrast, both ground this week's presentation.
+These notes are the course's own synthesis, grounded in but not copied from the sources.
 
 ## Public vs. graded
 
 These notes, the examples, and the practice here are **public and ungraded** — study material only. No
 graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
-checkpoints, quizzes, homework, inference labs, the midterm, the project, and the final live in
-**Blackboard (the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and
-Blackboard ever disagree, follow Blackboard.
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
 
 ## Looking ahead
 
-Next week we stop eyeballing the peak and find it exactly. Week 6 finds the single value that maximizes this
-likelihood: the **maximum likelihood estimate** (MLE). We set the score $\ell'(\theta) = 0$, solve it, and
-confirm what the curve already hinted — for the reading-fluency proportion, $\hat\theta_{\text{MLE}} = 0.65$,
-the sample proportion — and we do the same for the Normal mean. The likelihood you built this week is the
-object we will be climbing.
+Week 6 picks up exactly where this week stops: instead of comparing $L(\theta)$ at a handful of candidate
+values, you'll maximize it over *every* possible value of $\theta$, deriving the maximum likelihood estimate
+$\hat\theta_{\text{MLE}}$ symbolically for both the Binomial proportion and the Normal mean. The same MAC-Study
+pilot batches — the $n=5, k=2$ usage pilot and a companion small sample of five visit durations — carry
+straight over, so the numbers you computed this week become the launching point for that derivation.
 
 ## See also
 
-- [Week 4 — Bias, variance & MSE](week-04-bias-variance-mse.qmd) — how we judged estimators *before* we had
-  a principle for choosing them.
-- [Week 6 — Maximum likelihood estimation](week-06-maximum-likelihood-estimation.qmd) — finding the value
-  that maximizes the likelihood you built this week.
-- [Notation glossary](../resources/notation-glossary.qmd) — the parameter vs statistic vs estimator vs
-  estimate discipline, and the $L$-is-likelihood (not loss) convention.
-- [Inference reference](../resources/inference-reference.qmd) — the four lenses side by side, including where
-  the likelihood sits in each.
+- [Week 4 — Bias, variance, and mean squared error](week-04-bias-variance-and-mean-squared-error.qmd)
+- [Week 6 — Maximum likelihood estimation](week-06-maximum-likelihood-estimation.qmd)
+- [Notation glossary](../resources/notation-glossary.qmd)
+- [Inference formula reference](../resources/inference-formula-reference.qmd)

@@ -1,339 +1,369 @@
 ---
-title: "Week 2 — Sampling distributions & simulation"
-subtitle: "What would happen if we repeated the study?"
+title: "Week 2 — Sampling distributions and simulation"
+subtitle: "What happens to x̄ if you could draw the sample over and over again"
 page_mode: normal_week
 week_contract: public_note
 source_mode: source-informed
-verified: false
 readings:
-  - "MIT OCW 18.05 — Sampling distributions; the central limit theorem — supports the sampling-distribution idea; ModernDive Ch 7 (Sampling) — supports building it by simulation"
+  - "MIT OCW 18.05 — sampling distributions — supports the derivation of the distribution of x̄"
+  - "ModernDive — simulation-based inference — supports seeing a sampling distribution by resampling"
 toc: true
 ---
 
 ## The week question
 
-Last week you drew a single sample, computed a single number from it — the sample proportion
-$\hat p = 0.65$ — and called that number an *estimate* of a fixed unknown parameter $\theta$. A fair
-follow-up question is the one a skeptical reader always asks: **if you had run the study again, with a
-fresh sample of the same size, would you have gotten the same number?** Almost certainly not. So how much
-would the answer have moved around, and what does the pattern of all those imagined repeats look like?
-
-That pattern has a name: the **sampling distribution** of the estimator. This week's question is the engine
-of the whole course — *what would happen if we repeated the study?* — and the most honest way to answer it,
-before any formula, is to actually repeat it. Not in real life, but in simulation: have the computer draw
-thousands of fresh samples from a known process, compute the estimator on each one, and look at the
-histogram of results. The sampling distribution stops being an abstraction and becomes something you can
-*see*.
+If you took a sample of `n` values and computed the mean, you would get one number. If you took a *different*
+sample of the same size from the same world, you would get a *different* number. So: if you could repeat this
+process over and over, what would the collection of all those sample means look like? That collection has its
+own distribution — a **sampling distribution** — and this week is about understanding what that distribution
+is, why it has the shape it has, and how simulation lets you watch it take shape instead of only writing down
+its formula.
 
 ## Why this matters
 
-Every inferential claim you will make for the rest of the term — a standard error, a confidence interval, a
-p-value, a posterior — is a statement about a sampling distribution, even when the words "sampling
-distribution" never appear. A standard error is its spread. A confidence interval is built from its shape. A
-p-value is a tail area of one. If you do not have a clear picture of what an estimator does *across* repeated
-samples, those later objects are just recipes; with that picture, they are consequences.
-
-The deeper reason to start here is conceptual hygiene. There is a sharp line between **one realized estimate**
-(a single number, $\hat p = 0.65$) and **the estimator that produced it** ($\hat p = X/n$, a random variable
-that takes a different value in every sample). Only the estimator — the random variable — has a sampling
-distribution. The number $0.65$ does not "vary"; it is what it is. Confusing the two is the single most common
-error in early inference, and it is the trap this week exists to defuse. Simulation makes the distinction
-concrete, because you literally watch the estimator land on a different value every time the study repeats.
+Almost everything later in this course — confidence intervals (Week 7), hypothesis tests (Week 8), power
+(Week 9), the bootstrap (Week 10) — depends on knowing how a sample statistic such as x̄ or p̂ behaves across
+hypothetical repeated samples. None of those later tools make sense unless you first accept a strange-sounding
+idea: a *statistic* computed from *one* sample is itself a random variable, because a different sample would
+have given a different value. The sampling distribution is the probability distribution of that random
+variable. Once you can picture it, standard errors, margins of error, and p-values stop being arbitrary
+formulas and become statements about how much a statistic would bounce around under repeated sampling.
 
 ## Learning goals
 
 By the end of this week you should be able to:
 
-- Explain what a **sampling distribution** is — the distribution of an *estimator* (a statistic, viewed as a
-  random variable) across all possible samples of a fixed size from the same process.
-- Keep the **estimator vs. estimate** distinction explicit: which object has a sampling distribution, and which
-  is just one draw from it (Risk 2).
-- **Simulate** a sampling distribution in R by repeating a study many times and collecting the statistic from
-  each repeat, and read its center and spread off the simulated values.
-- State the **central limit theorem** result for a sample mean, $\bar X \approx \text{Normal}(\mu, \sigma^2/n)$,
-  and recognize that the simulated histogram of $\bar X$ should look approximately normal.
-- Name the **sampling assumption** (here, independent draws from one process) that every sampling-distribution
-  argument quietly relies on, rather than leaving it silent (Risk 14).
+- State, in your own words, what a sampling distribution is and how it differs from (a) the distribution of
+  one observation and (b) the distribution of the data in a single sample.
+- Derive the mean and standard error of x̄ for a sample of independent draws from a Normal(μ, σ) world, and
+  explain the role of `n` in shrinking that standard error.
+- Explain how simulation (repeated resampling from a known world) allows you to approximate a sampling
+  distribution empirically, and connect that to the exact derivation.
+- Distinguish a hypothetical "true" population used only as a teaching device from the sample data an analyst
+  actually has in hand.
 
 ## Core vocabulary
 
-- **Parameter** ($\theta$, $p$, $\mu$, $\sigma$): a fixed, unknown feature of the process or population. It
-  does not vary from sample to sample; it is the thing you are trying to learn about.
-- **Statistic / estimator** ($\hat p = X/n$, $\bar X$, $S$): a function of the random sample, and therefore
-  *itself a random variable*. Capital letters and hats signal "this is random; it has a distribution." An
-  estimator is a rule that turns whatever sample you get into a number.
-- **Estimate** ($\hat p = 0.65$, $\bar x = 8.0$): the single realized value the estimator produced from the
-  one sample you actually observed. Lowercase. It is a number, not a distribution.
-- **Sampling distribution:** the distribution of an estimator over all possible samples of size $n$ drawn from
-  the same process — equivalently, "what the histogram of the statistic would look like if you repeated the
-  study endlessly." It is a property of the **estimator**, never of a single estimate.
-- **Standard error** ($\operatorname{SE}$): the standard deviation *of the sampling distribution* — a preview
-  of next week. It measures how much the estimator bounces around, not how spread out the raw data are.
-- **Central limit theorem (CLT):** for a sample mean of independent draws with finite variance,
-  $\bar X \approx \text{Normal}(\mu, \sigma^2/n)$ as $n$ grows, regardless of the shape of the data
-  distribution.
-- **Simulation:** generating many synthetic samples from a *known* process on the computer, computing the
-  estimator on each, and using the collection as a stand-in for the (usually unknowable) exact sampling
-  distribution.
-
-All data on this page are **synthetic**, generated with `set.seed(35103)`; they stand in for a campus
-reading-fluency study and are not real student records.
+- **Statistic.** A number computed from sample data (for example x̄, the sample mean, or s, the sample
+  standard deviation). Because the sample varies, the statistic varies too.
+- **Sampling distribution.** The probability distribution of a statistic across all the samples of a given
+  size that could have been drawn from the same population.
+- **Standard error, SE(x̄).** The standard deviation of the sampling distribution of x̄ — a measure of how
+  much x̄ would typically vary from sample to sample.
+- **Simulation.** Using a computer to draw many samples from a specified (assumed or hypothetical) population,
+  compute the statistic on each one, and look at the resulting collection of statistic values as a stand-in
+  for the true sampling distribution.
+- **Known-σ teaching simplification.** Treating the population standard deviation σ as if it were known, so
+  the sampling-distribution math is clean. This course uses that simplification through Week 9 and states it
+  explicitly whenever it is in force.
 
 ## Concept development
 
-### An estimator is a random variable; its distribution is the sampling distribution
+### From one observation to one sample to one statistic
 
-Hold the parameter fixed. In Strand A of the reading-fluency study, the parameter is $\theta$, the true
-probability that a student reaches the reading-competency threshold; it is an unknown constant. You take a
-sample of $n = 40$ students and count the number who pass, $X$. Because $X$ depends on *which* 40 students you
-happened to sample, $X$ is random, and so is the proportion estimator
+Start with a single MAC visit duration for one student in a given week. If you believe that duration behaves
+like a draw from Normal(μ, σ), then any one student's duration is itself a random variable — it could come out
+higher or lower than μ, subject to the spread governed by σ.
 
-$$
-\hat p = \frac{X}{n}.
-$$
+Now take a whole *sample* of `n` such visits, say n = 36, and compute the sample mean x̄ of those 36 numbers.
+x̄ is a single number computed from data you actually have. But notice: if a different set of 36 students had
+been sampled that week, you would have gotten 36 different numbers, and therefore a different x̄. x̄ is
+*itself* a random variable — its value depends on which sample happened to be drawn. The probability
+distribution that describes how x̄ varies across all the possible samples of size 36 is the sampling
+distribution of x̄.
 
-The same symbol $\hat p$ does double duty. As a *rule* — $\hat p = X/n$, with $X$ random — it is the
-**estimator**, a random variable. As the *number* it produced from your one observed sample — $\hat p = 0.65$
-— it is the **estimate**. The estimator has a distribution; the estimate is one draw from it. When this week
-talks about a "sampling distribution," it always means the distribution of the estimator. Saying "the
-sampling distribution of $0.65$" is a category error: a fixed number has no distribution.
+This is the conceptual jump this week asks you to make: a sample statistic is not a fixed fact about the
+world. It is a random quantity with its own distribution, and that distribution is narrower than the
+distribution of a single observation, because averaging cancels out some of the individual noise.
 
-What does that distribution look like, in principle? With $X \sim \text{Binomial}(40, \theta)$ and
-$\theta = 0.65$, the estimator $\hat p = X/40$ can only land on the values $0/40, 1/40, \dots, 40/40$, with
-binomial probabilities. Its center sits at $\theta$ and its spread is governed by $\sqrt{\theta(1-\theta)/n}$.
-At $\theta = 0.65$, $n = 40$, that spread is
+![**One hypothetical world, many samples, one sampling distribution.** Each simulated sample of n = 36
+draws from the hypothetical Normal(mu=48, sigma=15) world produces its own x-bar; collecting many such
+x-bar values together is exactly what builds the sampling distribution x-bar ~ Normal(48, 2.5^2) shown on
+the right. The five sample means shown here are illustrative single draws, not the full
+10,000-repetition simulation used later on this
+page.](../assets/figures/wk02_repeated_sampling.png){#fig-wk02-repeated-sampling fig-alt="A flow diagram.
+On the left, a box labeled Hypothetical world, Normal mu equals 48, sigma equals 15. Arrows fan out to
+five small boxes labeled sample 1 through sample 5, each n equals 36, each with its own illustrative
+x-bar value close to 48. Arrows from each sample box converge into a bell-shaped curve on the right,
+labeled sampling distribution of x-bar, approximately Normal 48 comma 2.5 squared."}
 
-$$
-\sqrt{\frac{0.65 \cdot 0.35}{40}} = \sqrt{0.0056875} \approx 0.075.
-$$
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** One hypothetical population (Normal, mean 48, SD 15)
+produces many independent samples of size 36; each sample yields its own sample mean (five illustrative
+examples are shown, each close to but not exactly 48); collecting the sample means from many such
+repetitions is what builds the sampling distribution of x-bar, which this week derives to be Normal(48,
+2.5 squared) — narrower than the population curve because averaging cancels individual noise. *Synthetic
+instructional example; numbers are illustrative.*
+:::
 
-So even before simulating, we expect the histogram of $\hat p$ to be centered near $0.65$ with a standard
-deviation near $0.075$. The point of this week is not to take that on faith but to *watch it happen*.
+### A hypothetical true world, used only as a teaching device
 
-### Building the sampling distribution by simulation
+To *derive* the sampling distribution of x̄ exactly, you need to stipulate a population — you need to say what
+μ and σ actually are. In real analysis you never know these values; that is exactly why inference exists.
+But for this one week (and again in Week 9, and in the Week 4 shrinkage-estimator example), the course uses a
+**hypothetical "true" world** purely as a teaching device, clearly flagged as such and never claimed to be a
+known fact about actual MAC visits:
 
-Here is the move that makes the abstract concrete. You cannot repeat a real study thousands of times. But you
-*can* tell the computer to draw thousands of fresh samples from a process with a known $\theta$, compute
-$\hat p$ on each, and pile the results into a histogram. That histogram is an empirical picture of the
-sampling distribution.
+> **Hypothetical, for teaching only:** suppose MAC visit duration (in minutes), for a student who visits in a
+> given week, truly follows Normal(μ = 48, σ = 15). This is a stipulated backdrop, not a known truth — real
+> analysis never gets to assume μ and σ this way.
 
-The logic is a loop you can say in one breath: **draw a sample of size $n$ from the process; compute the
-statistic; record it; repeat many times.** Each repeat is one hypothetical "if we had run the study again."
-The collection of recorded statistics is the simulated sampling distribution. Its center estimates where the
-estimator is centered (here, near $\theta = 0.65$), and its spread estimates the standard error (here, near
-$0.075$).
+With that hypothetical world stipulated, you can ask a clean question: if you repeatedly drew samples of
+n = 36 visit durations from Normal(48, 15) and computed x̄ each time, what would the distribution of those x̄
+values look like?
 
-Two things are worth saying plainly. First, simulation does **not** create new information about the real
-study or shrink the uncertainty in $\hat p = 0.65$; it reveals how much $\hat p$ *would* vary, given the
-process. Second, it works only because we fixed a known $\theta$ to draw from. In a real analysis $\theta$ is
-unknown — which is exactly why, in later weeks, we approximate the sampling distribution differently (with a
-formula via the CLT in weeks 3 and 7, by resampling the data via the bootstrap in week 10). Simulation here is
-a teaching telescope: we point it at a known process to learn how the machinery behaves.
+### Deriving the sampling distribution of x̄
 
-### The central limit theorem: the sampling distribution of a sample mean
+For independent draws X₁, X₂, …, X₃₆, each Normal(μ, σ), with sample mean x̄ = (1/n)Σxᵢ, two standard facts
+combine:
 
-The proportion case is one face of a far more general fact. Switch to Strand B, where the outcome is a
-reading-gain *score* and the parameter is the mean $\mu$. The estimator is the sample mean
+- The **mean** of the sampling distribution of x̄ equals the population mean: E[x̄] = μ. Averaging does not
+  systematically push the statistic up or down — it is centered on the same value as the population.
+- The **spread** of the sampling distribution shrinks with sample size. The standard error is
+  $$SE(\bar{x}) = \frac{\sigma}{\sqrt{n}}.$$
+  Larger samples average out more of the individual noise, so x̄ clusters more tightly around μ as `n` grows.
+- Because a sum (and hence a scaled average) of independent Normal random variables is itself Normal, the
+  *entire distribution* of x̄, not just its mean and SE, is Normal:
+  $$\bar{x} \sim \text{Normal}\!\left(\mu, \left(\frac{\sigma}{\sqrt{n}}\right)^2\right).$$
 
-$$
-\bar X = \frac{1}{n}\sum_{i=1}^{n} X_i,
-$$
+Plugging in the hypothetical world's μ = 48 and σ = 15, with n = 36:
+$$SE(\bar{x}) = \frac{\sigma}{\sqrt{n}} = \frac{15}{\sqrt{36}} = \frac{15}{6} = 2.5.$$
 
-again a random variable, because it is a function of the random sample. The **central limit theorem** tells us
-that for independent draws with finite variance, as $n$ grows,
+So under this hypothetical world,
+$$\bar{x} \sim \text{Normal}(48,\ 2.5^2).$$
 
-$$
-\bar X \;\approx\; \text{Normal}\!\left(\mu,\ \frac{\sigma^2}{n}\right),
-$$
+That is a complete description of the sampling distribution: it says x̄ is centered at 48, and it says how
+tightly x̄ clusters around 48 — about two-thirds of hypothetical repeated samples would give an x̄ within 2.5
+minutes of 48 (that is, roughly between 45.5 and 50.5), and about 95% would fall within 2 × 2.5 = 5 minutes of
+48 (roughly 43 to 53). Compare that to the spread of a *single* visit duration, which has standard deviation
+σ = 15 — six times wider. Averaging 36 visits together has shrunk the spread by a factor of √36 = 6.
 
-*whatever the shape of the individual $X_i$.* The sampling distribution of $\bar X$ is approximately normal,
-centered at the true mean $\mu$, with a spread that shrinks like $\sigma/\sqrt{n}$. This is why the normal
-curve shows up everywhere in inference: not because raw data are normal, but because *averages* are
-approximately normal once $n$ is moderate.
+![**Individual spread vs. the spread of x̄ (synthetic).** The wide curve is the spread of one visit
+duration, Normal(48, 15^2); the narrow, hatched curve is the spread of x̄ for n = 36, Normal(48, 2.5^2).
+These are not the same object — SE(x̄) = 15/√36 = 2.5 is six times narrower than σ = 15, because averaging
+36 visits together cancels out much of the individual
+noise.](../assets/figures/wk02_se_vs_sigma.png){#fig-wk02-se-vs-sigma fig-alt="Two overlaid bell curves
+sharing the same center, 48. A wide, lightly shaded curve represents the spread of one visit duration,
+standard deviation 15. A much narrower, hatched curve represents the spread of the sample mean x-bar for
+n equals 36, standard error 2.5. A legend labels each curve."}
 
-In the observed Strand B cohort, $n = 36$, the sample mean is $\bar x = 8.0$, and the sample SD is $s = 6.0$,
-so the spread of the sampling distribution of $\bar X$ is estimated by
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Two bell curves share the same center (48) but very
+different widths: individual visit duration has SD = 15 (wide curve), while x̄ for n = 36 has SE = 2.5
+(narrow, hatched curve) — six times tighter. Confusing these two spreads is exactly the mistake named
+below, in *A common mistake*. *Synthetic instructional example; numbers are illustrative.*
+:::
 
-$$
-\operatorname{SE}(\bar X) = \frac{s}{\sqrt{n}} = \frac{6.0}{\sqrt{36}} = \frac{6.0}{6} = 1.0.
-$$
+### Watching it happen: simulation as a second way of seeing the same distribution
 
-So we expect the sampling distribution of $\bar X$ to be roughly normal, centered near $\mu$ (which our one
-observed mean $\bar x = 8.0$ estimates) with a standard deviation near $1.0$. The simulation below confirms
-the bell shape; turning that spread of $1.0$ into the formal object called a *standard error* is exactly the
-hand-off to Week 3.
+The derivation above is exact, but it can feel abstract on first encounter. Simulation offers a second,
+complementary way to arrive at the same picture — one you can literally watch unfold rather than only prove.
+
+The idea: instead of deriving the sampling distribution with algebra, you generate it empirically.
+
+1. Draw one simulated sample of n = 36 values from Normal(48, 15) (the hypothetical world).
+2. Compute x̄ for that one simulated sample; record it.
+3. Repeat steps 1–2 many times — say, 10,000 times — each time drawing a fresh sample of 36 and recording its
+   x̄.
+4. Look at the resulting collection of 10,000 x̄ values: plot a histogram of them.
+
+If the derivation above is correct, that histogram should look approximately Normal, centered near 48, with a
+spread whose standard deviation is close to 2.5. The more repetitions you run, the closer the simulated
+picture matches the exact derived distribution — simulation is an approximation that converges to the true
+sampling distribution as the number of repeated samples grows.
+
+This is the point of simulation-based inference as a teaching tool: it lets you *see* a sampling distribution
+build up, draw by draw, rather than accepting its shape purely on faith in an algebraic argument. It also
+generalizes to situations where the exact algebra is hard or unavailable — you can simulate a sampling
+distribution for almost any statistic, from almost any population, as long as you can describe how to draw one
+sample and compute the statistic on it. The bootstrap (Week 10) and the permutation test (Week 11) both reuse
+this same "repeat, compute, collect" logic, just resampling from data in hand instead of from a hypothetical
+population.
+
+### Two kinds of numbers, and why you must not mix them
+
+This week uses a hypothetical true population (μ = 48, σ = 15) purely so the sampling-distribution machinery
+has something concrete to run on. That is different from the **sample data in hand** — the actual n = 36
+MAC visits this course tracks all term, with sample mean x̄ = 49.8 minutes and sample SD s = 15.2 minutes.
+Starting in Week 3, the course stops assuming a known population and instead works forward from that real
+sample toward unknown μ, exactly as a real analyst would — never peeking at a "true" value, because in real
+analysis there isn't one to peek at. Keeping these two kinds of numbers straight — the hypothetical backdrop
+used only to teach the mechanics, versus the actual data used for real estimation — matters for the rest of
+the course.
 
 ## Worked examples
 
-### Worked example — the sampling distribution of $\hat p$ (reading-fluency study, Strand A)
+### Worked example — the MAC Study sampling distribution of x̄
 
-**The model.** Each of $n = 40$ students independently passes with probability $\theta = 0.65$, so
-$X \sim \text{Binomial}(40, 0.65)$ and the estimator is $\hat p = X/40$. We treat $\theta = 0.65$ as a
-*known* process to simulate from — this is the teaching telescope, not the real (unknown) world.
+**Symbolic form.** For independent draws from Normal(μ, σ), the sampling distribution of the mean of a sample
+of size n is
+$$\bar{x} \sim \text{Normal}\!\left(\mu, \left(\frac{\sigma}{\sqrt{n}}\right)^2\right), \qquad
+SE(\bar{x}) = \frac{\sigma}{\sqrt{n}}.$$
 
-**The computation.** Repeat the study $10{,}000$ times, each time drawing a fresh count of passers and
-converting it to a proportion, then look at the center and spread of the collected proportions. The code below
-is shown for study and is **not executed** on this site.
+**Numeric form.** Using the hypothetical true world flagged above — Normal(μ = 48, σ = 15) — and n = 36:
+$$SE(\bar{x}) = \frac{15}{\sqrt{36}} = \frac{15}{6} = 2.5.$$
+$$\bar{x} \sim \text{Normal}(48,\ 2.5^2).$$
 
-```r
-set.seed(35103)                       # synthetic; reproducible
+So if you repeatedly drew samples of 36 visit durations from this hypothetical world, the resulting x̄ values
+would cluster in a bell shape centered at 48 minutes, with about 95% of them falling within roughly 5 minutes
+of 48 (using the rough two-SE rule), i.e., between about 43 and 53 minutes.
 
-n      <- 40
-theta  <- 0.65
-reps   <- 10000
+![**The MAC Study sampling distribution of x-bar, drawn (synthetic).** Under the hypothetical world
+Normal(mu=48, sigma=15) with n = 36, x-bar ~ Normal(48, 2.5^2): centered at 48, with about 95% of
+hypothetical repeated sample means falling in the shaded interval (43,
+53).](../assets/figures/wk02_mac_sampling_density.png){#fig-wk02-mac-density fig-alt="A bell-shaped
+density curve centered at 48 minutes. A dashed vertical line marks the mean, 48. A shaded region under
+the curve spans from 43 to 53, labeled approximately 95 percent of x-bar values fall in that interval."}
 
-# Repeat the study: each draw is one hypothetical "run it again."
-x_counts <- rbinom(reps, size = n, prob = theta)   # number who pass, per repeat
-phat_sim <- x_counts / n                            # the estimator, per repeat
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** A bell-shaped curve for x-bar, centered at 48 minutes,
+with roughly 95% of the area (and so 95% of hypothetical repeated sample means) falling between 43 and 53
+minutes — the same "within about 5 minutes of 48" statement given in words just above. *Synthetic
+instructional example; numbers are illustrative.*
+:::
 
-mean(phat_sim)   # center of the sampling distribution  ~ 0.65  (near theta)
-sd(phat_sim)     # spread of the sampling distribution   ~ 0.075 (the SE)
+A base-R sketch of the simulation described above — shown as teaching code, not executed in this build:
 
-# A picture: the simulated sampling distribution of p-hat
-hist(phat_sim, breaks = 20,
-     main = "Simulated sampling distribution of p-hat (n = 40, theta = 0.65)",
-     xlab = "p-hat")
-abline(v = theta, lwd = 2)            # the true theta we drew from
+```{r}
+#| label: sim-sampling-distribution-xbar
+#| eval: false
+set.seed(35103)
+
+n_reps   <- 10000   # number of simulated samples
+n        <- 36       # sample size, matching the MAC Study visit-duration sample
+true_mu  <- 48        # hypothetical true mean -- teaching device only
+true_sd  <- 15        # hypothetical true SD -- teaching device only
+
+xbar_values <- replicate(n_reps, {
+  one_sample <- rnorm(n, mean = true_mu, sd = true_sd)
+  mean(one_sample)
+})
+
+mean(xbar_values)  # should be close to 48
+sd(xbar_values)    # should be close to 2.5
+hist(xbar_values, breaks = 40)
 ```
 
-**The interpretation.** The simulated proportions cluster around $0.65$, with a standard deviation near
-$0.075$ — exactly the values the formula predicted, $\sqrt{0.65 \cdot 0.35 / 40} \approx 0.075$. Read this
-carefully against what is fixed and what is random. The **parameter** $\theta = 0.65$ is fixed; it is the
-known process we drew from. The **estimator** $\hat p$ is random, and the histogram *is* its sampling
-distribution. The one **estimate** from the real study, $\hat p = 0.65$, is a single draw that would sit
-somewhere inside this histogram. The histogram is not a statement that "$\hat p$ has a 95% chance of being
-near $0.65$"; it is the long-run frequency pattern of the estimator across repeated sampling from a fixed
-process. What is *assumed* throughout — and must be stated, not left silent — is that the 40 students are
-independent draws with the same pass probability. If passing were contagious among classmates, or the sample
-were not representative, this sampling distribution would be the wrong picture.
+**This chunk is shown but not executed on this page** (`eval: false`) — running it yourself is the point.
+Running it (in your own R session) would produce a histogram of 10,000 simulated x̄ values that looks
+approximately Normal, centered near 48, with a spread close to 2.5 — the simulated picture converging on the
+exact derived sampling distribution above. The figure below reproduces exactly that (same seed, same
+`n_reps`), run once here so you can check a prediction against a real result:
 
-### Worked example — the sampling distribution of $\bar X$ for a second measure (transfer)
+![**What the simulation code above would produce (synthetic).** A histogram of 10,000 simulated x̄
+values, generated by running the chunk above once (seed 35103, n_reps = 10,000), with the theoretical
+Normal(48, 2.5^2) curve overlaid. The simulated mean (47.974) and simulated SD (2.481) are close to, but
+not identical to, the theoretical 48 and 2.5 — simulation is itself
+random.](../assets/figures/wk02_sim_xbar_hist.png){#fig-wk02-sim-hist fig-alt="A histogram of 10,000
+simulated sample means, bell-shaped and centered near 48 minutes, with a smooth theoretical curve traced
+over it. A dashed vertical line marks the theoretical mean 48. Text on the plot reports the simulated
+mean, 47.974, and simulated standard deviation, 2.481."}
 
-**A fresh context.** Move off the running study to a new measure: suppose a tutoring center records the time
-(in minutes) it takes each student to finish a placement reading passage, and the per-student times follow a
-right-skewed process with mean $\mu = 12$ minutes and SD $\sigma = 4$ minutes. The individual times are *not*
-normal — they are skewed. The question: what is the sampling distribution of the sample mean $\bar X$ for
-samples of $n = 36$ students?
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Among 10,000 simulated sample means generated by
+running the page's own (shown but not executed) simulation chunk once, the empirical mean is 47.974 and
+the empirical SD is 2.481 — close to, but not exactly, the theoretical values of 48 and 2.5 derived
+above; both numbers are reported here rather than treating one as simply replacing the other. This is
+what "simulation converges toward the exact derivation" looks like concretely. *Synthetic instructional
+example; numbers are illustrative.*
+:::
 
-**The computation.** Draw $10{,}000$ samples of $36$ skewed times, average each sample, and look at the
-distribution of those averages. We use `colMeans` over a matrix so each column is one repeated study.
+### Worked example — transfer: a manufacturing line's batch-mean weights (synthetic)
 
-```r
-set.seed(35103)                       # synthetic; reproducible
+*Synthetic example, not from the MAC Study; numbers invented for illustration only.*
 
-n     <- 36
-reps  <- 10000
-mu    <- 12
-sigma <- 4
+A production line packages batches of a component, and quality control weighs every unit in a batch, then
+records the batch's mean weight. Suppose — purely as a stipulated, hypothetical teaching backdrop — that an
+individual unit's weight (in grams) follows Normal(μ = 250, σ = 12), and a quality-control batch consists of
+n = 16 units.
 
-# Skewed per-student times via a gamma with mean = 12, sd = 4
-shape <- (mu / sigma)^2               # = 9
-rate  <- mu / sigma^2                 # = 0.75
-draws <- matrix(rgamma(n * reps, shape = shape, rate = rate),
-                nrow = n, ncol = reps)
+**Symbolic form** (same result as above, applied to this new context):
+$$SE(\bar{x}) = \frac{\sigma}{\sqrt{n}}, \qquad \bar{x} \sim \text{Normal}\!\left(\mu, \left(\frac{\sigma}{\sqrt{n}}\right)^2\right).$$
 
-xbar_sim <- colMeans(draws)           # the estimator X-bar, one value per repeat
+**Numeric form:**
+$$SE(\bar{x}) = \frac{12}{\sqrt{16}} = \frac{12}{4} = 3.$$
+$$\bar{x} \sim \text{Normal}(250,\ 3^2).$$
 
-mean(xbar_sim)   # ~ 12   (near mu)
-sd(xbar_sim)     # ~ 4 / sqrt(36) = 0.667  (the SE, = sigma / sqrt(n))
+So across many hypothetical batches of 16 units each, the batch mean weight would cluster around 250 grams,
+with about 95% of batch means falling within roughly 6 grams of 250 (that is, between about 244 and 256
+grams) — far tighter than the spread of an individual unit's weight, whose standard deviation is 12 grams.
+Exactly as in the MAC Study example, simulating many batches (drawing 16 simulated unit weights, averaging
+them, repeating thousands of times, and plotting a histogram of the batch means) would let you *see* this
+Normal(250, 3²) shape emerge, rather than only deriving it.
 
-hist(xbar_sim, breaks = 30,
-     main = "Simulated sampling distribution of X-bar (n = 36, skewed data)",
-     xlab = "sample mean (minutes)")
-```
-
-**The interpretation.** Two things happen, and both are the CLT in action. The *individual* times are
-skewed, but the histogram of the $10{,}000$ sample **means** is approximately a symmetric bell, centered near
-$\mu = 12$ with spread near $\sigma/\sqrt{n} = 4/6 \approx 0.667$. Averaging has washed out the skew and
-delivered the normal shape promised by $\bar X \approx \text{Normal}(\mu, \sigma^2/n)$. Note what this does and
-does not say: the *sample means* are approximately normal, not the raw times. The conditioning is again on
-independent draws from one process. This transfer example is the same logic as Strand B of the running study,
-where $n = 36$, $s = 6.0$, and the SE comes out to $1.0$ — the only difference is the numbers and the measure.
-The shape of the reasoning travels.
+![**The manufacturing transfer example's sampling distribution, drawn (synthetic).** Under the same
+Normal(mu, sigma)-with-known-sigma logic, batch-mean weight x̄ ~ Normal(250, 3^2) for n = 16: centered at
+250 grams, with about 95% of hypothetical batch means falling in the shaded interval (244, 256) — far
+tighter than a single unit's spread of sigma = 12
+grams.](../assets/figures/wk02_manufacturing_sampling_density.png){#fig-wk02-manufacturing-density
+fig-alt="A bell-shaped density curve centered at 250 grams. A dashed vertical line marks the mean, 250. A
+shaded region under the curve spans from 244 to 256, labeled approximately 95 percent of batch means fall
+in that interval."}
 
 ## A common mistake
 
-The week's trap is **confusing the estimator with the estimate** (Risk 2), and the language gives it away.
-You will hear — and may be tempted to write — "the sampling distribution of $0.65$." There is no such thing. A
-fixed number has no distribution; it does not vary. What has a sampling distribution is the *estimator*
-$\hat p = X/n$, the random rule, viewed across all the samples you might have drawn. The number $0.65$ is one
-realized draw from that distribution.
-
-A close cousin of the mistake is reading the spread of the *data* as the spread of the *estimator*. In the
-transfer example the individual times have SD $\sigma = 4$, but the sample mean's sampling distribution has SD
-$\approx 0.667$. Those are different objects: the SD of the data describes how spread out individual students
-are; the standard error describes how spread out the *estimator* is across repeated studies. They differ by a
-factor of $\sqrt{n}$, and conflating them is the seed of next week's most common error.
-
-The third, quieter mistake is leaving the **sampling assumption silent** (Risk 14). Every claim on this page —
-the center at $\theta$, the spread at $\sqrt{\theta(1-\theta)/n}$, the CLT's normal shape — rests on the draws
-being independent and from one common process. State that assumption out loud every time. If it fails (a
-clustered sample, dependence between students, a biased recruiting process), the sampling distribution you
-drew is not the one your real study lives in, and the inference built on it inherits the flaw.
+A very common confusion is treating the **standard deviation of the data** (σ, the spread of individual
+observations) as if it were the same thing as the **standard error of the mean** (SE(x̄), the spread of the
+sampling distribution of x̄). See the comparison figure above, in *Deriving the sampling distribution of
+x̄*, for exactly this contrast drawn out: two curves sharing a center but very different widths. They are
+related by SE(x̄) = σ/√n, but they answer different questions: σ
+describes how much one observation varies; SE(x̄) describes how much the *average of n observations* would
+vary if you resampled the whole batch of n again. Confusing the two makes people think a sample mean is just
+as noisy as a single observation, which badly overstates the uncertainty in x̄ once n is reasonably large. A
+second, related mistake is to think the sampling distribution describes "the data" — it does not; it describes
+the *statistic* (here, x̄) computed across hypothetical repeated samples of the data, which is a different
+object with a different (narrower) spread than the data itself.
 
 ## Low-stakes self-checks (ungraded)
 
-These are practice only — no points, no submission, nothing to turn in.
-
-1. In one sentence, say which of these has a sampling distribution and which does not: the estimator
-   $\hat p = X/40$, the estimate $\hat p = 0.65$, the parameter $\theta$. Explain why.
-2. The simulated sampling distribution of $\hat p$ (Strand A) came out centered near $0.65$ with SD near
-   $0.075$. Which of those two numbers is a preview of the *standard error*, and which is the center?
-3. In the transfer example the individual times have SD $4$ but the sample means have SD $\approx 0.667$. By
-   what factor do they differ, and where does that factor come from?
-4. The raw placement times were *skewed*, yet the histogram of sample means looked *normal*. Name the result
-   that explains this, and state what must be true about the draws for it to apply.
-5. A classmate writes, "the simulation proves $\theta = 0.65$." Correct the statement: what does the
-   simulation actually reveal, and what does the value $0.65$ depend on?
-6. If you increased $n$ from $40$ to $160$ in the proportion simulation, would the sampling distribution of
-   $\hat p$ get wider or narrower, and by roughly what factor? (Hint: $\sqrt{\theta(1-\theta)/n}$.)
+- If the hypothetical world's σ were 30 instead of 15 (holding n = 36 fixed), what would SE(x̄) become? What
+  would happen to the width of the sampling distribution of x̄?
+- If instead n were increased to 144 (holding σ = 15 fixed), what would SE(x̄) become? Explain in words why
+  quadrupling the sample size (36 → 144) only cuts the standard error in half rather than to a quarter.
+- In the manufacturing transfer example, suppose batch size were n = 4 instead of 16 (holding σ = 12 fixed).
+  Recompute SE(x̄) and describe, in a sentence, how the sampling distribution's spread compares to the n = 16
+  case.
+- In your own words, explain the difference between "the distribution of one visit duration" and "the
+  sampling distribution of x̄ across samples of 36 visit durations." Why is the second one narrower?
 
 ## Reading and source pointer
 
-Read **MIT OCW 18.05 — Introduction to Probability and Statistics (Spring 2022)** on **sampling distributions
-and the central limit theorem** for the theory spine: what a sampling distribution is, and why a sample mean
-is approximately normal. Pair it with **ModernDive (Ismay, Kim & Valdivia), Ch 7 — Sampling** for the
-simulation-first way of building a sampling distribution by repeating a study in R and reading its center and
-spread. For a lighter calibration on sampling variability, *Introduction to Modern Statistics* (Çetinkaya-Rundel
-& Hardin) covers the same intuition at a gentler pace.
+This week's spine reading is **MIT OCW 18.05**'s treatment of sampling distributions, which grounds the
+derivation of the mean and standard error of x̄ above and the Normal shape that follows from averaging
+independent Normal draws. Because this week's center is simulation-based thinking, it is also genuinely
+supported by **ModernDive**'s simulation-based inference framing: ModernDive builds intuition for a sampling
+distribution by describing a repeated process of drawing a sample, computing a statistic, and collecting many
+such statistic values into a distribution you can visualize — in words, exactly the "draw many samples, keep
+the x̄ each time, look at the collection" idea developed above. This course keeps its base-R-only house style
+for every shown chunk (see the simulation code above using `replicate()`, `rnorm()`, and `mean()`), rather than
+ModernDive's own `infer`-package pipeline (`specify()` / `hypothesize()` / `generate()` / `calculate()`); the
+underlying idea is the same, described here in words and shown in base R. These notes are the course's own
+synthesis, grounded in but not copied from the sources.
 
-These notes are the course's own synthesis, grounded in but not copied from the sources.
-
-## Formula-verification status
-
-**verified: false.** The math gate for this course is **BLOCKED**. The load-bearing formulas and numbers on
-this page — the spread of $\hat p$, $\sqrt{0.65 \cdot 0.35 / 40} \approx 0.075$; the CLT statement
-$\bar X \approx \text{Normal}(\mu, \sigma^2/n)$; the Strand B values $\bar x = 8.0$, $s = 6.0$,
-$\operatorname{SE}(\bar X) = 6/\sqrt{36} = 1.0$; and the transfer SE $\sigma/\sqrt{n} = 4/6 \approx 0.667$ —
-are **drafted, synthetic** (`set.seed(35103)`), and **not independently checked**. The simulated outputs shown
-as comments (means near $0.65$ and $12$; SDs near $0.075$ and $0.667$) are drafted expected values, not
-executed results. Do not treat any value here as a confirmed reference until the human/source sign-off in
-`_state/notation_ledger.md` §5 is complete.
+- MIT OCW 18.05 — Introduction to Probability and Statistics —
+  <https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/>
+- ModernDive — Statistical Inference via Data Science —
+  <https://moderndive.com/v2/>
 
 ## Public vs. graded
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
-quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
-which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
-follow Blackboard.
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
 
 ## Looking ahead
 
-Next week turns the *spread* of the sampling distribution you simulated here into a single, named quantity: the
-**standard error**. Where this week you watched $\hat p$ scatter with SD near $0.075$ and $\bar X$ scatter with
-SD $1.0$, Week 3 names those spreads $\operatorname{SE}(\hat p)$ and $\operatorname{SE}(\bar X) = s/\sqrt{n}$,
-shows how to compute them from a single sample without simulating, and pins down what they do and do not
-measure.
+Week 3 moves from this week's hypothetical-true-world teaching device to the real situation an analyst
+actually faces: μ and π are unknown, and you must estimate them and their standard errors from the sample data
+in hand — the n = 36 visit-duration sample (x̄ = 49.8, s = 15.2) and the n = 100 usage-rate survey (p̂ = 0.38).
+The same SE = σ/√n logic derived this week reappears there, now applied to real estimation rather than a
+stipulated backdrop.
 
 ## See also
 
-- [Week 1 — What statistical inference is](week-01-what-statistical-inference-is.qmd) — sample vs. population
-  vs. parameter, and why $\hat p = 0.65$ estimates $\theta$.
-- [Week 3 — Estimators & standard errors](week-03-estimators-and-standard-errors.qmd) — naming the spread of
-  this week's sampling distribution as the standard error.
-- [Lab 2 — Simulating sampling distributions](../labs/lab-02-simulating-sampling-distributions.qmd) — the
-  companion hands-on lab where you run the simulations above yourself.
-- [Notation glossary](../resources/notation-glossary.qmd) — the parameter / statistic / estimator / estimate
-  discipline in one place.
-- [Inference reference](../resources/inference-reference.qmd) — the four inferential lenses side by side.
+- Companion lab: [Lab 02 — Simulating sampling distributions](../labs/lab-02-simulating-sampling-distributions.qmd)
+- [Week 1 — What is statistical inference?](week-01-what-is-statistical-inference.qmd)
+- [Week 3 — Estimators and standard errors](week-03-estimators-and-standard-errors.qmd)
+- [Resources — Notation glossary](../resources/notation-glossary.qmd)

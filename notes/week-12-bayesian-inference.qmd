@@ -1,228 +1,395 @@
 ---
 title: "Week 12 — Bayesian inference"
-subtitle: "Prior, likelihood, posterior, and posterior prediction"
-page_mode: normal_week
-week_contract: public_note
+subtitle: "Updating a belief about a parameter with data, and what a credible interval really claims"
+page_mode: math_derivation_week
+week_contract: math_derivation
 source_mode: source-informed
-verified: false
 readings:
-  - "MIT OCW 18.05 — Bayesian inference; conjugate priors; credible intervals — supports the prior-to-posterior update and the posterior summaries"
+  - "MIT OCW 18.05 — Bayesian updating and conjugate priors — supports the prior-to-posterior derivation and the Beta-Binomial conjugacy result"
 toc: true
 ---
 
+## Mathematical goal
+
+Derive the general rule for Bayesian updating — prior $\pi(\theta)$ times likelihood $L(\theta \mid \text{data})$
+is proportional to posterior $\pi(\theta \mid \text{data})$ — and then specialize that rule to the case this
+course has been building toward all term: a Beta prior on a proportion $\pi$, updated by Binomial data. Prove
+that a $\text{Beta}(a, b)$ prior combined with $k$ successes in $n$ Binomial trials produces a
+$\text{Beta}(a + k,\, b + n - k)$ posterior — the **Beta-Binomial conjugacy** result — and use it to compute a
+posterior mean, posterior standard deviation, and an approximate credible interval for this course's recurring
+usage-rate parameter.
+
 ## The week question
 
-Every framework so far has treated the pass rate $\theta$ as a fixed unknown and asked what the data say about
-it. This week we ask a genuinely different question: what if we describe our *uncertainty about $\theta$
-itself* with a probability distribution, start from what we believed before seeing data, and let the data
-update that belief? How does a prior become a posterior — and what is the "95% probability about $\theta$"
-statement that a confidence interval kept refusing to make?
+Every framework this course has used so far treats the parameter $\theta$ (whether written $\mu$ or $\pi$) as a
+fixed, unknown constant, and asks what the *data* would look like under various possible values of $\theta$ —
+that is exactly what the likelihood function $L(\theta \mid \text{data})$ from Weeks 5 and 6 does. Bayesian
+inference asks a different question: instead of treating $\theta$ as fixed and asking about the data, can we
+treat $\theta$ itself as uncertain — describe our belief about it with a probability distribution — and then
+*update* that distribution once data arrive? This week derives exactly how that update works, shows it has a
+clean closed form for the Beta/Binomial pair this course has already been using, and works the update through
+on the MAC Study's own usage-rate survey.
 
-This is the Bayesian lens, the fourth in the course. It is not a contradiction of the first three; it is a
-different choice about what gets a probability. Where the frequentist conditions on a fixed $\theta$ and treats
-the data as random, the Bayesian conditions on the *observed data* and treats $\theta$ as the uncertain thing.
-We return to the recurring pass-rate study and watch a $\text{Beta}(2,2)$ prior turn into a
-$\text{Beta}(28,16)$ posterior — and we finally meet the **credible interval**, which says exactly what the
-confidence interval could not.
+## Notation
 
-## Why this matters
+| Symbol | Meaning |
+|---|---|
+| $\theta$ | the unknown parameter (here, a proportion, so also written $\pi$ below) |
+| $\pi(\theta)$ | the **prior** density on $\theta$ — belief about $\theta$ before seeing this term's data |
+| $L(\theta \mid \text{data})$ | the Bayesian likelihood — same function as Weeks 5–6's $L(\theta)$, now paired with a prior |
+| $\pi(\theta \mid \text{data})$ | the **posterior** density on $\theta$ — updated belief after seeing the data |
+| $\text{Beta}(a, b)$ | the Beta distribution, with density $\propto \theta^{a-1}(1-\theta)^{b-1}$ on $(0,1)$, mean $a/(a+b)$ |
+| $n$ | number of Binomial trials (survey respondents) |
+| $k$ | number of successes observed (respondents who used the MAC) |
+| $\binom{n}{k}$ | the Binomial coefficient — a constant with respect to $\theta$ |
+| $\propto$ | "proportional to" — equal up to a multiplicative constant that does not depend on $\theta$ |
+| $\text{Var}(\theta \mid \text{data})$ | posterior variance of $\theta$ |
+| $\Phi(\cdot)$ | standard normal cdf, used for the normal-approximation credible interval |
 
-Bayesian inference matters because it answers the question people actually ask. When a stakeholder hears "95%
-confident the pass rate is between 0.50 and 0.80," what they *want* is "there's a 95% chance the pass rate is
-in that range" — and only the Bayesian credible interval can honestly deliver that, because only the Bayesian
-treats $\theta$ as having a probability distribution. Naming this difference precisely, after six weeks of
-guarding against it, turns a recurring trap into a clean conceptual fork.
+## Conceptual setup
 
-It matters too because the Bayesian update is the cleanest place in the course to see **the likelihood doing
-its job**. Bayes' rule literally multiplies the prior by the likelihood; the likelihood from Weeks 5–6 is the
-exact mechanism that carries the data's information into the posterior. And the **conjugate** Beta–Binomial
-pair makes the whole update arithmetic you can do by hand — prior counts plus data counts — which makes the
-abstract machinery concrete before any simulation is needed.
+**From likelihood alone to prior times likelihood.** Weeks 5 and 6 built the Binomial likelihood for a
+proportion $\pi$: if $n$ independent trials produce $k$ successes, the probability of that exact data pattern,
+viewed as a function of the unknown $\pi$, is
 
-## Learning goals
+$$
+L(\pi \mid \text{data}) = \binom{n}{k}\pi^k(1-\pi)^{n-k}.
+$$
 
-By the end of this week you should be able to:
+Weeks 5–6 used this function only to *rank* candidate values of $\pi$ against each other (the likelihood-kernel
+comparison in Week 5, then the MLE $\hat\pi = k/n$ in Week 6). At no point was $L(\pi \mid \text{data})$ treated
+as a probability distribution *over* $\pi$ — the notation ledger's convention-risk flag is explicit about this:
+a likelihood is a function of $\theta$ for fixed data, never a probability of $\theta$.
 
-- State Bayes' rule for inference — posterior $\propto$ likelihood $\times$ prior — and name which term is
-  which.
-- Explain a prior as a probability distribution encoding belief about $\theta$ *before* the data, and
-  distinguish it from data.
-- Perform the Beta–Binomial conjugate update: a $\text{Beta}(a,b)$ prior and $x$ successes in $n$ trials give a
-  $\text{Beta}(a+x,\ b+n-x)$ posterior.
-- Summarize a posterior with its mean, mode, spread, and a **credible interval**, and state a posterior
-  probability such as $P(\theta > 0.5 \mid x)$.
-- Explain how a credible interval differs from a confidence interval, and why the prior is an assumption you
-  must justify.
-- Use the posterior to make a posterior-predictive statement about a future observation.
+Bayesian inference adds one new ingredient: a **prior** density $\pi(\theta)$, representing a degree of belief
+about $\theta$ *before* the current data are observed. (Context disambiguates the two uses of the symbol $\pi$
+here — $\pi(\theta)$ is a density function of $\theta$, while $\pi$ alone, as in the rest of this section, is
+still this course's usual symbol for the population proportion parameter. This double use is inherited directly
+from the standard notation and is flagged once, here, rather than repeated at every occurrence.) Once a prior
+exists, **Bayes' rule** for densities gives the rule for turning a prior into a posterior:
 
-## Core vocabulary
+$$
+\pi(\theta \mid \text{data}) = \frac{L(\theta \mid \text{data})\,\pi(\theta)}{\int L(\theta \mid \text{data})\,\pi(\theta)\,d\theta}.
+$$
 
-- **Prior $\pi(\theta)$** — a probability distribution for $\theta$ before seeing the data.
-- **Likelihood $p(x \mid \theta)$** — the probability of the observed data as a function of $\theta$ (Weeks
-  5–6).
-- **Posterior $\pi(\theta \mid x)$** — the updated distribution for $\theta$ after the data.
-- **Evidence $p(x)$** — the normalizing constant that makes the posterior integrate to 1; dropped when we write
-  $\propto$.
-- **Conjugate prior** — a prior whose family is preserved by the update (Beta is conjugate to the Binomial).
-- **Credible interval** — an interval that contains $\theta$ with a stated *posterior probability* — a genuine
-  probability statement about $\theta$.
-- **Posterior predictive** — the distribution of a future observation, averaging the likelihood over the
-  posterior.
+The denominator is a single number (once the data are fixed) — it does not depend on $\theta$, since $\theta$
+has been integrated out. It exists purely to rescale the numerator so that $\pi(\theta \mid \text{data})$
+integrates to $1$, as any proper density must. Because that denominator is a $\theta$-free constant, this
+relationship is almost always written using proportionality instead of full equality:
 
-## Concept development
+$$
+\pi(\theta \mid \text{data}) \propto L(\theta \mid \text{data})\,\pi(\theta).
+$$
 
-### 1. Bayes' rule for a parameter
+This is the central rule of Bayesian updating: **posterior is proportional to likelihood times prior.** In
+words — start with a belief about $\theta$ (the prior), multiply it pointwise by how well each candidate value
+of $\theta$ explains the observed data (the likelihood), and whatever shape results, once rescaled to integrate
+to $1$, is the updated belief (the posterior). Everything that follows in this section is a matter of carrying
+out that multiplication for one specific, tractable pair of prior and likelihood.
 
-Bayesian inference treats $\theta$ as uncertain and updates a distribution for it. Bayes' rule says the
-posterior is proportional to the likelihood times the prior:
+**Setting up the Beta-Binomial case.** Suppose the prior on $\pi$ is a $\text{Beta}(a, b)$ distribution, whose
+density (up to the normalizing constant, which again does not involve $\pi$) is
 
-$$\pi(\theta \mid x) \;=\; \frac{p(x \mid \theta)\,\pi(\theta)}{p(x)} \;\propto\; p(x \mid \theta)\,\pi(\theta).$$
+$$
+\pi(\pi) \propto \pi^{a-1}(1-\pi)^{b-1}, \qquad 0 < \pi < 1.
+$$
 
-The denominator $p(x) = \int p(x \mid \theta)\,\pi(\theta)\,d\theta$ is the **evidence** — a constant in
-$\theta$ whose only job is to make the posterior a proper distribution. When we write $\propto$ we are dropping
-exactly that constant; we recover it at the end by requiring the posterior to integrate to 1 (Risk 13: always
-know which constant the $\propto$ hid). The prior $\pi(\theta)$ is a genuine *assumption* — a statement of
-belief before the data — and it is part of the model, to be chosen and defended, not read off the data.
+(As above, the left-hand $\pi(\cdot)$ denotes the prior density and the argument $\pi$ denotes the parameter —
+the same symbol carrying its usual double duty.) Suppose the data are $n$ independent Binomial trials with $k$
+successes, so the likelihood is the Binomial form already derived in Weeks 5–6:
 
-### 2. The Beta–Binomial conjugate update
+$$
+L(\pi \mid \text{data}) = \binom{n}{k}\pi^k(1-\pi)^{n-k}.
+$$
 
-For the pass-rate study, the data are $x = 26$ successes in $n = 40$ trials, so the likelihood is
-$p(x \mid \theta) \propto \theta^{26}(1-\theta)^{14}$. Choose a $\text{Beta}(a,b)$ prior, whose density is
-$\pi(\theta) \propto \theta^{a-1}(1-\theta)^{b-1}$. Multiply:
+**Multiplying prior by likelihood.** Apply the updating rule derived above:
 
-$$\pi(\theta \mid x) \;\propto\; \theta^{26}(1-\theta)^{14}\cdot \theta^{a-1}(1-\theta)^{b-1}
-\;=\; \theta^{(a+26)-1}(1-\theta)^{(b+14)-1}.$$
+$$
+\pi(\pi \mid \text{data}) \propto L(\pi \mid \text{data})\,\pi(\pi)
+\propto \binom{n}{k}\pi^k(1-\pi)^{n-k} \cdot \pi^{a-1}(1-\pi)^{b-1}.
+$$
 
-That is the kernel of a $\text{Beta}(a+26,\ b+14)$. The posterior is in the same family as the prior — this is
-**conjugacy** — and the update is just **prior counts plus data counts**: add the successes to $a$ and the
-failures to $b$. There is no integral to do; the normalizing constant takes care of itself because we
-recognize the Beta shape.
+The factor $\binom{n}{k}$ does not involve $\pi$ at all, so it can be absorbed into the proportionality constant
+and dropped. Combine the remaining powers of $\pi$ and of $(1-\pi)$ separately, since exponents of the same base
+add:
 
-### 3. Reading the posterior
+$$
+\pi(\pi \mid \text{data}) \propto \pi^{k}\pi^{a-1}(1-\pi)^{n-k}(1-\pi)^{b-1}
+= \pi^{(a+k)-1}(1-\pi)^{(b+n-k)-1}.
+$$
 
-A posterior is a full distribution, so it carries far more than a single number. From a $\text{Beta}(A,B)$ we
-read the **posterior mean** $A/(A+B)$, the **mode** $(A-1)/(A+B-2)$, the **spread** (its SD), a **credible
-interval** (a central 95% region, from the Beta quantiles), and any **posterior probability** such as
-$P(\theta > 0.5 \mid x)$ (an area under the posterior). Reporting only the mean and calling it "the answer"
-throws away the spread that makes the posterior honest (Risk 12) — the whole point of carrying a distribution
-is to show how much uncertainty remains.
+**Recognizing the result.** This last expression is, up to a normalizing constant, exactly the density of a
+$\text{Beta}(a+k,\, b+n-k)$ distribution — compare directly to the general Beta density $\pi^{a'-1}(1-\pi)^{b'-1}$
+with $a' = a+k$ and $b' = b+n-k$. Because a density is uniquely determined (up to its normalizing constant) by
+its functional form, and this functional form is exactly a Beta density, the posterior *is* that Beta
+distribution — no further integration is required to identify it:
 
-### 4. The credible interval, and the contrast with a CI
+$$
+\pi \mid \text{data} \sim \text{Beta}(a+k,\ b+n-k).
+$$
 
-A **credible interval** is the interval that contains $\theta$ with a stated posterior probability — a real
-"95% probability that $\theta$ is in here" statement, because in the Bayesian frame $\theta$ *has* a
-distribution. This is exactly the sentence a confidence interval forbade (Week 7, Risk 11). The two can be
-numerically close yet mean different things: the CI's 95% is coverage of a random procedure over repeated
-samples; the credible interval's 95% is posterior probability about $\theta$ given this one dataset. Week 13
-will lay the two side by side; this week, just hold the distinction firmly.
+This is the **Beta-Binomial conjugacy** result. "Conjugate" means the posterior belongs to the same family
+(Beta) as the prior — updating never leaves the Beta family, it only moves the two parameters. The update rule
+itself has a clean reading: start with $a$ and $b$, then **add the observed successes to $a$ and the observed
+failures to $b$**. A helpful interpretation of the prior parameters themselves falls out of this: $a$ and $b$
+behave exactly like "prior successes" and "prior failures" — a $\text{Beta}(a,b)$ prior carries the same
+updating weight as having already observed $a$ successes and $b$ failures in some earlier, hypothetical dataset
+of size $a+b$. The larger $a+b$ is, the more data it takes to move the posterior noticeably away from the prior
+mean.
 
-## Worked examples
+Before working the MAC Study's own numbers below, it helps to see the whole mechanism as one picture, using a
+small illustrative example distinct from the case this week's worked example builds:
 
-### Worked example — updating the pass rate
+![**Posterior is proportional to likelihood times prior (synthetic, illustrative numbers).** Three panels show
+the general update mechanism with a small example distinct from this week's worked example below: a Beta(2,3)
+prior, a likelihood shape from 7 successes in 10 illustrative trials (rescaled to show shape only — a
+likelihood is not a probability density over $\theta$), and the resulting Beta(9,6)
+posterior.](../assets/figures/wk12_prior_likelihood_posterior.png){#fig-wk12-prior-likelihood-posterior fig-alt="Three side-by-side panels labeled Prior, Likelihood, and Posterior. The left panel shows a Beta(2,3) density curve peaked near 0.33 with its mean marked at 0.40. The middle panel shows a likelihood curve rescaled to a maximum height of 1, peaked at theta equals 0.7, labeled not a probability density over theta. The right panel shows a Beta(9,6) posterior density curve, shifted right of the prior and narrower, with mean marked at 0.60."}
 
-We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`) with $x = 26$ passes
-out of $n = 40$. Take a weakly informative prior $\theta \sim \text{Beta}(2,2)$ — symmetric, centered at
-$0.5$, mildly favoring middling rates over extremes. The conjugate update adds the $26$ successes and $14$
-failures:
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Multiplying a Beta(2,3) prior by a likelihood peaked near
+$\theta=0.7$ (from 7 successes in 10 illustrative trials) produces a Beta(9,6) posterior — shifted toward the
+likelihood's peak and narrower than the prior, exactly as the general derivation above predicts. These numbers
+are a separate illustration; the MAC Study's own prior, data, and posterior appear in the worked example below.
+*Synthetic instructional example; numbers are illustrative.*
+:::
 
-$$\theta \mid x \;\sim\; \text{Beta}(2 + 26,\ 2 + 14) \;=\; \text{Beta}(28,\ 16).$$
+**Posterior mean, as a weighted average.** Since $\text{Beta}(a', b')$ has mean $a'/(a'+b')$, the posterior mean
+here is
 
-```r
-set.seed(35103)
-a <- 2; b <- 2; x <- 26; n <- 40
-A <- a + x; B <- b + (n - x)              # Beta(28, 16)
-A / (A + B)                                # posterior mean   ~ 0.636
-(A - 1) / (A + B - 2)                       # posterior mode   ~ 0.643
-qbeta(c(0.025, 0.975), A, B)               # 95% credible interval ~ 0.493  0.766
-1 - pbeta(0.5, A, B)                        # P(theta > 0.5 | x)    ~ 0.975
-```
+$$
+E[\pi \mid \text{data}] = \frac{a+k}{(a+k)+(b+n-k)} = \frac{a+k}{a+b+n}.
+$$
 
-The posterior $\text{Beta}(28,16)$ has **mean $\approx 0.636$**, **mode $\approx 0.643$**, **SD $\approx
-0.072$**, and a **95% credible interval of about $(0.493,\ 0.766)$**. We can say directly: *given the data and
-the $\text{Beta}(2,2)$ prior, there is about a 95% probability that the true pass rate lies between $0.49$ and
-$0.77$* — a sentence no confidence interval can make. And the posterior puts about **$97.5\%$** of its mass
-above $0.5$: $P(\theta > 0.5 \mid x) \approx 0.975$, a clean probabilistic read on "the rate beats a coin flip."
-Notice the posterior mean $0.636$ sits a touch below the MLE $0.65$ — the $\text{Beta}(2,2)$ prior pulled it
-gently toward $0.5$, which is what a prior is supposed to do when the data are not overwhelming.
+This can be rewritten to make the "weighted average" reading explicit. Let $\pi_0 = a/(a+b)$ be the prior mean
+and $\hat\pi = k/n$ be the sample proportion (the MLE from Week 6). A short algebraic rearrangement (not carried
+out in full here, since it is a standard identity) shows
 
-### Worked example — posterior prediction, and a transfer
+$$
+E[\pi \mid \text{data}] = \left(\frac{a+b}{a+b+n}\right)\pi_0 + \left(\frac{n}{a+b+n}\right)\hat\pi,
+$$
 
-The posterior also lets us predict the *next* student. The **posterior-predictive** probability that a new
-student passes averages the likelihood over the posterior, which for the Beta–Binomial is just the posterior
-mean: $P(\text{next passes} \mid x) = A/(A+B) \approx 0.636$ — slightly less certain than plugging in the MLE,
-because it folds in our remaining uncertainty about $\theta$. A **transfer**: a lab tests a new assay on $12$
-samples and gets $9$ positives; with a flat $\text{Beta}(1,1)$ prior the posterior is
-$\text{Beta}(1+9,\ 1+3) = \text{Beta}(10,4)$, posterior mean $10/14 \approx 0.714$, and `qbeta` gives a 95%
-credible interval — the same prior-counts-plus-data-counts arithmetic on a different proportion.
+a weighted average of the prior mean and the sample proportion, with weights that shift toward the data as $n$
+grows relative to the prior's "sample size" $a+b$. As $n \to \infty$ with $a, b$ fixed, the posterior mean
+converges to $\hat\pi$ — the data eventually dominate any fixed prior.
 
-## A common mistake
+## Worked example
 
-The headline error is treating the **prior as data** — slipping it in as if it were extra observations and
-then forgetting it was a choice. The prior is an *assumption*; it shapes the posterior, and a strong prior on
-thin data can dominate the answer. Honest Bayesian work states the prior, justifies it, and ideally checks how
-much the conclusion would change under a different reasonable prior. Our $\text{Beta}(2,2)$ is weak — worth
-only about two pretend successes and two pretend failures — so the $40$ real observations swamp it; but had we
-used a $\text{Beta}(50,50)$, the posterior would have barely moved off $0.5$, and we would owe the reader a
-defense of that strong belief.
+**MAC Study slice — updating the director's belief about the usage rate.**
 
-A second mistake is **reporting the posterior mean as "the answer"** and dropping everything else. The
-posterior is a distribution; its spread is information, not clutter. Saying "$0.636$" alone hides that the
-credible interval runs from $0.49$ to $0.77$ — a real range of plausibility. And the deepest mistake is
-**conflating the credible interval with a confidence interval**: they may print similar numbers, but the
-credible interval is a probability statement about $\theta$ given this data and prior, while the confidence
-interval is a coverage statement about a procedure over hypothetical repeated samples. Same digits, different
-claims — keep them apart.
+Before this term's survey, the MAC director's belief about $\pi$, the proportion of students who use the MAC in
+a given week, is represented by a $\text{Beta}(a=3,\, b=7)$ prior. Its mean is
 
-## Low-stakes self-checks (ungraded)
+$$
+E[\pi] = \frac{a}{a+b} = \frac{3}{10} = 0.30,
+$$
 
-These are **ungraded self-checks** — no points, no submission.
+consistent with a director who expects roughly 30% weekly usage before seeing this term's numbers, but whose
+prior is not extremely confident (a $\text{Beta}(3,7)$ carries the updating weight of only $a+b = 10$
+hypothetical prior observations — a fairly weak prior, easily outweighed by real data).
 
-1. State Bayes' rule for inference and label the prior, likelihood, posterior, and evidence. Which term does
-   $\propto$ drop?
-2. With a $\text{Beta}(2,2)$ prior and $x = 26$ of $n = 40$, write down the posterior and its mean without a
-   calculator. Why is the update "counts plus counts"?
-3. The posterior mean is $0.636$ but the MLE is $0.65$. Explain, in one sentence, why they differ and in which
-   direction.
-4. In plain words, what does "$P(\theta > 0.5 \mid x) \approx 0.975$" claim — and why can no confidence interval
-   make a comparable statement?
-5. A colleague uses a $\text{Beta}(50,50)$ prior on the same data and gets a posterior near $0.5$. What
-   happened, and what do they now owe the reader?
+The data are the full survey from Weeks 3–8: $n = 100$ students, $k = 38$ used the MAC. Applying the
+Beta-Binomial update derived above:
+
+$$
+\pi \mid \text{data} \sim \text{Beta}(a+k,\ b+n-k) = \text{Beta}(3+38,\ 7+100-38) = \text{Beta}(41, 69).
+$$
+
+**Posterior mean.**
+
+$$
+E[\pi \mid \text{data}] = \frac{41}{41+69} = \frac{41}{110} \approx 0.373.
+$$
+
+Checking this against the weighted-average form above: prior mean $0.30$ gets weight $10/110$, and sample
+proportion $\hat\pi = 38/100 = 0.38$ gets weight $100/110$ — so the posterior mean sits close to, but not
+exactly at, the sample proportion, pulled very slightly toward the prior. That is exactly the pattern the
+formula predicts: with $n=100$ data points against only $a+b=10$ prior "observations," the data dominate almost
+entirely.
+
+**Posterior standard deviation.** The variance of a $\text{Beta}(a', b')$ distribution is
+$\dfrac{a'b'}{(a'+b')^2(a'+b'+1)}$. With $a'=41$, $b'=69$, $a'+b'=110$:
+
+$$
+\text{Var}(\pi \mid \text{data}) = \frac{(41)(69)}{(110)^2(111)} = \frac{2829}{110^2 \times 111}.
+$$
+
+Computing the denominator: $110^2 = 12{,}100$, and $12{,}100 \times 111 = 1{,}343{,}100$. So
+
+$$
+\text{Var}(\pi \mid \text{data}) = \frac{2829}{1{,}343{,}100} \approx 0.002106,
+$$
+
+$$
+\text{SD}(\pi \mid \text{data}) = \sqrt{0.002106} \approx 0.0459.
+$$
+
+**Seeing the update.** Before turning the mean and SD into an interval, look at the prior and posterior as two
+curves on the same axis — this is the Beta-Binomial conjugacy result made visible for this week's own numbers,
+rather than the illustrative pair above:
+
+![**The MAC Study update, in one picture (synthetic).** The Beta(3,7) prior (dashed, mean 0.30) and the
+Beta(41,69) posterior (solid, mean $\approx 0.373$) plotted on the same axis — the posterior is both shifted
+toward the data and visibly narrower after 100 observations are folded
+in.](../assets/figures/wk12_beta_prior_posterior_mac.png){#fig-wk12-beta-overlay-mac fig-alt="A density plot on the 0 to 1 probability scale with two curves. A dashed curve, the Beta(3,7) prior, is wide and low, centered near 0.30. A solid curve, the Beta(41,69) posterior, is much taller and narrower, centered near 0.373, shifted right of the prior."}
+
+**Normal-approximation 95% credible interval.** For a Beta posterior this concentrated (both $a'=41$ and
+$b'=69$ are comfortably large), a normal approximation to the posterior is reasonable, exactly as the normal
+approximation was used for confidence intervals in Week 7:
+
+$$
+0.373 \pm 1.96(0.0459) \approx 0.373 \pm 0.0900 \approx (0.283,\ 0.463).
+$$
+
+A credible interval is a claim about *area* under the posterior curve, not just two endpoints computed from a
+formula — the picture below shades exactly that area:
+
+![**The 95% credible interval, shaded on the posterior (synthetic).** The Beta(41,69) posterior density with
+the central region (0.283, 0.463) shaded — that shaded area IS (approximately) the 95% credible interval: the
+posterior assigns about 95% probability to $\pi$ falling in this shaded region, given the Beta(3,7) prior and
+the observed data.](../assets/figures/wk12_credible_interval_mac.png){#fig-wk12-credible-interval-mac fig-alt="A density curve for the Beta(41,69) posterior, peaked near 0.373. The central region between 0.283 and 0.463 is shaded, covering nearly all of the curve's area, with small unshaded slivers remaining in both tails."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The shaded central region (0.283, 0.463) holds about 95.1%
+of the Beta(41,69) posterior's probability mass — very close to, but not exactly, 95%, because this interval
+was built from the normal approximation used throughout this course rather than from the posterior's own exact
+quantiles (the exact equal-tailed Beta(41,69) quantile interval is (0.285, 0.465), reported here alongside the
+normal-approximation interval rather than silently replacing it). Unlike a p-value's tail shading (Week 8),
+this shading covers the CENTER of the curve, not the tails — a credible interval keeps the middle of the
+posterior, where most of the probability sits. *Synthetic instructional example; numbers are illustrative.*
+:::
+
+**Table — the update at a glance.** Reading prior and posterior side by side shows the update's whole effect
+in one place — the numeric companion to the two figures above: the mean moves modestly (0.30 $\to$ 0.373), the
+spread shrinks substantially, and the "effective sample size" $a+b$ grows from 10 to 110 — a direct measure of
+how much more concentrated the belief becomes after 100 real observations are folded in.
+
+| Quantity | Prior Beta(3, 7) | Posterior Beta(41, 69) |
+|---|---|---|
+| Mean | $3/10 = 0.30$ | $41/110 \approx 0.373$ |
+| SD | $\sqrt{\frac{(3)(7)}{10^2(11)}} \approx 0.138$ | $\approx 0.0459$ |
+| "Effective sample size" $a+b$ | $10$ | $110$ |
+| Interpretation | a director's belief worth about 10 hypothetical prior observations | that belief plus 100 real survey responses, now much more concentrated |
+
+The SD shrinking from about $0.138$ to about $0.046$ — roughly a threefold tightening — is the numeric
+signature of "the data dominated a comparatively weak prior," the same story the mean's modest shift from
+$0.30$ to $0.373$ already told in words above.
+
+**Transfer example (synthetic; seed set) — updating a coin's bias with new flips.**
+
+Return to the coin-bias setting first introduced as a running device in Weeks 5–6 (the pilot survey's
+likelihood-kernel comparison used the same Binomial machinery this week reuses). Suppose, as a fresh synthetic
+scenario distinct from the MAC Study, someone holds a weak prior belief that a particular coin is close to
+fair, represented as $\text{Beta}(a=2,\, b=2)$ — mean $2/4 = 0.50$, and, like the MAC director's prior, carrying
+the weight of only $a+b=4$ hypothetical prior flips.
+
+New data arrive: $n = 20$ new flips, $k = 15$ heads. Applying the same conjugacy result:
+
+$$
+\theta \mid \text{data} \sim \text{Beta}(a+k,\ b+n-k) = \text{Beta}(2+15,\ 2+20-15) = \text{Beta}(17, 7).
+$$
+
+Posterior mean:
+
+$$
+E[\theta \mid \text{data}] = \frac{17}{17+7} = \frac{17}{24} \approx 0.708.
+$$
+
+Posterior variance and SD, using $a'=17$, $b'=7$, $a'+b'=24$:
+
+$$
+\text{Var}(\theta \mid \text{data}) = \frac{(17)(7)}{(24)^2(25)} = \frac{119}{14{,}400} \approx 0.008264,
+\qquad \text{SD}(\theta \mid \text{data}) \approx 0.0909.
+$$
+
+Normal-approximation 95% credible interval:
+
+$$
+0.708 \pm 1.96(0.0909) \approx 0.708 \pm 0.178 \approx (0.530,\ 0.886).
+$$
+
+![**The coin transfer update, in one picture (synthetic).** The Beta(2,2) prior (dashed, mean 0.50) and the
+Beta(17,7) posterior (solid, mean $\approx 0.708$) plotted on the same axis — 20 new flips showing 15 heads
+pull the belief well away from "fair," even though the prior itself was
+weak.](../assets/figures/wk12_coin_prior_posterior.png){#fig-wk12-coin-overlay fig-alt="A density plot on the 0 to 1 probability scale with two curves. A dashed curve, the Beta(2,2) prior, is a shallow symmetric hump centered at 0.50. A solid curve, the Beta(17,7) posterior, is taller and narrower and shifted right, centered near 0.708."}
+
+Here the weak $\text{Beta}(2,2)$ prior (only 4 "prior flips" worth of weight) is swamped almost entirely by 20
+real flips showing 15 heads — the posterior mean of $0.708$ sits close to the raw sample proportion
+$15/20 = 0.75$, pulled only slightly toward the prior's $0.50$. This mirrors the MAC Study case: whenever the
+sample size $n$ is large relative to the prior's implied sample size $a+b$, the posterior is dominated by the
+data, and the specific prior chosen matters less. A much stronger prior (larger $a+b$, same mean) would pull
+the posterior mean noticeably farther from the raw sample proportion — that sensitivity check is left to the
+practice problems below.
+
+## A convention warning
+
+**A credible interval and a confidence interval answer different questions, even when they use the same normal
+approximation and even when their numbers look similar.** The Week 7 confidence interval for $\mu$,
+$(44.9, 54.7)$, is a **property of a repeated-sampling procedure**: if the same sampling and interval-construction
+recipe were repeated over and over, about 95% of the resulting intervals would contain the true (fixed, unknown)
+$\mu$. Any single realized interval either does or does not contain $\mu$ — probability language does not apply
+to that fixed interval and fixed constant. The notation ledger's convention-risk flag makes this explicit: a CI
+is **not** "a 95% probability the parameter is in this interval."
+
+The credible interval derived above, $(0.283, 0.463)$, means something different in kind, not just in degree.
+Because Bayesian inference treats $\pi$ itself as a random variable with the posterior distribution
+$\text{Beta}(41, 69)$, the statement "there is a 95% probability that $\pi$ lies in $(0.283, 0.463)$" is a
+**direct, literal probability statement about $\pi$** — and it is a perfectly valid statement to make, *given*
+the posterior distribution just derived. It is emphatically not the same claim a frequentist confidence interval
+makes, and the two should never be described with the same sentence.
+
+That validity, though, comes with a condition that must always be stated alongside it: the credible interval's
+probability statement is conditional on the **prior actually used** — here, $\text{Beta}(3,7)$, the MAC
+director's stated belief. A different director with a different prior, updated by the exact same survey data,
+would derive a different posterior and a different credible interval. The confidence interval's guarantee, by
+contrast, does not depend on anyone's prior belief at all — it depends only on the repeated-sampling behavior
+of the estimation procedure. Neither interval is "more correct" in general; they answer different questions
+under different assumptions, and this course's pluralistic stance (§1 of the syllabus) is precisely that both
+are legitimate tools, so long as each is described accurately and never in the other's language.
+
+## Practice (ungraded)
+
+Self-check only — no submission, no key.
+
+1. Suppose the MAC director instead started with a much stronger prior, $\text{Beta}(a=30,\, b=70)$ (same mean
+   $0.30$, but ten times the "prior sample size" of the $\text{Beta}(3,7)$ used above). Using the same survey
+   data ($n=100$, $k=38$), derive the posterior distribution and its mean. Is the posterior mean closer to or
+   farther from the raw sample proportion $\hat\pi = 0.38$ than this week's worked example was, and does that
+   match the weighted-average formula derived above?
+2. For the coin-flip transfer example, suppose instead of $\text{Beta}(2,2)$ the prior had been
+   $\text{Beta}(20,20)$ (same mean $0.50$, much stronger). Using the same new data ($n=20$, $k=15$), find the
+   new posterior distribution and its mean. Explain in words why a stronger prior changes the answer even
+   though the data are identical.
+3. In your own words, explain why the constant $\binom{n}{k}$ can be dropped when deriving the posterior's
+   functional form, but the posterior still needs to be a valid probability density that integrates to 1. What
+   step in the derivation restores that missing normalization?
 
 ## Reading and source pointer
 
-Read the **MIT OCW 18.05 material on Bayesian inference, conjugate priors, and credible intervals** alongside
-this note for the prior-to-posterior update and the Beta–Binomial machinery. These notes are the course's own
-synthesis, grounded in but not copied from the sources.
-
-## Formula-verification status
-
-**verified: false.** Every Bayesian result on this page — the posterior $\text{Beta}(28,16)$, its mean
-$\approx 0.636$, mode $\approx 0.643$, SD $\approx 0.072$, the 95% credible interval $\approx (0.493,\ 0.766)$,
-and $P(\theta > 0.5 \mid x) \approx 0.975$, plus the posterior-predictive $\approx 0.636$ and the
-$\text{Beta}(10,4)$ transfer — is **drafted, synthetic, and not independently checked**. The course
-**math/statistics gate is BLOCKED**: every value here is provisional, pending the human/source sign-off in
-`_state/notation_ledger.md` §5. Do not treat any result as a confirmed reference until that review is complete.
+MIT OCW 18.05 covers Bayesian updating and conjugate priors, including the Beta-Binomial case, and this page's
+scope, terminology, and notation level are grounded in that treatment. These notes are the course's own
+synthesis, grounded in but not copied from the source.
 
 ## Public vs. graded
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
-quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
-which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
-follow Blackboard.
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
 
 ## Looking ahead
 
-Next week we put all four lenses on the same table. We will take the one pass-rate question and answer it the
-frequentist way (a confidence interval and a p-value), the likelihood way (the MLE and a likelihood ratio), the
-simulation way (bootstrap and randomization), and the Bayesian way (this posterior and its credible interval) —
-and ask the real question of the course: where do they agree, where do they differ, and what does each one
-actually condition on and claim?
+Week 13 puts every framework this course has built side by side — classical estimation and confidence
+intervals, likelihood and MLE, bootstrap resampling, permutation tests, and this week's Bayesian updating — all
+applied to the same MAC Study usage-rate question, so the frequentist/Bayesian contrast drawn above becomes one
+part of a fuller comparison across all four inferential traditions.
 
 ## See also
 
-- [Week 11 — Randomization & permutation tests](week-11-randomization-and-permutation-tests.qmd)
+- [Week 6 — Maximum likelihood estimation](week-06-maximum-likelihood-estimation.qmd)
+- [Week 7 — Confidence intervals (and midterm)](week-07-confidence-intervals-and-midterm.qmd)
 - [Week 13 — Comparing inferential frameworks](week-13-comparing-inferential-frameworks.qmd)
-- [Week 5 — Likelihood](week-05-likelihood.qmd)
+- [Lab 12 — Simulating the posterior](../labs/lab-12-simulating-the-posterior.qmd)
 - [Notation glossary](../resources/notation-glossary.qmd)
-- [Inference reference](../resources/inference-reference.qmd)
+- [Inference formula reference](../resources/inference-formula-reference.qmd)

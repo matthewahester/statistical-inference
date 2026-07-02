@@ -1,219 +1,388 @@
 ---
-title: "Week 11 — Randomization & permutation tests"
-subtitle: "Testing a claim by shuffling labels under a null of no effect"
+title: "Week 11 — Randomization and permutation tests"
+subtitle: "Building a null distribution by shuffling labels, with no distributional assumption required"
 page_mode: normal_week
 week_contract: public_note
 source_mode: source-informed
-verified: false
 readings:
-  - "ModernDive (Ismay, Kim & Valdivia), Ch 9 — Hypothesis Testing — supports building a null distribution by relabeling"
-  - "MIT OCW 18.05 — Resampling and null distributions — supports the randomization framing"
+  - "MIT OCW 18.05 — hypothesis testing and simulation-based inference — supports the shuffle logic behind a permutation test"
+  - "ModernDive — randomization-based hypothesis testing — supports the two-group permutation test worked in this week"
 toc: true
 ---
 
 ## The week question
 
-A reading intervention is given to one group of students and withheld from another, and the treated group
-reads faster on average — a difference of $3.0$ words per minute. But random chance shuffles people into
-groups, and even with no real effect one group will usually come out a little ahead. So how surprising is a
-$3.0$-point gap if the intervention does *nothing* — and how do we measure that surprise without assuming a
-formula?
-
-This week answers the question the way Week 8 did — "how surprising is the data under a null?" — but with the
-simulation engine of Week 10 instead of a theoretical sampling distribution. The **permutation test** builds
-the null distribution directly: if the treatment label truly does nothing, then which students got labeled
-"treatment" is arbitrary, so we *re-shuffle the labels* thousands of times and watch how big a group
-difference chance alone produces. Where the bootstrap resampled one sample to measure uncertainty, the
-permutation test relabels two groups to enact a null hypothesis.
+You have two groups of measurements and an observed difference in their means. How much of that
+difference could plausibly be explained by chance alone, if group membership carried no real
+information? Randomization and permutation tests answer this question directly, by simulation,
+without leaning on the Normal-distribution machinery from Weeks 7–9. This week asks: what happens
+when we stop assuming a sampling-distribution formula and instead let the data itself generate the
+null distribution, by re-shuffling the labels we already have?
 
 ## Why this matters
 
-Randomization tests matter because they make the logic of a hypothesis test physical and assumption-light.
-Week 8's test relied on a normal approximation and a standard-error formula; the permutation test relies on a
-single, often-defensible idea — **exchangeability** under the null. If the treatment has no effect, the two
-groups are just two arbitrary labels stuck on one pool of students, and any reassignment of those labels is as
-plausible as the one we observed. That premise *is* the null model, and simulating from it needs no
-distributional assumptions at all.
-
-It also matters because randomization is the inferential partner of *experimental design*. The reason we can
-even entertain "labels are exchangeable under the null" is that the experiment assigned students to groups at
-random in the first place. The test mirrors the design: random assignment in the world justifies random
-relabeling in the computer. That tight link between how data are collected and how they are analyzed is one of
-the course's recurring themes, and it is nowhere cleaner than here.
+Every hypothesis test up to this point (Week 8's test of μ = 45, Week 9's power calculation) leaned
+on a known or assumed standard error and a Normal or t reference distribution. Those tools are fast
+and well understood, but they rest on assumptions — a known σ, a large-enough n for the Central
+Limit Theorem, or an assumed shape for the sampling distribution. A permutation test asks a more
+direct question: if the group labels ("workshop" vs. "control," "version A" vs. "version B") were
+attached to the outcomes at random, how extreme would an observed difference need to be before we
+call it surprising? This reframes the null hypothesis as "the labels are exchangeable" and lets a
+computer answer the question by brute-force re-randomization rather than by formula. It is a
+natural bridge between the resampling logic you built in Week 10 (bootstrap) and the general testing
+logic from Week 8 — same simulation instinct, applied to comparing two groups instead of estimating
+one parameter.
 
 ## Learning goals
 
-By the end of this week you should be able to:
+By the end of this week, you should be able to:
 
-- State the null hypothesis of a permutation test as **exchangeability of labels** (no group effect) and
-  explain why random assignment justifies it.
-- Build a null distribution by repeatedly shuffling group labels and recomputing the test statistic.
-- Compute a permutation **p-value** as the fraction of shuffles giving a statistic as or more extreme than the
-  observed one.
-- Compare a permutation p-value with a theory-based test and interpret agreement.
-- Distinguish a permutation test from a bootstrap: what is held fixed, what is shuffled or resampled, and what
-  question each answers.
-- Carry the permutation idea to a new statistic, such as a difference in proportions.
+- State the null hypothesis of a permutation test as "no real association between group label and
+  outcome" — i.e., the labels could be re-assigned without changing anything about the world.
+- Describe, in words and in base-R pseudocode, how to build a permutation null distribution: shuffle
+  the labels, recompute the group-difference statistic, repeat many times.
+- Read a permutation p-value off a simulated null distribution: the proportion of shuffled
+  differences at least as extreme as the one actually observed.
+- Compare a permutation test's result to the Normal-approximation two-sample test from earlier weeks,
+  and explain why the two agree closely when sample sizes and spreads are similar.
+- Recognize when a permutation test is the more honest choice — small samples, skewed data, or no
+  confidence in a Normal or t approximation.
 
 ## Core vocabulary
 
-- **Permutation (randomization) test** — a test that builds the null distribution by reassigning group labels
-  at random many times.
-- **Exchangeability** — the null assumption that, with no group effect, any labeling of the pooled data is as
-  likely as any other.
-- **Observed statistic** — the test statistic computed on the real labeling (here, the difference in group
-  means, $d = 3.0$).
-- **Null (reference) distribution** — the distribution of the statistic over many random relabelings, assuming
-  no effect.
-- **Permutation p-value** — the proportion of relabelings whose statistic is as or more extreme than the
-  observed one.
-- **Two-sided** — counting extremeness in both directions (here, $|d^{*}| \ge |d_{\text{obs}}|$).
+- **Permutation (randomization) test** — a hypothesis-testing procedure that builds the null
+  distribution of a statistic by repeatedly reassigning ("permuting") the observed labels at random,
+  recomputing the statistic each time, and comparing the observed statistic to that simulated
+  distribution.
+- **Exchangeability under H₀** — the assumption that, if the null hypothesis is true, every
+  relabeling of the data is equally plausible, because group membership carries no real signal.
+  This is what licenses shuffling the labels rather than the outcomes.
+- **Permutation null distribution** — the collection of group-difference statistics obtained across
+  many (typically thousands of) random relabelings; it approximates the sampling distribution of the
+  difference statistic under H₀, without assuming Normality.
+- **Permutation p-value** — the proportion of the permutation null distribution at least as extreme
+  (in the direction(s) specified by Hₐ) as the observed statistic. For a two-sided test, this is the
+  proportion of shuffled differences whose absolute value is at least as large as the observed
+  absolute difference.
+- **Test statistic (difference in means)** — here, x̄₁ − x̄₂, the same quantity used in the
+  Normal-approximation two-sample comparison; a permutation test can be built around this or many
+  other statistics, but this week uses the difference in means throughout.
 
 ## Concept development
 
-### 1. The null as a shuffling machine
+### From "assume a distribution" to "simulate the distribution"
 
-Start from the claim we want to test: the intervention has **no effect** on fluency speed. If that is true,
-then a student's reading speed would have been the same whether we had labeled them "treatment" or "control" —
-the label is inert. So the 36 observed speeds are just a fixed pool, and the split into a treatment group of
-18 and a control group of 18 is one arbitrary deal of the labels among many. To see what "chance alone" looks
-like, we **re-deal the labels**: randomly choose 18 of the 36 speeds to be "treatment," call the rest
-"control," and recompute the difference in group means. Do that thousands of times and the resulting spread of
-differences is exactly the null distribution — what the group gap would look like in a world where the
-treatment does nothing.
+Every prior testing week asked you to accept a distributional shape for a statistic under H₀: the
+sampling distribution of x̄ was treated as approximately Normal (Weeks 7–9) because σ was assumed
+known and/or n was large enough for the Central Limit Theorem. A permutation test drops that
+assumption. Instead of asking "what shape would the null sampling distribution have, in theory?" it
+asks "what does the null sampling distribution actually look like, if I simulate it directly from
+the data I already collected?" The logic: if H₀ is true — group label carries no real information —
+then the specific assignment of labels ("workshop" vs. "control") to the observed outcomes is just
+one of very many equally likely assignments. Shuffling the labels and recomputing the statistic
+samples from exactly the distribution the statistic would have under that null.
 
-### 2. The observed statistic and the p-value
+This is a close cousin of the bootstrap from Week 10. Both are simulation-based, both use
+`replicate()`-style resampling in base R, and both trade a closed-form formula for direct
+computation. The difference is what gets resampled: the bootstrap resamples *observations* (with
+replacement) from a single sample to approximate the sampling distribution of an estimator; a
+permutation test reshuffles *labels* (without replacement, keeping all outcomes fixed) across two or
+more groups to approximate the null distribution of a group-comparison statistic.
 
-Against that null distribution we place the **observed** difference, $d_{\text{obs}} = 3.0$. The
-**permutation p-value** is the fraction of shuffled differences that are as or more extreme than $3.0$ — for a
-two-sided test, the fraction with $|d^{*}| \ge 3.0$. A small p-value means a gap of $3.0$ rarely happens by
-relabeling alone, so the data are surprising under "no effect"; a large p-value means chance shuffling
-produces gaps that big routinely, so $3.0$ is unremarkable. The logic is identical to Week 8 — surprise of the
-data under a null — but the null distribution is *simulated*, not derived.
+### The permutation procedure, step by step
 
-### 3. Permutation versus bootstrap: same engine, opposite questions
+Suppose you have two groups with outcomes pooled into one combined set — say, 20 workshop-group
+visit durations and 20 control-group visit durations, 40 numbers total. Under H₀, the "workshop" and
+"control" labels are just names attached to 40 exchangeable numbers; nothing about the workshop
+label makes a number systematically larger or smaller. The procedure:
 
-These two simulation methods are easy to confuse because both involve drawing from the data. The difference is
-what they hold fixed and what they vary. The **bootstrap** (Week 10) resamples one sample *with replacement* to
-estimate how much an estimate would **vary** — a question about *uncertainty*, with no null hypothesis in
-sight. The **permutation test** keeps the pooled data fixed and **shuffles labels without replacement** to
-enact a *null hypothesis of no effect* — a question about *evidence against a claim*. Bootstrap: resample one
-group's data, measure spread. Permutation: relabel two groups, measure surprise. Keeping the two questions —
-"how variable?" versus "how surprising under no effect?" — separate is the whole point of putting them in
-adjacent weeks.
+1. Compute the observed statistic: the actual difference in group means, x̄₁ − x̄₂, using the real
+   labels.
+2. Pool all 40 outcomes together, discarding which label went with which number.
+3. Randomly reassign 20 of the 40 pooled outcomes to a "pseudo-workshop" group and the other 20 to a
+   "pseudo-control" group — a random relabeling with no reference to the real assignment.
+4. Recompute the difference in means for this relabeling. This is one simulated draw from the null
+   distribution of the difference statistic.
+5. Repeat steps 3–4 many times (thousands), building up a histogram of simulated differences — the
+   permutation null distribution.
+6. Compare the observed difference (step 1) to this simulated null distribution: the permutation
+   p-value is the proportion of simulated differences whose magnitude is at least as large as the
+   observed difference's magnitude (for a two-sided test).
+
+No Normal curve, no σ, no Central Limit Theorem appeal is needed anywhere in this procedure — the
+null distribution is built entirely from the data's own values, just relabeled.
+
+![**The permutation-test procedure (synthetic).** The same six steps drive every permutation test in this course: compute the observed difference on the real labels, pool the two groups, shuffle labels with no replacement, recompute the difference on the shuffle, repeat thousands of times, and read a p-value off the resulting null distribution.](../assets/figures/wk11_shuffle_pipeline.png){#fig-wk11-shuffle-pipeline fig-alt="A flow diagram of six boxes arranged in two rows of three, connected by arrows: observed difference with real labels, pool all outcomes together, shuffle labels with no replacement, then continuing to recompute difference on the shuffle, repeat ten thousand times, and null distribution leading to a p-value."}
+
+### Why "no distributional assumption" is the key selling point
+
+The phrase "no distributional assumption required" means specifically this: the permutation test
+does not require you to assume the outcome variable is Normally distributed, does not require a
+known or estimated σ to plug into a z or t formula, and does not require appeal to the Central Limit
+Theorem for validity. Its only real assumption is exchangeability under H₀ — that if there truly is
+no group effect, every relabeling is equally plausible. This makes permutation tests attractive when
+sample sizes are small, when the outcome is skewed, or when you are simply not confident a Normal
+approximation is trustworthy. In the worked example below, the workshop-group and control-group
+sample sizes are equal (n₁ = n₂ = 20) and their spreads are equal (SD = 10 in both), which is exactly
+the setting where a Normal-approximation two-sample test and a permutation test should agree closely
+— and, as the example shows, they do.
 
 ## Worked examples
 
-### Worked example — permutation test for the fluency experiment
+### Worked example — MAC Study: workshop vs. control visit duration
 
-We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`). The randomized
-experiment compares fluency speed (words per minute): the treatment group ($n_T = 18$) averages $9.5$, the
-control group ($n_C = 18$) averages $6.5$, so the observed difference is
+**Setup.** A voluntary study-skills workshop's association with MAC visit duration is examined by
+comparing two groups: a workshop group and a control group, each with n = 20 students.
 
-$$d_{\text{obs}} = 9.5 - 6.5 = 3.0 \text{ wpm}.$$
+- Workshop group: n₁ = 20, mean x̄₁ = 52.4 minutes, SD = 10 minutes.
+- Control group: n₂ = 20, mean x̄₂ = 45.1 minutes, SD = 10 minutes.
+- Observed difference in means: x̄₁ − x̄₂ = 52.4 − 45.1 = **7.3 minutes**.
 
-We pool all 36 speeds, shuffle the 18/18 labeling 10,000 times, and recompute the mean difference each time:
+**Symbolic statement of the permutation test.**
 
-```r
+$$
+H_0: \text{workshop-group membership carries no real association with visit duration}
+$$
+$$
+H_a: \text{workshop-group membership is associated with longer (or shorter) visit duration}
+$$
+
+Test statistic: $D = \bar{x}_1 - \bar{x}_2$, computed on the real grouping, then recomputed on
+each of many random relabelings of the pooled 40 durations into two pseudo-groups of size 20.
+
+**The permutation logic in base R (shown, not executed in this build).**
+
+```{r}
+#| label: permutation-test-workshop-control
+#| eval: false
 set.seed(35103)
-speed <- /* the 36 observed fluency speeds (18 treatment, 18 control) */
-group <- rep(c("T", "C"), each = 18)
-d_obs <- mean(speed[group == "T"]) - mean(speed[group == "C"])   # 3.0
 
-perm_diff <- replicate(10000, {
-  g <- sample(group)                                              # shuffle labels, no replacement
-  mean(speed[g == "T"]) - mean(speed[g == "C"])
+# Illustrative synthetic vectors consistent with the locked group summaries
+# (n = 20 each, mean 52.4 / 45.1, SD = 10); a real study would measure these directly.
+workshop <- rnorm(20, mean = 52.4, sd = 10)
+control  <- rnorm(20, mean = 45.1, sd = 10)
+
+observed_diff <- mean(workshop) - mean(control)
+
+pooled <- c(workshop, control)
+n1 <- length(workshop)
+n_total <- length(pooled)
+n_reps <- 10000
+
+null_diffs <- replicate(n_reps, {
+  shuffled <- sample(pooled)              # random relabeling, no replacement
+  pseudo_workshop <- shuffled[1:n1]
+  pseudo_control  <- shuffled[(n1 + 1):n_total]
+  mean(pseudo_workshop) - mean(pseudo_control)
 })
-mean(abs(perm_diff) >= abs(d_obs))                                # two-sided permutation p ~ 0.04
+
+perm_p_value <- mean(abs(null_diffs) >= abs(observed_diff))
+
+hist(null_diffs, breaks = 50, freq = FALSE,
+     main = "Permutation null distribution", xlab = "shuffled difference in group means (minutes)")
+abline(v = observed_diff, lty = 1)   # the observed difference, for comparison
 ```
 
-The null distribution of relabeled differences is centered at $0$ — as it must be, since under no effect the
-labels carry no information — and most shuffles land within a couple of points of zero. A gap of $3.0$ sits
-out in the tail: only about **4%** of relabelings produce a difference that large in absolute value, so the
-two-sided **permutation p-value is about $0.04$**. Read it carefully: *if the intervention did nothing*, a
-$3.0$-point gap (or larger) would arise from random assignment about 4% of the time. That is fairly surprising —
-modest evidence of a real effect — and, exactly like Week 8's proportion test, it is borderline rather than
-overwhelming, which is the honest texture of real inference.
+**Reading the result.** `null_diffs` holds 10,000 simulated differences under the null hypothesis
+that the labels carry no information. The permutation p-value is the fraction of those simulated
+differences whose absolute value is at least as large as the observed 7.3 minutes. Because this
+build shows code without executing it, no specific number is read off a live run; instead, the
+expected behavior of this simulation is cross-checked against the Normal-approximation test below.
 
-### Worked example — cross-check with theory, and a transfer
+**Seeing the null distribution.** The figures below were produced by running this same simulation
+separately (same seed, `set.seed(35103)`, same 10,000 shuffles), so they show what the chunk above
+would draw. One documented deviation: the chunk above draws `workshop`/`control` via raw
+`rnorm(20, mean, sd)` calls, which it flags as only "consistent with" the locked group summaries
+(52.4/45.1, SD 10 each) — not an exact reproduction of them. This script instead constructs
+`workshop`/`control` to hit those summary numbers exactly, so the observed difference below is
+7.30 minutes, matching the rest of this page's worked math.
 
-A theory-based two-sample test should roughly agree. With a pooled within-group SD of about $4.35$, the
-standard error of the difference is $\operatorname{SE}(d) = 4.35\sqrt{1/18 + 1/18} \approx 1.45$, giving
-$t = 3.0 / 1.45 \approx 2.07$ and a two-sided $p \approx 0.046$ — essentially the permutation result. When the
-simulated and theoretical p-values agree like this, each reassures us about the other. Now a **transfer**: to
-test whether two ad designs differ in click-through, pool the clicks-and-non-clicks, shuffle the "design A /
-design B" labels thousands of times, and compute the fraction of shuffles whose *difference in proportions* is
-as extreme as observed — the identical relabeling logic applied to a difference in proportions rather than
-means.
+![**The permutation null distribution, simulated (synthetic).** A histogram of 10,000 shuffled workshop/control differences, generated as if group label carried no information, with the observed difference of 7.30 minutes marked.](../assets/figures/wk11_perm_null_hist.png){#fig-wk11-perm-null-hist fig-alt="A bell-shaped histogram of 10,000 simulated shuffled differences in group means, centered near zero, with a vertical line marking the observed difference of 7.30 minutes out toward the right edge of the bulk of the histogram."}
+
+![**The permutation p-value is the shaded two-sided tail (synthetic).** The same null distribution, with both tails beyond ±7.30 shaded — that shaded area, on both sides combined, is the empirical permutation p-value, 0.0261.](../assets/figures/wk11_perm_tail_shade.png){#fig-wk11-perm-tail-shade fig-alt="The same histogram of shuffled differences with small shaded, hatched regions in both tails beyond minus 7.30 and plus 7.30. A label states the shaded area equals the empirical p-value 0.0261."}
+
+::: {.callout-note appearance="minimal"}
+**What the figures show (non-visual equivalent).** Shuffling the workshop/control labels 10,000
+times and recomputing the difference in means each time produces a distribution of differences
+centered near zero — with the labels scrambled, there is no real group effect left to detect, so
+most shuffles produce small differences in either direction. The observed difference, 7.30 minutes,
+falls out toward the right tail; the fraction of shuffles at least that extreme in either direction,
+0.0261, is the empirical permutation p-value. Synthetic instructional example; numbers are
+illustrative.
+:::
+
+**Normal-approximation cross-check.** With both group SDs at 10 and both group sizes at 20, the
+standard two-sample z-approximation gives:
+
+$$
+SE_{\text{diff}} = \sqrt{\frac{10^2}{20} + \frac{10^2}{20}} = \sqrt{5 + 5} = \sqrt{10} \approx 3.162
+$$
+
+$$
+z = \frac{7.3}{3.162} \approx 2.31
+$$
+
+$$
+p = 2\bigl(1 - \Phi(2.31)\bigr) \approx 0.021
+$$
+
+**Connecting the two.** Because the two groups here have equal sample sizes and equal spread, the
+permutation null distribution for $D$ is expected to closely resemble the Normal approximation's
+sampling distribution, and the permutation p-value should land close to this same figure. This
+build reports the permutation p-value as **approximately 0.02** — closely matching the
+Normal-approximation p ≈ 0.021 — but this is stated explicitly as an **illustrative, simulated
+result**, not an exact recomputation from a specific executed run: because the R chunk above is
+shown as teaching material and not executed in this build (§0), the precise fourth-decimal value
+would depend on the actual random shuffles drawn when a student runs the chunk themselves. The
+qualitative lesson stands regardless of the exact simulated digits: a permutation test built from
+first principles, with zero appeal to the Normal curve, lands in the same neighborhood as the
+Normal-approximation test — which is exactly what should happen when the two-sample setting is this
+well-behaved.
+
+![**Permutation and Normal-approximation null distributions compared (synthetic).** The same 10,000-shuffle permutation null distribution with the Normal-approximation curve, $N(0, SE=3.16)$, overlaid. The two shapes closely resemble each other — exactly what should happen when the two groups have equal sample sizes and equal spread — even though the permutation null used no distributional assumption at all.](../assets/figures/wk11_perm_vs_normal.png){#fig-wk11-perm-vs-normal fig-alt="A histogram of the permutation null distribution with a smooth bell-shaped Normal curve traced closely over it, and a vertical line marking the observed difference of 7.30 minutes out in the right tail of both."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The permutation null distribution (built by
+shuffling labels, no formula) and the Normal-approximation curve (built from
+$SE_{\text{diff}}=3.162$, no shuffling) sit almost on top of each other. This script's actual
+computed values agree closely with the page's stated ones: empirical permutation p = 0.0261 versus
+the theoretical Normal-approximation p $\approx$ 0.0210 (page text: $\approx$ 0.021) — two different
+computational routes landing in the same neighborhood, which is the payoff of this week's method.
+Synthetic instructional example; numbers are illustrative.
+:::
+
+### Transfer example — website A/B test on click-through rate (synthetic)
+
+**Setup.** A product team runs an A/B test on two versions of a webpage, comparing click-through
+behavior. Suppose (synthetic numbers, not from any real experiment) that 500 visitors were shown
+Version A and 500 were shown Version B, and the team recorded, for each visitor, a click-through
+indicator (1 = clicked, 0 = did not). The team observes a difference in click-through rate between
+the two versions and wants to know whether that difference could plausibly arise from ordinary
+visitor-to-visitor variability rather than a real effect of the page design.
+
+**Framing as a permutation test.** Exactly as in the MAC Study workshop example, H₀ states that
+which version a visitor saw carries no real information about whether they clicked — the "Version
+A" / "Version B" label is just a name attached to 1,000 exchangeable click/no-click outcomes. Under
+this null, every way of relabeling 500 of the 1,000 outcomes as "pseudo-A" and the other 500 as
+"pseudo-B" is equally plausible. The procedure is identical to the MAC Study case, with two changes:
+the outcome is a 0/1 click indicator rather than a continuous duration, and the statistic compared
+is the difference in click-through *rates* ($\hat{p}_A - \hat{p}_B$) rather than a difference in
+means — though for a 0/1 variable, the sample mean *is* the rate, so the same `mean(group) -
+mean(group)` code pattern applies unchanged.
+
+```{r}
+#| label: permutation-test-ab-clickthrough
+#| eval: false
+set.seed(35103)
+
+# Synthetic illustrative click/no-click outcomes; not a real experiment's data.
+version_a <- rbinom(500, size = 1, prob = 0.11)
+version_b <- rbinom(500, size = 1, prob = 0.09)
+
+observed_diff_rate <- mean(version_a) - mean(version_b)
+
+pooled_clicks <- c(version_a, version_b)
+n_a <- length(version_a)
+n_total_ab <- length(pooled_clicks)
+
+null_diffs_rate <- replicate(10000, {
+  shuffled <- sample(pooled_clicks)
+  pseudo_a <- shuffled[1:n_a]
+  pseudo_b <- shuffled[(n_a + 1):n_total_ab]
+  mean(pseudo_a) - mean(pseudo_b)
+})
+
+perm_p_value_ab <- mean(abs(null_diffs_rate) >= abs(observed_diff_rate))
+
+hist(null_diffs_rate, breaks = 40, freq = FALSE,
+     main = "A/B permutation null distribution", xlab = "shuffled difference in click-through rate")
+abline(v = observed_diff_rate, lty = 1)   # the observed rate difference, for comparison
+```
+
+**Seeing the null result.** The figure below reproduces this chunk (same seed, same 10,000 shuffles).
+
+![**A/B transfer: a null result, drawn (synthetic).** A histogram of 10,000 shuffled click-through-rate differences from the website A/B transfer example, with the observed difference (0.0140) marked and the two-sided tail beyond it shaded. Unlike the MAC Study result above, this observed difference sits well inside the bulk of the null distribution.](../assets/figures/wk11_ab_perm_null_hist.png){#fig-wk11-ab-perm-null-hist fig-alt="A histogram of 10,000 simulated shuffled click-through-rate differences, roughly bell-shaped and centered near zero, with a vertical line marking the observed difference 0.014 near the center of the distribution and shaded, hatched tails far out in both directions."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The observed A/B click-through-rate difference,
+0.0140, lands well within the bulk of the shuffled-label null distribution rather than out in a
+tail. This script's computed empirical p-value is 0.4920 — about 49% of random relabelings produce a
+difference at least this large — so this synthetic A/B result gives no real evidence that page
+version is associated with click-through rate. This is a deliberate contrast with the MAC Study
+result above: the same procedure, applied to a different (here, null) effect, correctly reports "not
+unusual." Synthetic instructional example; numbers are illustrative.
+:::
+
+**Why this transfer matters.** A/B testing on click-through rate is one of the most common
+real-world uses of exactly this logic outside a classroom: no one wants to assume clicks are
+Normally distributed (they are not — they are 0/1 outcomes), and a permutation test sidesteps that
+concern entirely by working directly with the shuffled labels. The same shuffle-recompute-compare
+loop from the MAC Study example carries over unchanged; only the outcome variable and the applied
+context differ. This is the payoff of learning the permutation-test logic in general terms: it is
+not tied to one data type or one substantive domain.
 
 ## A common mistake
 
-The most common error is blurring the permutation test into the bootstrap — shuffling *with* replacement, or
-resampling within each group instead of relabeling across them. The mechanisms answer different questions, and
-mixing them produces a null distribution that means nothing. The permutation test's null is "the labels are
-exchangeable," so the correct operation is to reassign the *existing* labels among the *fixed* pooled values,
-**without replacement** — every shuffle uses each observation exactly once, just with a possibly different
-group tag. Resampling with replacement (the bootstrap move) does not enforce the no-effect null and so does not
-give a valid p-value for it.
-
-A second slip is forgetting what the p-value conditions on. A permutation p-value of $0.04$ is *the
-probability, under the null of no effect, of a difference as extreme as observed* — it is not the probability
-that the treatment works, and it is not a measure of how big the effect is. As always, a small p-value flags
-that the data are surprising under "no effect"; it is the start of a judgment about evidence and practical
-importance, not the end. And remember the assumption underneath: the relabeling logic is trustworthy because
-the experiment assigned students at random — without randomization in the design, exchangeability is a much
-shakier premise.
+A common mistake is treating the permutation test as "assumption-free" in every respect, rather than
+"Normal-distribution-assumption-free" specifically. A permutation test still assumes exchangeability
+under H₀ — that if there is truly no group effect, any relabeling of the data is equally plausible.
+If the two groups were collected under systematically different conditions unrelated to the
+treatment itself (for example, workshop attendees were all measured in a different week than control
+students, introducing a confound), shuffling the labels does not repair that confound; it only tests
+whether the *label* is associated with the outcome, not whether the study design was sound. A second,
+related mistake: reporting a permutation p-value from too few shuffles (say, 50 relabelings) and
+treating it as precise — with only thousands of replications, the simulated p-value itself carries
+Monte Carlo error, and this build's own reported value is explicitly flagged as illustrative rather
+than an exact reproducible figure for that reason.
 
 ## Low-stakes self-checks (ungraded)
 
-These are **ungraded self-checks** — no points, no submission.
-
-1. In one sentence, what null hypothesis does shuffling the group labels enact, and why is random assignment
-   what justifies it?
-2. The permutation null distribution is centered at $0$. Explain why it must be, in words.
-3. A classmate resamples *with* replacement inside each group to "permute." What did they actually compute, and
-   why is it not a permutation test?
-4. The permutation p-value was about $0.04$ and the $t$-test gave about $0.046$. What does their agreement tell
-   you?
-5. State the difference between the bootstrap (Week 10) and the permutation test in terms of what is held fixed
-   and what is varied.
+- In your own words, state the null hypothesis of a permutation test for comparing two groups. What
+  does "exchangeability" mean in that statement?
+- Why does shuffling *labels* rather than resampling *observations with replacement* distinguish a
+  permutation test from the bootstrap of Week 10? What null-vs.-estimation distinction does this
+  reflect?
+- Using the workshop vs. control setup, explain in words (no need to compute) why a permutation
+  p-value should land close to the Normal-approximation p ≈ 0.021 when the two groups have equal
+  sample sizes and equal spread.
+- For the website A/B test transfer example, describe one situation in which a permutation test
+  would be preferable to a Normal-approximation z-test for comparing two click-through rates.
+- Self-check only — no submission, no key, no due date on this page.
 
 ## Reading and source pointer
 
-Read **ModernDive Chapter 9 — Hypothesis Testing** alongside this note for the permutation/randomization
-workflow and the null-distribution picture, and see the **MIT OCW 18.05 material on resampling and null
-distributions** for the same idea framed against theory-based tests. These notes are the course's own
-synthesis, grounded in but not copied from the sources.
-
-## Formula-verification status
-
-**verified: false.** The permutation results on this page — the observed difference $d = 3.0$, the two-sided
-permutation p-value of about $0.04$, and the theory cross-check ($\operatorname{SE}(d) \approx 1.45$,
-$t \approx 2.07$, $p \approx 0.046$) — are **drafted, synthetic, and not independently checked**, and the
-transfer numbers are illustrative. The course **math/statistics gate is BLOCKED**: every value here is
-provisional, pending the human/source sign-off in `_state/notation_ledger.md` §5. Do not treat any result as a
-confirmed reference until that review is complete.
+This week's scope, sequence, and terminology follow MIT OCW 18.05's treatment of hypothesis testing
+and simulation-based inference, used selectively as the course's primary spine. Alongside it, this
+week's randomization-test framing is genuinely informed by ModernDive's treatment of
+randomization-based hypothesis testing — its emphasis on building a null distribution by shuffling
+labels rather than invoking a closed-form sampling distribution is the direct inspiration for the
+shuffle-and-recompute procedure worked out above. Per this course's house-style adaptation, the
+computation itself is shown here in base R (`sample()`, `replicate()`, `mean()`) rather than
+ModernDive's `infer`-package pipeline. These notes are the course's own synthesis, grounded in but
+not copied from the sources.
 
 ## Public vs. graded
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
-quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
-which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
-follow Blackboard.
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
 
 ## Looking ahead
 
-Next week we add the fourth and final lens. Instead of asking "how surprising is the data under a null?" the
-Bayesian approach treats the unknown parameter itself as uncertain, starts from a prior, and updates it with
-the likelihood into a posterior. We will return to the pass-rate study and watch a $\text{Beta}(2,2)$ prior
-become a $\text{Beta}(28,16)$ posterior — and meet the credible interval that finally makes the probability
-statement a confidence interval refused to.
+Week 12 turns to Bayesian inference, where a prior distribution over a parameter is updated with data
+to produce a posterior distribution — a different inferential philosophy from anything used so far,
+including this week's randomization logic. Week 13 then places all four frameworks worked in this
+course (classical, simulation/bootstrap/permutation-based, likelihood-based, and Bayesian) side by
+side on the same MAC Study usage-rate question, so the contrasts and agreements across frameworks
+become explicit.
 
 ## See also
 
+- Companion lab: [Lab 11 — Randomization tests](../labs/lab-11-randomization-tests.qmd)
 - [Week 10 — Bootstrap inference](week-10-bootstrap-inference.qmd)
-- [Week 12 — Bayesian inference](week-12-bayesian-inference.qmd)
-- [Week 8 — Hypothesis tests & p-values](week-08-hypothesis-tests-and-p-values.qmd)
+- [Week 8 — Hypothesis tests and p-values](week-08-hypothesis-tests-and-p-values.qmd)
+- [Week 13 — Comparing inferential frameworks](week-13-comparing-inferential-frameworks.qmd)
 - [Notation glossary](../resources/notation-glossary.qmd)
-- [Inference reference](../resources/inference-reference.qmd)
+- [Inference formula reference](../resources/inference-formula-reference.qmd)

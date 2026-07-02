@@ -11,103 +11,103 @@ toc: false
 Likelihood, simulation, and decisions — learning from data under uncertainty
 :::
 
-> Inference is not a collection of formulas for confidence intervals and hypothesis tests. It is a
-> disciplined way to connect data, probability models, assumptions, uncertainty, evidence, and decisions —
-> to say something responsible about a larger process from a limited sample. This course teaches you to do
-> that carefully, across four complementary ways of reasoning.
+> Every dataset is a keyhole view of something larger — a population, a process, a truth we cannot
+> observe directly. Statistical inference is the disciplined craft of reasoning back through that
+> keyhole: from a sample to a defensible statement about what generated it, with the uncertainty of
+> that step made explicit rather than hidden. It is how a single survey becomes a claim about a
+> campus, how a handful of measurements becomes an estimate with a margin of error attached, and how
+> we decide, honestly, when the evidence is strong enough to act on.
 
 ## What this course is
 
-This is a course in **statistical inference** built around one idea: inference is the disciplined process of
-**learning from data under uncertainty**. We begin with the inferential problem itself — we observe a sample
-but want to speak about a parameter, a population, a process, or a claim. We then build the machinery:
-sampling distributions and simulation, estimators and standard errors, bias and variance, likelihood and
-maximum likelihood estimation, confidence intervals, hypothesis tests and p-values, error rates and power,
-the bootstrap, randomization and permutation tests, Bayesian updating, and the link from inference to
-decisions.
+This course teaches inference as a **pluralistic** discipline. There is more than one coherent way to
+reason from data to conclusions, and this course does not declare any one of them uniquely correct.
+You will learn the classical frequentist toolkit — sampling distributions, estimators, confidence
+intervals, hypothesis tests — alongside likelihood-based reasoning, simulation-based methods
+(bootstrap and randomization), and an introduction to Bayesian updating. Each framework asks a
+slightly different question of the same data, and part of the work of this course is learning to tell
+those questions apart.
 
-The course is deliberately **pluralistic**. You will learn classical frequentist tools, likelihood-based
-reasoning, simulation-based inference, and introductory Bayesian inference — not to crown one framework and
-dismiss the rest, but to understand **what each one conditions on, what each method claims, what assumptions
-it requires, and how its conclusions should be communicated**. The emphasis throughout is reasoning,
-computation, and interpretation.
-
-We use **R** and **Quarto** to simulate sampling distributions, resample, draw likelihood and posterior
-curves, and run randomization tests. But this is an inference course, not a programming course: the software
-exists to make inferential reasoning visible, and every line of code is in service of a statistical idea.
+Throughout the semester we follow one recurring synthetic world: **the MAC Study**, a research team's
+investigation of how students use UA Little Rock's Math Assistance Center. A population parameter —
+an average visit duration, a usage rate — is treated as genuinely unknown, and a sample is treated as
+the only evidence in hand, exactly as a real analyst would face it. The same sample numbers return
+week after week, so that each new method (estimation, confidence intervals, testing, bootstrap,
+permutation, Bayesian updating) attaches to a world you already know rather than a fresh one.
 
 ## What you will be able to do
 
 By the end of the term, you should be able to:
 
-- Explain the inferential problem: how sample data are used to learn about unknown parameters, populations,
-  processes, or claims.
-- Distinguish parameters, statistics, estimators, estimates, standard errors, and sampling distributions.
-- Use simulation to approximate a sampling distribution and reason about sampling variability.
-- Evaluate estimators with bias, variance, mean squared error, and practical interpretability.
-- Use likelihood to compare parameter values and compute maximum likelihood estimates in common settings.
-- Construct and interpret confidence intervals **without** treating them as probability statements about a
-  fixed parameter.
-- Conduct and interpret hypothesis tests — test statistics, p-values, significance, Type I and Type II error,
-  and power — and explain their common misinterpretations.
-- Use the bootstrap, and randomization/permutation tests, to estimate uncertainty and weigh evidence.
-- Explain the structure of Bayesian inference — prior, likelihood, posterior, posterior prediction — and
-  compare a credible interval with a confidence interval.
-- Use simple loss functions or decision rules to connect inference to action, and communicate conclusions
-  carefully — assumptions, uncertainty, limitations, and consequences included.
+- Describe a sampling distribution and explain why a statistic computed from a random sample is
+  itself a random variable with its own spread.
+- Evaluate an estimator by its bias, variance, and mean squared error, and explain the trade-off a
+  biased estimator can offer.
+- Write down a likelihood function for simple models, and derive and interpret a maximum likelihood
+  estimate.
+- Construct a confidence interval for a mean or a proportion, and state — correctly — what a
+  confidence level does and does not promise.
+- Carry out a hypothesis test, interpret a p-value without overclaiming, and connect Type I/Type II
+  error rates to the power of a test.
+- Build a bootstrap confidence interval and a randomization (permutation) test from resampling
+  principles, without leaning on a formula you cannot justify.
+- Update a Bayesian prior into a posterior using data, and summarize a posterior with a mean, SD, and
+  credible interval.
+- Compare what frequentist, likelihood-based, simulation-based, and Bayesian approaches each say about
+  the same question, and recognize when their answers agree and when they do not.
+- Connect an inference to a decision: state a simple loss or decision rule and explain what "acting
+  on" an estimate or a test result actually commits you to.
+- Communicate an estimate, an interval, or a test result to a nonspecialist audience without
+  overstating what the data show.
 
 ## How the site is organized
 
 This public site has three working areas, reachable from the sidebar:
 
-- **Notes** — the weekly instructional spine. Each week poses an inferential question, develops the concept,
-  works it on a recurring teaching study, names a common mistake, and offers ungraded self-checks. Start here.
-- **Labs** — the hands-on simulation strand. Four short labs in R and Quarto let you simulate sampling
-  distributions, draw likelihood curves, build bootstrap intervals, and update a posterior. Code is shown for
-  study; you run it in your own session.
-- **Resources** — a notation glossary, a one-page inference reference that lays the four frameworks side by
-  side, and setup instructions for R and Quarto. Keep these open while you read.
+- **[Notes](notes/index.qmd)** — the weekly instructional spine. Each week poses a question, develops
+  the concept, works examples (including the recurring MAC Study), names a common mistake, and offers
+  ungraded self-checks. Start here.
+- **[Labs](labs/index.qmd)** — the simulation strand. Five short labs in R and Quarto let you confirm
+  the theory by simulating sampling distributions, likelihood curves, bootstrap intervals,
+  randomization tests, and a Bayesian posterior. Code is shown for study; you run it in your own
+  session.
+- **[Resources](resources/index.qmd)** — a notation glossary, a formula reference, and setup
+  instructions for R and Quarto. Keep these open while you read.
 
 ## Software
 
-We use **R** (via RStudio or Posit Cloud) together with **Quarto** to simulate, resample, and visualize
-inference. No prior coding experience is assumed — the simulation work is scaffolded, and the code is
-explained as it goes. On this site, R chunks are **shown as static teaching code** and are not
-executed in place; you run them in your own session.
+We use **R** (via RStudio or Posit Cloud) together with **Quarto** for the simulation work. No paid
+homework platform is used in this course. Software is a *support* for inference, not the center of
+it: simulation lets you watch a sampling distribution, a bootstrap distribution, or a posterior take
+shape, and checks reasoning you have already worked out by hand. In the notes and labs on this site, R
+chunks are **shown as teaching examples** and are not executed in place; they are written in base R,
+carry a set seed (`set.seed(35103)`), and are reproducible when you run them yourself.
 
 ## Source and attribution
 
-These notes are the course's own synthesis, **grounded in but not copied from** three open sources:
+These notes are the course's own synthesis, grounded in but not copied from three free, openly
+licensed sources, each used at a different intensity:
 
-- **Primary spine:** *MIT OpenCourseWare 18.05, Introduction to Probability and Statistics* (Spring 2022) —
-  free at [ocw.mit.edu](https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/).
-  **License: CC BY-NC-SA 4.0.** It grounds the theory spine — sampling distributions, likelihood, maximum
-  likelihood, confidence intervals, hypothesis testing, and Bayesian inference.
-- **Simulation supplement:** *Statistical Inference via Data Science: A ModernDive into R and the Tidyverse*,
-  2nd ed. (Ismay, Kim & Valdivia) — free at [moderndive.com/v2](https://moderndive.com/v2/). **License: CC
-  BY-NC-SA 4.0.** It grounds simulation-based inference, the bootstrap, randomization tests, and reproducible
-  R/Quarto workflows.
-- **Lighter review source:** *Introduction to Modern Statistics*, 2nd ed. (Çetinkaya-Rundel & Hardin) — free
-  at [openintro-ims.netlify.app](https://openintro-ims.netlify.app/). **License: CC BY-SA 3.0.** Used
-  selectively as a lighter calibration source for introductory inference concepts.
+- **Primary spine — [MIT OpenCourseWare 18.05](https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/)**,
+  *Introduction to Probability and Statistics* (**CC BY-NC-SA 4.0**, free). Used selectively across
+  every week of the course to ground scope, sequence, and terminology.
+- **Secondary, genuinely used co-source — [ModernDive](https://moderndive.com/v2/)**, *Statistical
+  Inference via Data Science: A ModernDive into R and the Tidyverse*, 2nd ed. (Ismay, Kim, Valdivia),
+  **CC BY-NC-SA 4.0**, free. Named and linked alongside 18.05 in the weeks where its strengths are the
+  week's center: simulation-based inference, hypothesis testing, bootstrapping, and randomization,
+  plus the closing synthesis week.
+- **Optional supplementary review — [OpenIntro IMS](https://openintro-ims.netlify.app/)**,
+  *Introduction to Modern Statistics*, 2nd ed. (Çetinkaya-Rundel & Hardin), **CC BY-SA 3.0**, free.
+  Pointed to occasionally, in the more foundational and review weeks, always as an optional gentler
+  alternative rather than required reading.
 
-MIT OCW 18.05 and ModernDive are **CC BY-NC-SA 4.0** (Attribution · NonCommercial · ShareAlike); IMS is **CC
-BY-SA 3.0** (Attribution · ShareAlike). The course notes are instructor-original and only *ground in* these
-texts; any public reuse or adaptation is treated conservatively and transparently, with attribution. All
-example data are **synthetic with seeds set**; the prose here is original.
+All example data on this site are synthetic, with a seed set. See the [Syllabus](syllabus.qmd) for
+full attribution.
 
-## A note on what is public here
+## Public vs. graded
 
-Everything on this site is **public and ungraded** — study material only. You will not find graded prompts,
-answer keys, rubrics, point values, or due dates here. The operational side of the course — graded inference
-checkpoints, quizzes, homework, inference labs, the midterm, the project, and the final, along with all dates
-and submissions — lives in **Blackboard (the LMS)**, which is authoritative. If this site and Blackboard ever
-disagree, follow Blackboard.
-
-::: {.callout-note}
-## Draft course site
-
-This site is a **draft course site**, not a finished release. Some pages are drafts, every
-formula and numeric value is **synthetic and provisional pending human review**, and no
-accessibility-compliance claim is made. Treat it as a work in progress rather than the final word.
-:::
+Everything on this site is **public and ungraded** — study material only. No graded prompts, answer
+keys, rubrics, point values, or due dates appear here. Graded inference checkpoints, quizzes,
+homework, labs, the midterm, the project, and the final live in **Blackboard (the LMS)**, which is
+authoritative for due dates, submissions, and grades. If this site and Blackboard ever disagree,
+follow Blackboard.

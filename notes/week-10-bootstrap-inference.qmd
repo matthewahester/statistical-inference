@@ -1,210 +1,352 @@
 ---
 title: "Week 10 — Bootstrap inference"
-subtitle: "Estimating how much an estimate would vary by resampling your own data"
+subtitle: "Building a confidence interval by resampling the data itself"
 page_mode: normal_week
 week_contract: public_note
 source_mode: source-informed
-verified: false
 readings:
-  - "ModernDive (Ismay, Kim & Valdivia), Ch 8 — Bootstrapping and Confidence Intervals — supports resampling and percentile intervals"
-  - "MIT OCW 18.05 — Bootstrap confidence intervals — supports the bootstrap framing"
+  - "MIT OCW 18.05 — bootstrap resampling and simulation-based confidence intervals — supports the resampling principle developed this week"
+  - "ModernDive — bootstrapping — supports the bootstrap distribution and percentile-interval framing used in the worked examples"
 toc: true
 ---
 
 ## The week question
 
-In Week 7 we built a confidence interval for the mean using a formula — $\bar x \pm t^{*}\,s/\sqrt n$ — that
-came from a theory about the sampling distribution. But what if we are not sure that theory applies, or we are
-estimating something with no tidy formula? Can we estimate how much our estimate would *vary* using only the
-one sample we actually have?
-
-The answer is yes, and it is one of the most quietly radical ideas in the course. The **bootstrap** treats
-our sample as a stand-in for the population and resamples from it, over and over, to watch our estimate
-wobble. From that simulated wobble we read a standard error and a confidence interval — without ever writing
-down a sampling-distribution formula. It is the first of two weeks (with Week 11) where simulation, not
-algebra, does the inferential work.
+Every confidence interval you have built so far — for μ in Week 7, for π in Week 7, for a test statistic in
+Week 8 — leaned on a formula for the standard error, and that formula leaned on an assumption: a known
+population SD, or a large enough n for a normal approximation to kick in. This week asks a different
+question: what if you do not want to assume a specific formula for the standard error, or you are worried
+that assumption might not hold for a skewed population or a small, unusual sample? Can the data themselves
+tell you how much a statistic would vary from sample to sample, without your having to derive that variability
+by formula first?
 
 ## Why this matters
 
-The bootstrap matters because it decouples *inference* from *a formula for the sampling distribution*. In
-Weeks 3 and 7 we leaned on the fact that $\hat p$ and $\bar X$ have known, approximately normal sampling
-distributions. But plenty of estimates — a median, a trimmed mean, a ratio, a correlation, the difference of
-two skewed group means — have sampling distributions that are awkward or unknown. The bootstrap gives all of
-them the same treatment: resample, recompute, look at the spread. One idea, many estimators.
-
-It also matters as a *concept check* on everything we have done. When the bootstrap interval and the
-formula-based interval agree — as they will for our mean — it builds confidence that both are doing the same
-honest job of quantifying sampling variability. When they disagree, it is a signal worth investigating. And it
-sets up Week 11's permutation test, the bootstrap's close cousin, by getting you comfortable with the move of
-*resampling to build a reference distribution*.
+Real data rarely arrive with a label attached reading "population is exactly Normal" or "σ is known in
+advance." The bootstrap is the tool that lets you approximate a statistic's sampling distribution directly
+from the one sample you actually have, by treating that sample as a stand-in for the population and
+resampling from it over and over. It matters for this course in three ways. First, it is a genuinely different
+strategy from every prior week's approach: instead of deriving a formula for SE(θ̂) from probability theory,
+you approximate SE(θ̂) computationally. Second, it generalizes to statistics — a median, a trimmed mean, a
+correlation, a ratio — where a clean textbook SE formula may not exist or may be hard to derive. Third, it
+gives you a direct, hands-on check on the formula-based intervals from Week 7: when both approaches apply,
+does the bootstrap agree with the known-σ interval? Seeing that agreement (or a meaningful disagreement) is
+itself part of what this week is teaching.
 
 ## Learning goals
 
-By the end of this week you should be able to:
+By the end of this week, you should be able to:
 
-- Explain the bootstrap principle: resample the sample with replacement to approximate the sampling
-  distribution of an estimator.
-- Generate a bootstrap distribution for a statistic and read its center and spread.
-- Compute a **bootstrap standard error** (the SD of the bootstrap distribution) and a **percentile confidence
-  interval** (its middle 95%).
-- Compare a bootstrap interval with a theory-based interval and say what agreement or disagreement implies.
-- State clearly what the bootstrap does and does *not* do — it estimates sampling variability; it does not
-  create new data or rescue a too-small sample.
-- Carry the bootstrap to a statistic with no convenient formula, such as a median.
+- State the bootstrap principle in your own words: resampling with replacement from the observed sample,
+  treating that sample as a working stand-in for the population.
+- Explain why the bootstrap does not require a known σ or an assumed normal population.
+- Describe how a bootstrap distribution of a statistic is built, step by step, from repeated resamples.
+- Compute a bootstrap standard error and a percentile-based bootstrap confidence interval from a set of
+  bootstrap replicate statistics.
+- Compare a bootstrap SE and interval against a known-σ, formula-based SE and interval, and explain why they
+  are close but not identical.
+- Recognize situations — a skewed quantity, or a statistic without a simple SE formula — where bootstrapping
+  is especially useful.
 
 ## Core vocabulary
 
-- **Bootstrap resample** — a new sample of the same size $n$, drawn **with replacement** from the observed
-  sample; some original observations appear more than once, others not at all.
-- **Bootstrap statistic $\hat\theta^{*}$** — the estimate recomputed on a bootstrap resample.
-- **Bootstrap distribution** — the collection of many $\hat\theta^{*}$ values; it approximates the sampling
-  distribution of $\hat\theta$.
-- **Bootstrap standard error** — the standard deviation of the bootstrap distribution.
-- **Percentile interval** — a confidence interval read off as the middle 95% (the 2.5th and 97.5th
-  percentiles) of the bootstrap distribution.
-- **With replacement** — the key mechanism; sampling without replacement would just rebuild the original
-  sample every time.
+- **Bootstrap sample (or resample).** A sample of size n drawn **with replacement** from the original
+  observed sample of size n, so the same original observation can appear zero, one, or several times in a
+  given resample.
+- **Bootstrap replicate.** The value of the statistic of interest (for example, the sample mean) computed on
+  one bootstrap sample.
+- **Bootstrap distribution.** The collection of bootstrap replicates across many resamples (this week, B =
+  2000 of them), used as an approximation to the statistic's true sampling distribution.
+- **Bootstrap standard error.** The standard deviation of the bootstrap distribution — an estimate of how
+  much the statistic would vary from sample to sample, built entirely from resampling rather than from a
+  probability formula.
+- **Percentile bootstrap confidence interval.** A confidence interval built directly from percentiles of the
+  bootstrap distribution (or, as shown below, from the bootstrap SE combined with a normal critical value) —
+  no known-σ assumption required.
+- **Resampling with replacement vs. without replacement.** Resampling *with* replacement is what makes the
+  bootstrap work: it lets each resample differ from the original sample and from every other resample, which
+  is exactly the variability the bootstrap distribution is meant to capture. Resampling *without* replacement
+  from a fixed sample of size n would just reproduce the same n values in a different order every time — no
+  new variability at all.
 
 ## Concept development
 
-### 1. The bootstrap principle: the sample stands in for the population
+### The problem the bootstrap is solving
 
-The sampling distribution we have wanted all along describes how an estimate varies across *fresh samples from
-the population*. We cannot draw fresh samples — we have one. The bootstrap's move is to treat **the sample as
-a miniature population** and draw fresh samples *from it*. Each bootstrap resample takes $n$ observations with
-replacement from our $n$ data points, so it is "like" a new draw from a population that looks just like our
-sample. Recompute the estimate on each resample and you get a cloud of estimates — the **bootstrap
-distribution** — whose spread mimics the spread of the true sampling distribution. Sampling **with
-replacement** is essential: it is what lets a resample differ from the original.
+Recall the logic behind every confidence interval built so far in this course. To say "θ̂ ± 1.96·SE(θ̂) is a
+95% confidence interval," you need to know how much θ̂ would vary if you repeated the sampling process many
+times — that is, you need SE(θ̂), the standard deviation of θ̂'s sampling distribution. In Weeks 2, 3, and 7,
+you got that SE either from a known population SD (a known-σ teaching simplification) or from a large-sample
+normal approximation formula, such as SE(p̂) = sqrt(p̂(1−p̂)/n). Both routes require either an assumption about
+the population or a formula that has already been derived for the specific statistic in question.
 
-### 2. Reading a standard error and an interval off the bootstrap
+The bootstrap sidesteps both requirements. Instead of asking "what does probability theory say the sampling
+distribution of θ̂ looks like," it asks a more direct, computational question: "if I treat my one observed
+sample as a stand-in for the population, and I draw many new samples from *it* — the same way an actual
+new sample would be drawn from the real population — how much does θ̂ vary across those resamples?" That
+variability, measured directly from resampling, is used as an approximation to the true sampling variability
+of θ̂.
 
-Once you have, say, 10,000 bootstrap statistics, inference is just description. The **bootstrap standard
-error** is the standard deviation of those 10,000 values — a direct estimate of $\operatorname{SE}$ with no
-formula. The **percentile confidence interval** is even simpler: sort the bootstrap statistics and take the
-2.5th and 97.5th percentiles; the middle 95% of the bootstrap distribution *is* the interval. Because both come
-from the same simulated cloud, they tell a consistent story about how much the estimate would move from sample
-to sample.
+### The resampling mechanism, step by step
 
-### 3. What the bootstrap is — and is not
+Concretely, given an observed sample of size n:
 
-The bootstrap estimates **sampling variability**; it does not manufacture information. Three guardrails keep
-the idea honest. It does **not** create new data — every bootstrap resample is built only from the
-observations you already have, so it cannot reveal anything the sample does not contain. It does **not** fix a
-too-small sample — if $n$ is tiny, the sample is a poor stand-in for the population and the bootstrap inherits
-that poverty. And it does **not** reduce bias in the estimate itself — a biased estimator stays biased; the
-bootstrap just describes how the (biased) estimate would vary. Used within these limits, it is trustworthy;
-oversold as "more data for free," it misleads.
+1. Draw a resample of size n from the original n observations, **with replacement**. Because replacement is
+   allowed, a resample is not just a reordering of the original data — some original observations may appear
+   multiple times, and others may not appear at all.
+2. Compute the statistic of interest (for example, the sample mean) on this resample. This single number is
+   one bootstrap replicate.
+3. Repeat steps 1 and 2 a large number of times, B (this week's example uses B = 2000), producing B bootstrap
+   replicates of the statistic.
+4. Treat the resulting collection of B replicates as an approximation to the statistic's sampling
+   distribution. Its standard deviation approximates SE(θ̂); its shape and percentiles can be used to build a
+   confidence interval.
+
+Nothing in this mechanism referenced a population σ, a normal-population assumption, or a specific SE
+formula. The only inputs were the observed sample itself and the resampling process. This is why the
+bootstrap is described as **non-parametric**: it does not assume a particular family of distribution for the
+population.
+
+**Seeing the mechanism.** The four steps above are easiest to see on a small schematic sample — not the real
+36-observation MAC Study data, just a handful of numbers small enough to watch every draw happen.
+
+![**Resampling with replacement, drawn (synthetic).** A small schematic sample (n=8, not the real 36-visit MAC sample) is resampled twice, with replacement. Highlighted boxes mark a value drawn more than once within that resample; comparing each resample row back to the original row shows that some original values are skipped entirely. Repeating this process 2000 times, and keeping the mean of each resample, is exactly what builds the bootstrap distribution in the next figure.](../assets/figures/wk10_resample_mechanism.png){#fig-wk10-resample-mechanism fig-alt="A flow diagram: a row of 8 numbered boxes labeled original sample, an arrow labeled draw with replacement pointing to a second row of 8 boxes labeled resample 1 with some repeated values highlighted and its mean shown below, another arrow to a third row labeled resample 2 with different repeated values highlighted and its mean shown below, then text noting the process repeats 2000 times, followed by two stacked boxes reading bootstrap replicates x-bar star one through x-bar star two-thousand and bootstrap distribution of x-bar star."}
+
+### Why resampling approximates sampling variability
+
+It can feel almost too simple: how can resampling from a sample of size n possibly stand in for drawing a
+fresh sample of size n from the actual population? The justification is that the observed sample, especially
+once n is reasonably large, already carries information about the shape of the population — its center, its
+spread, its skewness. Resampling with replacement from that observed sample generates new "pretend samples"
+that vary from each other in much the same way repeated real samples from the population would vary, because
+both kinds of variability trace back to the same underlying spread in the data. The bootstrap distribution is
+not a perfect stand-in for the true sampling distribution — it is built from one sample, not from repeated
+access to the population — but under broad conditions it approximates that distribution well enough to be
+genuinely useful, especially when a clean formula-based SE is unavailable or its assumptions feel shaky.
 
 ## Worked examples
 
-### Worked example — bootstrapping the mean gain
+### Worked example — the MAC Study visit-duration bootstrap
 
-We use the recurring **reading-fluency study** (synthetic; seed set, `set.seed(35103)`). The cohort of
-$n = 36$ students has mean gain $\bar x = 8.0$ and SD $s = 6.0$. We resample the 36 gains with replacement,
-recompute the mean, and repeat 10,000 times:
+**Symbolic setup.** You have an observed sample of size n with sample mean x̄ and sample SD s. Rather than
+assuming a known population σ, you resample directly from the observed data:
 
-```r
+- Draw B bootstrap resamples of size n, with replacement, from the original n observations.
+- Compute the sample mean on each resample, producing bootstrap replicates x̄*₁, x̄*₂, …, x̄*_B.
+- Estimate the bootstrap standard error as the standard deviation of these B replicate means. As a widely
+  used approximation for the mean specifically, this bootstrap SE is close to s/√n, the same form as the
+  known-σ SE formula but built from the **sample** SD s rather than a population σ.
+- Build a percentile-style 95% confidence interval as x̄ ± 1.96 · SE_boot.
+
+**Numeric case — the MAC Study.** Recall the visit-duration sample from Weeks 2, 3, 7, 8, and 9: n = 36
+recorded MAC visits, sample mean x̄ = 49.8 minutes, sample SD s = 15.2 minutes. In Weeks 2 through 9, the
+population SD was treated as known, σ ≈ 15, giving SE(x̄) = σ/√n = 15/6 = 2.5, and the Week 7 confidence
+interval for μ was 49.8 ± 1.96(2.5) = 49.8 ± 4.9 = **(44.9, 54.7)**.
+
+This week drops the known-σ assumption. Instead, you resample the 36 visit durations with replacement, B =
+2000 times, and compute the mean of each resample. The bootstrap SE approximates s/√n:
+
+$$
+SE_{\text{boot}} \approx \frac{s}{\sqrt{n}} = \frac{15.2}{\sqrt{36}} = \frac{15.2}{6} \approx 2.53.
+$$
+
+Notice this is close to, but not identical to, the known-σ SE of 2.5 from Week 7. That is a deliberate
+teaching point, not a coincidence to gloss over: the known-σ SE used the *hypothetical, stipulated* population
+value σ = 15 (a teaching simplification), while the bootstrap SE is built entirely from the *sample* SD, s =
+15.2, which is itself only an estimate of the unknown true population SD. When the sample SD happens to be
+close to the value used for the known-σ teaching simplification, the two SEs come out close together — 2.53
+versus 2.5 — but they are conceptually different quantities, and only the bootstrap SE would still be
+available if you refused to assume a known σ at all.
+
+Using the bootstrap SE, the percentile-style 95% confidence interval for μ is:
+
+$$
+49.8 \pm 1.96(2.53) = 49.8 \pm 4.96 \approx (44.84,\ 54.76).
+$$
+
+This bootstrap interval, **(44.84, 54.76)**, is extremely close to the Week 7 known-σ interval, (44.9, 54.7) —
+which is exactly what you should hope to see. The bootstrap did not have access to a known population SD, and
+yet, by resampling the data 2000 times, it recovered essentially the same interval as the formula that assumed
+σ was known. That agreement is itself evidence the bootstrap is doing what it claims to do: approximating the
+same sampling variability the known-σ formula captured analytically, but computationally, directly from the
+data in hand.
+
+**The resampling mechanism in code.** The four steps described above translate directly into four lines of
+base R. (Shown as teaching code, not executed in this build; the companion [Lab 10](../labs/lab-10-bootstrap-intervals.qmd)
+carries this out in full, step by step, on a synthetic stand-in sample.)
+
+```{r}
+#| label: mac-study-bootstrap-mechanism
+#| eval: false
 set.seed(35103)
-gains <- /* the 36 observed gain scores; mean 8.0, sd 6.0 */
-boot_means <- replicate(10000, mean(sample(gains, replace = TRUE)))
-sd(boot_means)                          # bootstrap SE  ~ 1.0
-quantile(boot_means, c(0.025, 0.975))   # ~ 6.0   10.0
+
+# visit_sample would be the n = 36 recorded visit durations (mean 49.8, SD 15.2).
+# One bootstrap resample, drawn with replacement:
+one_resample <- sample(visit_sample, size = 36, replace = TRUE)
+
+# Repeat 2000 times, keeping the mean of each resample:
+boot_means <- replicate(2000, mean(sample(visit_sample, size = 36, replace = TRUE)))
+
+boot_se <- sd(boot_means)                          # bootstrap SE, ~ 2.53
+boot_ci <- quantile(boot_means, c(0.025, 0.975))    # percentile 95% CI, ~ (44.84, 54.76)
+
+hist(boot_means, breaks = 40, freq = FALSE,
+     main = "Bootstrap distribution of the mean", xlab = "bootstrap replicate mean (minutes)")
+abline(v = 49.8, lty = 1)          # the original sample mean, for comparison
+abline(v = boot_ci, lty = 2)       # the percentile 95% interval boundaries
 ```
 
-The bootstrap distribution of the mean is centered near $8.0$ and has standard deviation about $1.0$ — which
-is exactly $\operatorname{SE}(\bar X) = s/\sqrt n = 6/6 = 1.0$ from the formula. The percentile interval comes
-out at about $(6.0,\ 10.0)$, essentially the same as the theory-based $t$-interval $(5.97,\ 10.03)$ from Week
-7. **That agreement is the lesson:** for a mean with a moderate sample, the simulation and the formula
-quantify the same sampling variability, so we can trust either. The bootstrap earned no new precision — it
-re-derived the formula's answer by brute force, which is precisely why it can stand in when no formula is
-handy.
+**What this shows (public-safe description, since this chunk is not executed here):** `boot_means` becomes a
+vector of 2000 resample means, its standard deviation approximates the bootstrap SE ($\approx 2.53$), and its
+2.5th/97.5th percentiles approximate the percentile confidence interval ($\approx (44.84, 54.76)$) — the
+entire bootstrap idea compressed into four lines, with no normal-theory formula anywhere in them.
 
-### Worked example — a transfer bootstrap for a median
+**Seeing the bootstrap distribution.** The figure below was produced by running exactly this simulation
+separately (same seed, `set.seed(35103)`, same n=36, same B=2000), on a synthetic stand-in sample constructed
+to have exactly the stated mean (49.8) and SD (15.2), so the histogram below is what the chunk above would
+draw if it were executed.
 
-Now an estimator with no tidy standard-error formula. Suppose a coffee shop records the wait times (seconds)
-of $n = 50$ customers and reports the **median** wait as $74$ seconds; the question is how much that median
-would vary across samples. There is no clean "$\operatorname{SE}$ of a median" to plug in — but the bootstrap
-does not care:
+![**The bootstrap distribution of the mean (synthetic).** A histogram of 2000 bootstrap replicate means, resampled with replacement from a synthetic stand-in sample (n=36, mean 49.8, SD 15.2). The original sample mean, 49.8, is marked. The standard deviation of these 2000 replicates — this script's actual computed bootstrap SE — comes out to 2.49, close to but not identical to the page's formula-based approximation of 2.53 above.](../assets/figures/wk10_boot_dist_hist.png){#fig-wk10-boot-dist-hist fig-alt="A bell-shaped histogram of 2000 bootstrap replicate means, roughly centered at 49.8 minutes, with a vertical line marking the original sample mean 49.8 and a label reporting boot SE equals 2.49."}
 
-```r
-set.seed(35103)
-waits <- /* the 50 observed wait times */
-boot_med <- replicate(10000, median(sample(waits, replace = TRUE)))
-sd(boot_med)                            # bootstrap SE of the median
-quantile(boot_med, c(0.025, 0.975))     # percentile 95% CI for the median wait
-```
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Resampling the synthetic 36-observation stand-in sample
+2000 times, with replacement, and averaging each resample produces a bell-shaped spread of 2000 numbers
+centered near 49.8. The spread of that histogram — 2.49 — is this script's actual computed bootstrap SE. It
+is close to, but not exactly equal to, both the page's formula-based approximation (2.53, from $s/\sqrt{n}$)
+and the Week 7 known-$\sigma$ SE (2.5); all three numbers come from different routes (resampling, a
+sample-SD shortcut, and a stipulated population SD) and are reported here side by side rather than treating
+any one as simply replacing another. Synthetic instructional example; numbers are illustrative.
+:::
 
-Same three moves — resample, recompute, summarize — applied to a statistic the formula-based machinery does
-not easily reach. The bootstrap distribution of the median gives its standard error and a percentile interval
-directly. (All numbers here are illustrative placeholders for the transfer context; only the reading-fluency
-study's values are locked.)
+The same histogram is also how you read a confidence interval straight off the data, with no
+$\bar{x} \pm 1.96 \cdot SE$ formula at all: cut off the bottom 2.5% and top 2.5% of the 2000 replicates, and
+whatever remains in the middle *is* a 95% interval.
+
+![**The percentile interval is the middle 95% (synthetic).** The same bootstrap distribution, with the 2.5th and 97.5th percentiles marked (dashed lines) and the two excluded 2.5% tails hatched. The percentile bootstrap interval IS the un-hatched middle region, (44.95, 54.66) here — read directly off the histogram, with no normal-curve formula involved.](../assets/figures/wk10_boot_percentile_ci.png){#fig-wk10-boot-percentile-ci fig-alt="A histogram of bootstrap replicate means with two dashed vertical lines marking the 2.5th and 97.5th percentiles, small tail regions beyond those lines hatched, and the middle region labeled as the 95 percent interval."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** Sorting the 2000 bootstrap replicate means and cutting off
+the lowest 2.5% and the highest 2.5% leaves the middle 95% of the values, from about 44.95 to about 54.66.
+That middle chunk of resampled means IS the percentile bootstrap confidence interval — no normal curve, no
+$\pm 1.96 \cdot SE$ arithmetic, just a direct read of where the resampled statistics actually fell. Synthetic
+instructional example; numbers are illustrative.
+:::
+
+Finally, the whole point of this week's worked example — that the bootstrap recovers essentially the same
+interval the known-$\sigma$ formula gave in Week 7 — is easiest to see as two intervals on the same number
+line.
+
+![**Bootstrap and known-sigma intervals agree closely (synthetic).** The Week 7 known-$\sigma$ 95% CI, (44.9, 54.7), and this script's actual computed bootstrap percentile 95% CI, (44.95, 54.66), drawn on the same scale. The two intervals nearly coincide, even though the bootstrap interval never used a known population SD.](../assets/figures/wk10_boot_vs_formula_ci.png){#fig-wk10-boot-vs-formula-ci fig-alt="A number line showing two horizontal bracket intervals, one above the other. The upper bracket, labeled Week 7 known-sigma 95 percent CI, runs from 44.9 to 54.7. The lower bracket, labeled bootstrap percentile 95 percent CI, runs from 44.95 to 54.66. Both brackets cover nearly the same range."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The Week 7 known-$\sigma$ interval, (44.9, 54.7), and the
+bootstrap percentile interval computed here, (44.95, 54.66), overlap almost entirely — their endpoints differ
+by less than 0.1 minute on either side. The bootstrap reached essentially the same answer without ever
+assuming a known population SD, which is the evidence that it is doing what it claims to do. Synthetic
+instructional example; numbers are illustrative.
+:::
+
+### Worked example — transfer: a bootstrap CI for a skewed household-income median
+
+**Symbolic setup.** The bootstrap is especially valuable for a statistic like a median, where there is no
+simple textbook SE formula the way there is for a mean, and where the underlying population may be visibly
+skewed (income, wait times, and similar quantities are rarely close to normal). The same four-step mechanism
+applies: resample with replacement from the observed data, compute the median (not the mean) on each
+resample, collect B replicate medians, and use their spread to build an interval — all without assuming
+the population of incomes is normally distributed.
+
+**Numeric case (synthetic; seed set).** Suppose a research team records the household income (in thousands
+of dollars) for a synthetic sample of n = 40 households in a small survey area, and the sample median income
+is $\tilde{x} = 52.0$ thousand dollars. Because income distributions are typically right-skewed (a small
+number of very high incomes stretch the upper tail), the team does not want to assume normality or rely on a
+mean-based SE formula. Instead, they bootstrap the median directly:
+
+- Draw B = 2000 resamples of size 40, with replacement, from the 40 observed incomes.
+- Compute the median income on each resample, producing 2000 bootstrap replicate medians.
+- Suppose (synthetic figures) the standard deviation of these 2000 replicate medians works out to
+  SE_boot ≈ 3.1 thousand dollars, and the 2.5th and 97.5th percentiles of the bootstrap distribution of
+  replicate medians fall at 46.0 and 58.5 thousand dollars.
+
+Reading the interval directly off these percentiles gives a **percentile bootstrap 95% confidence interval**
+for the population median income of approximately **(46.0, 58.5)** thousand dollars — built without ever
+writing down a formula for the standard error of a median, and without assuming the underlying income
+distribution is symmetric or normal. This is the case the bootstrap is built for: a statistic (the median)
+and a population (skewed income) where a normal-theory shortcut either does not exist cleanly or would be a
+questionable assumption to make.
+
+**Seeing the skew.** The bullet points above *suppose* illustrative figures rather than reporting a specific
+executed run. The figure below runs an actual bootstrap-of-the-median on a genuinely right-skewed synthetic
+income sample (n=40, seed 35103, B=2000 resamples), so the shape below is a real simulated bootstrap
+distribution of a median, not a hand-drawn curve.
+
+![**A skewed bootstrap distribution, drawn (synthetic).** A histogram of 2000 bootstrap replicate medians from a right-skewed synthetic household-income sample, with the sample median and the 2.5th/97.5th percentiles marked. Unlike the roughly bell-shaped mean distribution above, this distribution is visibly irregular and right-leaning — exactly the situation where reading the interval off percentiles, rather than off $\tilde{x} \pm 1.96 \cdot SE_{\text{boot}}$, is the safer choice.](../assets/figures/wk10_median_boot_skewed.png){#fig-wk10-median-boot-skewed fig-alt="A histogram of 2000 bootstrap replicate medians that is visibly irregular and right-skewed rather than bell-shaped, with a solid vertical line marking the sample median near 45.8 and two dashed vertical lines marking the 2.5th and 97.5th percentiles near 40.2 and 52.9."}
+
+This script's actual simulated numbers — sample median 45.8, bootstrap SE 3.44, percentile interval
+(40.22, 52.86) — differ somewhat from the bullet points' stipulated illustrative figures (median 52.0, SE
+$\approx$ 3.1, interval (46.0, 58.5) above), because the two use different synthetic income samples; both are
+reported here rather than treating one as simply replacing the other. The qualitative lesson is the same
+either way: the bootstrap distribution of a median from a skewed population is itself not a clean symmetric
+bell, and the percentile method reads a sensible interval off it regardless.
 
 ## A common mistake
 
-The most damaging misunderstanding is believing the bootstrap **creates information** — that resampling
-somehow turns 36 observations into a larger or better dataset. It does not. Every bootstrap resample is
-assembled entirely from the original observations; the cloud of $\hat\theta^{*}$ values reflects only what is
-already in the sample. If the sample is small or unrepresentative, the bootstrap faithfully reproduces that
-limitation — a narrow bootstrap interval from a tiny sample is not reassurance, it is the small sample fooling
-itself. The bootstrap estimates how much your estimate would *vary*; it cannot tell you about variation your
-data never sampled.
-
-A second slip is forgetting **with replacement**. If you resample without replacement, every "resample" is
-just a reshuffle of the original 36 values, the mean is identical every time, and the bootstrap distribution
-collapses to a single point — useless. Replacement is the mechanism that lets resamples differ, and so it is
-the mechanism that lets the bootstrap see variability at all. When your bootstrap SE comes out as zero, this is
-almost always the cause.
+A common mistake is treating the bootstrap as if it could somehow fix a *bad* original sample — as though
+resampling repeatedly from a small or unrepresentative sample could manufacture information about the
+population that was never in the data to begin with. It cannot. The bootstrap approximates the sampling
+variability *given* the observed sample; if that sample is small, biased, or not representative of the
+population (say, drawn only from one campus building at one time of day), every bootstrap resample inherits
+the same limitation, and the bootstrap distribution faithfully reproduces that flaw rather than correcting it.
+The bootstrap approximates sampling variability from a reasonable sample; it is not a substitute for a
+well-designed sample in the first place.
 
 ## Low-stakes self-checks (ungraded)
 
-These are **ungraded self-checks** — no points, no submission.
-
-1. In your own words, why must bootstrap resampling be done *with* replacement? What goes wrong without it?
-2. The bootstrap SE of the mean came out near $1.0$, matching $s/\sqrt n$. What would you conclude if it had
-   come out near $3.0$ instead?
-3. Explain why the bootstrap cannot rescue a sample of only $n = 4$ observations.
-4. You need a confidence interval for the *ratio* of two means and have no formula for its standard error.
-   Sketch, in three steps, how the bootstrap would give you one.
-5. The percentile interval for the mean was $(6.0, 10.0)$ and the $t$-interval was $(5.97, 10.03)$. What does
-   their close agreement tell you, and what would disagreement have suggested?
+- In your own words, explain why resampling **with** replacement is essential to the bootstrap, and what
+  would go wrong if you resampled the same n observations **without** replacement instead.
+- Using the MAC Study numbers, explain in a sentence or two why the bootstrap SE (≈2.53) and the known-σ SE
+  (2.5) are close but not identical, referencing where each number comes from.
+- Name one statistic other than the mean or median for which you might prefer a bootstrap confidence interval
+  over a normal-theory formula, and say why.
+- If a bootstrap distribution of a statistic turned out to be strongly skewed rather than roughly symmetric,
+  would using x̄ ± 1.96·SE_boot (built for a normal-shaped sampling distribution) still be the best way to
+  read a 95% interval from it, or would reading the interval directly off the 2.5th and 97.5th percentiles of
+  the bootstrap distribution make more sense? Explain your reasoning.
 
 ## Reading and source pointer
 
-Read **ModernDive Chapter 8 — Bootstrapping and Confidence Intervals** alongside this note for the resampling
-workflow and percentile intervals, and see the **MIT OCW 18.05 material on bootstrap confidence intervals**
-for the same idea framed against the theory-based interval. These notes are the course's own synthesis,
-grounded in but not copied from the sources.
-
-## Formula-verification status
-
-**verified: false.** The bootstrap results on this page — the bootstrap SE of about $1.0$ and the percentile
-95% interval of about $(6.0,\ 10.0)$ for the mean gain, and their agreement with the Week-7 $t$-interval
-$(5.97,\ 10.03)$ — are **drafted, synthetic, and not independently checked**, and the median transfer numbers
-are illustrative placeholders. The course **math/statistics gate is BLOCKED**: every value here is provisional,
-pending the human/source sign-off in `_state/notation_ledger.md` §5. Do not treat any result as a confirmed
-reference until that review is complete.
+This week's core development follows MIT OCW 18.05's treatment of bootstrap resampling and simulation-based
+confidence intervals, which grounds the resampling-with-replacement mechanism and the use of a bootstrap
+distribution to approximate a sampling distribution. ModernDive's chapter on bootstrapping is genuinely used
+alongside 18.05 this week: its framing of building a bootstrap distribution and reading a confidence interval
+from its percentiles is described here in words and reproduced with base-R resampling (`sample()` with
+`replace = TRUE`, `replicate()`, and `sd()`), rather than with ModernDive's own `infer` package pipeline.
+These notes are the course's own synthesis, grounded in but not copied from the sources.
 
 ## Public vs. graded
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
-quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
-which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
-follow Blackboard.
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
 
 ## Looking ahead
 
-Next week we keep resampling, but for a different purpose. Instead of resampling *one* sample to estimate
-variability, we will shuffle the *labels* of a two-group experiment to build a null distribution and test
-whether the groups really differ. The bootstrap and the permutation test share the simulation engine but ask
-opposite questions — one about uncertainty, one about a null hypothesis — and keeping them straight is Week
-11's main job.
+Next week turns to a different resampling idea: instead of resampling one sample to approximate its own
+sampling variability, Week 11 reshuffles group labels between two groups to build a null distribution for a
+group difference from scratch — the randomization (permutation) test. Both weeks share the same spirit of
+letting the computer, not a textbook formula, generate the distribution you need; Week 11 applies that spirit
+to a comparison between two groups rather than to a single sample's statistic.
 
 ## See also
 
-- [Week 9 — Error rates, power & decisions](week-09-error-rates-power-decisions.qmd)
-- [Week 11 — Randomization & permutation tests](week-11-randomization-and-permutation-tests.qmd)
-- [Week 7 — Confidence intervals (midterm)](week-07-confidence-intervals-and-midterm.qmd)
-- [Notation glossary](../resources/notation-glossary.qmd)
-- [Inference reference](../resources/inference-reference.qmd)
+- [Lab 10 — Bootstrap intervals](../labs/lab-10-bootstrap-intervals.qmd) — the companion lab, where you
+  resample the MAC Study visit-duration data yourself in base R and compare the resulting bootstrap interval
+  to the formula-based interval from Week 7.
+- [Week 7 — Confidence intervals (+ midterm)](week-07-confidence-intervals-and-midterm.qmd) — the known-σ
+  confidence interval this week's bootstrap interval is checked against.
+- [Week 9 — Error rates, power, and decisions](week-09-error-rates-power-and-decisions.qmd) — the previous
+  week, where the known-σ framework was used to reason about a testing decision.
+- [Week 11 — Randomization and permutation tests](week-11-randomization-and-permutation-tests.qmd) — next
+  week's related resampling idea, applied to a two-group comparison.
+- [Notation glossary](../resources/notation-glossary.qmd) — a reference for the symbols used above.

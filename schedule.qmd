@@ -1,72 +1,112 @@
 ---
-title: "Schedule (topic flow)"
-subtitle: "A 15-week pacing plan — Blackboard is authoritative for dates and deadlines"
+title: "Schedule"
+subtitle: "A pacing plan for the 15-week arc"
+page_mode: public_syllabus_stub
+week_contract: public_syllabus_stub
+source_mode: source-informed
 toc: true
 ---
 
 ::: {.callout-important}
-This is a **pacing plan, not a calendar**. It shows the order in which inferential topics unfold and roughly
-when, so you can read ahead and see where you are headed. It is **not** the authoritative calendar: exact
-dates, deadlines, and any mid-term adjustments live in **Blackboard (the LMS)**, which is authoritative. A
-few fixed semester dates are noted for orientation only — confirm everything against Blackboard.
+## This is a pacing plan, not the calendar
+
+This page sketches how the fifteen weeks fit together conceptually — it is **not** the authoritative
+calendar. Exact meeting dates, any date changes, room/time information, and all graded due dates live in
+**Blackboard (the LMS)**, which governs. If this page and Blackboard ever disagree, follow Blackboard.
 :::
 
-The course runs fifteen weeks in four parts. Each part below lists its weeks, the theme for each week, and the
-throughline — the inferential question that carries the week. The **theme** links to that week's note.
+The course moves through five parts, each building the machinery the next part needs. Parts I–III lay the
+classical foundation (the inferential problem, how estimators behave, and the two classical tools — confidence
+intervals and hypothesis tests). Part IV steps back from formula-driven approximations to simulation-based
+alternatives that rely on resampling and reshuffling the data itself. Part V introduces a genuinely different
+way of reasoning about uncertainty — Bayesian updating — and then asks you to hold all four frameworks side by
+side.
 
-## Part I — The inferential problem (Weeks 1–4)
+## Part I — The inferential problem (Wk 1–3)
 
-We set up the frame: what inference is, how sampling variability behaves, and how we judge an estimator.
-
-| Week | Theme | The throughline |
-|------|-------|-----------------|
-| 1 | [What statistical inference is](notes/week-01-what-statistical-inference-is.qmd) | How does a sample let us say something responsible about an unknown parameter or claim? |
-| 2 | [Sampling distributions & simulation](notes/week-02-sampling-distributions-and-simulation.qmd) | What would happen to our estimate if we repeated the study many times? |
-| 3 | [Estimators & standard errors](notes/week-03-estimators-and-standard-errors.qmd) | What is a good estimate, and how do we measure how much it would vary? |
-| 4 | [Bias, variance & MSE](notes/week-04-bias-variance-mse.qmd) | What makes one estimator better than another for a purpose? |
-
-*Note: **Labor Day (Mon, Sep 7)** falls in Week 3 — no class that Monday, so the week runs Wednesday and
-Friday.*
-
-## Part II — Likelihood & classical inference (Weeks 5–9)
-
-We use likelihood to compare parameter values, then build the classical machinery of intervals and tests.
+Before any formula, the course has to define the problem: a population parameter is unknown, a sample is all
+we have, and inference is the disciplined bridge between them. These three weeks introduce the vocabulary
+(parameter vs. statistic), show why repeated sampling produces a *distribution* of estimates rather than a
+single fixed answer, and formalize how much an estimator wobbles from sample to sample.
 
 | Week | Theme | The throughline |
-|------|-------|-----------------|
-| 5 | [Likelihood](notes/week-05-likelihood.qmd) | Which parameter values make the data we actually saw most plausible? |
-| 6 | [Maximum likelihood estimation](notes/week-06-maximum-likelihood-estimation.qmd) | How do we find the single parameter value the data most support? |
-| 7 | [Confidence intervals (midterm)](notes/week-07-confidence-intervals-and-midterm.qmd) | What does "95% confident" actually mean, and what does it *not* mean? |
-| 8 | [Hypothesis tests & p-values](notes/week-08-hypothesis-tests-and-p-values.qmd) | How surprising is our data under a null model — and what does a p-value really say? |
-| 9 | [Error rates, power & decisions](notes/week-09-error-rates-power-decisions.qmd) | What are we risking when we decide, and how often will we be wrong? |
+|------|-------|------------------|
+| 1 | [What statistical inference is](notes/week-01-what-is-statistical-inference.qmd) | If the true population value is unknown and unknowable directly, what exactly are we allowed to claim from a single sample? |
+| 2 | [Sampling distributions and simulation](notes/week-02-sampling-distributions-and-simulation.qmd) | If we could draw the same sample over and over, how would the sample mean itself behave — and can simulation show us that behavior before we trust a formula for it? |
+| 3 | [Estimators and standard errors](notes/week-03-estimators-and-standard-errors.qmd) | How do we put a single number on "how much an estimator wobbles," and why does that number depend on both the population and the sample size? |
 
-*Note: the **midterm is Friday, Oct 9** (in class), during Week 7. It covers sampling distributions through
-confidence intervals. No graded content appears on this public site — see Blackboard.*
+*Note: Labor Day (Mon Sep 7) falls in Week 3, which is a compressed Wednesday/Friday week as a result.*
 
-## Part III — Simulation-based inference (Weeks 10–11)
+## Part II — Estimator quality & likelihood (Wk 4–6)
 
-We estimate uncertainty and weigh evidence by resampling and relabeling, with minimal model assumptions.
-
-| Week | Theme | The throughline |
-|------|-------|-----------------|
-| 10 | [Bootstrap inference](notes/week-10-bootstrap-inference.qmd) | How can resampling our own data estimate how much an estimate would vary? |
-| 11 | [Randomization & permutation tests](notes/week-11-randomization-and-permutation-tests.qmd) | How do we test a claim by shuffling labels under a null of no effect? |
-
-## Part IV — Bayesian inference & synthesis (Weeks 12–15)
-
-We add the Bayesian lens, compare all four frameworks, then build and present a method comparison.
+With sampling variability on the table, the course asks a sharper question: among all the ways we could
+estimate a parameter, what makes one estimator *better* than another? Bias, variance, and mean squared error
+give a shared vocabulary for that comparison. Likelihood then supplies a principled way to manufacture good
+estimators in the first place, culminating in maximum likelihood estimation.
 
 | Week | Theme | The throughline |
-|------|-------|-----------------|
-| 12 | [Bayesian inference](notes/week-12-bayesian-inference.qmd) | How does a prior become a posterior, and what is a credible interval? |
-| 13 | [Comparing inferential frameworks](notes/week-13-comparing-inferential-frameworks.qmd) | When the four lenses answer the same question, where do they agree and differ? |
-| 14 | [Inference project workshop](notes/week-14-inference-project-workshop.qmd) | How do you compare two inferential methods on one problem and report it responsibly? |
-| 15 | [Final review & synthesis](notes/week-15-final-review-synthesis.qmd) | How do estimation, likelihood, testing, resampling, and Bayes fit as one practice? |
+|------|-------|------------------|
+| 4 | [Bias, variance, and mean squared error](notes/week-04-bias-variance-and-mean-squared-error.qmd) | Is an estimator with zero bias always the one you want, or can a slightly biased estimator actually do better overall? |
+| 5 | [Likelihood](notes/week-05-likelihood.qmd) | Instead of asking "how likely is this parameter value," how do we compare parameter values by how well each one explains the data we actually observed? |
+| 6 | [Maximum likelihood estimation](notes/week-06-maximum-likelihood-estimation.qmd) | If the likelihood function ranks every candidate parameter value by how well it explains the data, what value sits at the very top of that ranking, and how do we find it? |
 
-*Note: **fall break is Nov 22–28** (no classes), between Weeks 13 and 14. The **last class is Mon, Dec 7**,
-the **consultation day is Dec 8**, and the **final-exam window is Dec 9–15** (exact block via Blackboard).*
+## Part III — Classical inference (Wk 7–9)
+
+This part assembles the two workhorse tools of classical inference: confidence intervals, which express a
+range of plausible parameter values, and hypothesis tests, which weigh evidence against a specific claim. It
+closes by asking what can go wrong with a test — the two kinds of error — and how much power a test has to
+detect a real effect.
+
+| Week | Theme | The throughline |
+|------|-------|------------------|
+| 7 | [Confidence intervals (+ midterm)](notes/week-07-confidence-intervals-and-midterm.qmd) | Instead of a single point estimate, how do we build an entire *range* of plausible parameter values, and what does "95% confidence" actually promise about that range? |
+| 8 | [Hypothesis tests and p-values](notes/week-08-hypothesis-tests-and-p-values.qmd) | If we start by assuming a specific claim about the parameter is true, how surprising does our sample have to be before we treat that claim as no longer credible? |
+| 9 | [Error rates, power, and decisions](notes/week-09-error-rates-power-and-decisions.qmd) | Every test can be wrong in two different directions — so how do we quantify those risks, and how much power does a given test actually have to catch a real effect? |
+
+*Note: the midterm is Friday, Oct 9 (in class), during Week 7. No graded content — no items, keys, or
+prompts — appears anywhere on this public site; the midterm itself lives entirely in Blackboard.*
+
+## Part IV — Simulation-based inference (Wk 10–11)
+
+Classical confidence intervals and tests lean on formulas that assume a known (or approximated) sampling
+distribution. This part asks what happens when we instead let the computer manufacture that distribution
+directly — by resampling the data we already have (the bootstrap) or by reshuffling group labels under the
+null hypothesis (permutation and randomization tests).
+
+| Week | Theme | The throughline |
+|------|-------|------------------|
+| 10 | [Bootstrap inference](notes/week-10-bootstrap-inference.qmd) | If we resample our own data over and over instead of relying on a formula for the standard error, can we recover a confidence interval that agrees with — and does not require — the classical approximation? |
+| 11 | [Randomization and permutation tests](notes/week-11-randomization-and-permutation-tests.qmd) | If group membership really had no effect, how often would reshuffling the labels produce a difference at least as large as the one we observed? |
+
+## Part V — Bayesian inference & synthesis (Wk 12–15)
+
+The final part introduces an alternative foundation for inference — treating the parameter itself as having a
+probability distribution that a prior belief and observed data jointly update into a posterior — and then asks
+you to place classical, simulation-based, and Bayesian reasoning side by side. The course closes with a
+project workshop and a one-day synthesis of the whole arc.
+
+| Week | Theme | The throughline |
+|------|-------|------------------|
+| 12 | [Bayesian inference](notes/week-12-bayesian-inference.qmd) | Instead of treating the parameter as a fixed unknown constant, what changes if we let it have its own probability distribution that data update? |
+| 13 | [Comparing inferential frameworks](notes/week-13-comparing-inferential-frameworks.qmd) | Given the very same data, how do the classical, bootstrap, permutation, and Bayesian answers actually compare when placed side by side? |
+| 14 | [Inference project workshop](notes/week-14-inference-project-workshop.qmd) | Faced with a new question of your own, which two (or more) inferential methods would you choose to answer it, and why? |
+| 15 | [Final review and synthesis](notes/week-15-final-review-and-synthesis.qmd) | Looking back across the whole term, how do all these separate tools fit together into a single coherent picture of "learning from data under uncertainty"? |
+
+*Note: fall break is Nov 22–28 (no classes). The last class meeting is Mon, Dec 7 (Week 15, a single day).
+The final-exam window is Dec 9–15, with the exact block to be announced via Blackboard.*
 
 ::: {.callout-note}
-Again: this page is a pacing plan to help you read ahead. For the real calendar — every date, every deadline,
-and any adjustment during the term — **Blackboard (the LMS) is authoritative**.
+## Blackboard is authoritative
+
+As stated at the top of this page: this pacing plan is a study aid, not the calendar of record. For exact
+dates, any schedule changes, and every graded due date, follow **Blackboard (the LMS)** — it is authoritative,
+and this page yields to it whenever the two disagree.
 :::
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.

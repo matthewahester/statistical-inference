@@ -1,111 +1,182 @@
 ---
 title: "Notation glossary"
-subtitle: "Symbols and conventions used across the course"
-page-type: reference
+subtitle: "Every symbol used across the course, collected in one place"
+page_mode: reference_page
+week_contract: reference
+source_mode: source-informed
 toc: true
 ---
 
-Keep this page open while you read the notes. The single most important distinction in the course runs down
-the first three tables: a **parameter** is a fixed unknown, a **statistic / estimator** is a random function of
-the sample, and an **estimate** is one realized number. Confusing them is the root of most inferential
-mistakes, so the symbols are chosen to keep them apart. All numeric values shown are from the synthetic
-recurring **reading-fluency study** and are `verified: false` (the math gate is blocked pending sign-off).
+## What this page is
 
-## Parameters (fixed unknowns)
+This page is the **public mirror of the course's private notation ledger**, the internal document that first
+fixed every symbol, convention, and known confusion before any week note was drafted. That private ledger is
+build bookkeeping, not something you need to read. What you need from it is here: the symbols themselves, the
+convention this course chose for each one, and — because a symbol memorized without a worked number rarely
+sticks — a tie-back to the recurring MAC Study numbers wherever that helps. Keep this page open in a second
+tab whenever a week's "Concept development" or "Worked examples" section uses a symbol without re-deriving it
+from scratch.
 
-A parameter is a fixed feature of the population or process. It does not have a sampling distribution and never
-takes a "hat."
+Two families of symbols recur across the whole term: **parameters** (unknown, about the population) and
+**statistics** (computed from a sample, used to learn about the parameters). This course is consistent about
+marking the difference with a hat: a hatted symbol ($\hat\theta$, $\hat p$) is something you compute; an
+unhatted Greek letter ($\theta$, $\mu$, $\pi$) is something you are trying to learn about and never actually
+see.
 
-| Symbol | Meaning |
-|---|---|
-| $\theta$ | a generic parameter (in this course, usually the true pass rate) |
-| $p$ | a success probability / proportion parameter |
-| $\mu$ | a population mean |
-| $\sigma$, $\sigma^2$ | a population standard deviation, variance |
+## Core symbols
 
-## Statistics and estimators (random — functions of the sample)
+| Symbol | Meaning | Convention chosen |
+|---|---|---|
+| $\theta$ | a generic population parameter | unknown; the target of every estimation problem this term |
+| $\hat\theta$ | an estimator (before data) / an estimate (after data) | a random variable before data arrive; a plain number once computed |
+| $\mu, \sigma$ | population mean, population standard deviation | never assumed known outside a flagged teaching simplification |
+| $\pi$ | population proportion | context disambiguates from the constant $\pi \approx 3.14159$; the two never appear needing disambiguation on the same page |
+| $\bar X, \bar x$ | sample mean — the statistic (random variable), then its computed value (a number) | capital for the random variable, lowercase for the realized number |
+| $s$ | sample standard deviation | $s = \sqrt{\frac{1}{n-1}\sum(x_i - \bar x)^2}$ — the $n-1$ divisor is derived, not asserted (Week 4) |
+| $\hat p$ | sample proportion | $\hat p = k/n$ for $k$ successes in $n$ trials |
+| $n$ | sample size | — |
+| $\operatorname{SE}(\hat\theta)$ | standard error of an estimator | the standard deviation of $\hat\theta$'s own sampling distribution |
+| $\operatorname{Bias}(\hat\theta)$ | $E[\hat\theta] - \theta$ | requires a stipulated true $\theta$ — a teaching device only, flagged every time it is used |
+| $\operatorname{Var}(\hat\theta)$ | variance of the estimator's sampling distribution | how much $\hat\theta$ would bounce around across repeated samples |
+| $\operatorname{MSE}(\hat\theta)$ | $\operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2$ | the bias-variance decomposition, derived in Week 4 |
+| $L(\theta)$ | the likelihood function | a function of $\theta$ for **fixed, already-observed** data — never a probability distribution over $\theta$ |
+| $\ell(\theta)$ | the log-likelihood | $\ell(\theta) = \ln L(\theta)$ — same maximizer as $L(\theta)$, easier arithmetic |
+| $\hat\theta_{\text{MLE}}$ | the maximum likelihood estimate | $\arg\max_\theta L(\theta)$ |
+| CI | confidence interval | a property of the repeated-sampling **procedure** — never "the probability $\theta$ is in this interval" |
+| $H_0, H_a$ | null hypothesis, alternative hypothesis | fixed before the data are examined |
+| $\alpha$ | significance level | chosen in advance, before seeing the data |
+| $p\text{-value}$ | tail probability of the data under $H_0$ | $P(\text{data this extreme or more} \mid H_0 \text{ true})$ — never $P(H_0 \text{ true})$ |
+| $\beta$ | Type II error probability | depends on which specific alternative is true — never known in practice, only stipulated for teaching |
+| Power | $1 - \beta$ | the procedure's chance of correctly rejecting $H_0$ against a *specific* stated alternative |
+| $\pi(\theta)$ | Bayesian prior density on $\theta$ | context disambiguates from the proportion $\pi$ above — the two are never both load-bearing on the same page |
+| $L(\theta \mid \text{data})$ | Bayesian likelihood | the same likelihood-function idea as $L(\theta)$, written with the conditioning made explicit for the Bayesian update |
+| $\pi(\theta \mid \text{data})$ | Bayesian posterior density | prior updated by the likelihood; a genuine probability distribution over $\theta$ |
+| $\text{Beta}(a,b)$ | the Beta distribution | mean $a/(a+b)$; the conjugate prior family for a Binomial proportion |
+| $\Phi(\cdot)$ | the standard normal cumulative distribution function | used throughout to convert a $z$-score into a tail probability |
+| $z, t$ | standardized test statistics | $z$ when $\sigma$ is treated as known; $t$ when $\sigma$ is estimated by $s$ — flagged explicitly whenever the distinction matters |
 
-A statistic is computed from the random sample, so it is itself random and has a **sampling distribution**. An
-estimator is a statistic used to estimate a parameter.
+## The pairs that get confused
 
-| Symbol | Meaning |
-|---|---|
-| $X_1,\dots,X_n$, $X$ | the sample (random variables); lowercase $x$ are observed values |
-| $\bar X$ | the sample mean (estimator of $\mu$) |
-| $\hat p = X/n$ | the sample proportion (estimator of $p$ or $\theta$) |
-| $S$ | the sample standard deviation (estimator of $\sigma$) |
-| $\hat\theta$ | a generic estimator of $\theta$ |
+Some of these symbols look, or sound, close enough to something else that mixing them up is the single most
+common inference mistake at this level. Each pair below gets its own subsection, with a MAC Study number
+attached so the distinction is not just verbal.
 
-## Estimates (one realized number)
+### p-value vs. $P(H_0 \text{ true})$
 
-| Symbol | Meaning |
-|---|---|
-| $\hat p = 0.65$ | the observed sample proportion ($26$ of $40$) |
-| $\bar x = 8.0$ | the observed sample mean gain |
-| $s = 6.0$ | the observed sample SD of the gains |
+The p-value is $P(\text{data this extreme or more extreme} \mid H_0 \text{ true})$ — a statement about how
+surprising the *data* would be **if** $H_0$ were true. It is not, and cannot be turned into, $P(H_0 \text{ true})$,
+a statement about how likely the *hypothesis* itself is. The p-value never conditions on the hypothesis being
+questioned; it conditions on the hypothesis being **assumed**.
 
-The hat does double duty — $\hat\theta$ can mean the estimator (a random variable) or its realized value (a
-number). Say which you mean.
+MAC Study tie-back (Week 8): testing $H_0: \mu = 45$ against $H_a: \mu \neq 45$, using the visit-duration
+sample ($n = 36$, $\bar x = 49.8$, known $\sigma = 15$, so $\operatorname{SE}(\bar X) = 2.5$), gives
+$z = (49.8 - 45)/2.5 = 1.92$ and a two-sided $p \approx 2(1 - \Phi(1.92)) \approx 0.0548$. That number answers
+"if the true average visit duration really were 45 minutes, how often would a sample of 36 visits produce a
+mean at least this far from 45?" It does **not** answer "how likely is it that the true average visit
+duration is 45 minutes?" — that second question would require a prior over $\mu$, which classical hypothesis
+testing never supplies. (Week 12's Bayesian posterior is the tool that answers a question in that shape, and
+even then it is a posterior for the parameter, not a probability attached to $H_0$ as classical testing frames it.)
 
-## Variability, bias, and error
+### A confidence interval vs. "95% probability $\theta$ is in this interval"
 
-| Symbol | Meaning |
-|---|---|
-| $\operatorname{SE}(\hat\theta)$ | standard error — the (estimated) SD of the estimator's sampling distribution (not the SD of the data) |
-| $\operatorname{Bias}(\hat\theta) = E[\hat\theta] - \theta$ | bias; the estimator is unbiased when this is $0$ |
-| $\operatorname{Var}(\hat\theta)$ | the variance of the estimator |
-| $\operatorname{MSE}(\hat\theta) = \operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2$ | mean squared error; the bias–variance decomposition |
+A CI is a property of the **procedure**: build the interval $\bar x \pm 1.96\,\operatorname{SE}(\bar X)$ the
+same way across many hypothetical samples, and 95% of the resulting intervals will contain the true $\mu$.
+Once a single sample has been drawn and a single interval computed, $\mu$ is a fixed (if unknown) number and
+the interval's endpoints are fixed numbers — there is no more randomness left to attach a 95% probability to
+*this particular* interval. The 95% describes the method's long-run track record, not this one outcome.
 
-## Likelihood and maximum likelihood
+MAC Study tie-back (Week 7): $49.8 \pm 1.96(2.5) = 49.8 \pm 4.9 \rightarrow (44.9, 54.7)$. The correct reading
+is "this interval was produced by a procedure that captures the true mean visit duration in 95% of hypothetical
+repeated samples" — not "there is a 95% chance the true mean visit duration is between 44.9 and 54.7." The
+same distinction holds for the companion proportion CI, $0.38 \pm 1.96(0.0485) \approx (0.285, 0.475)$.
 
-| Symbol | Meaning |
-|---|---|
-| $L(\theta)$ | the likelihood — a function **of $\theta$** given the data; **not** a distribution over $\theta$ (it need not integrate to 1) |
-| $\ell(\theta) = \log L(\theta)$ | the log-likelihood; maximized at the same $\theta$ as $L$ |
-| $\hat\theta_{\text{MLE}}$ | the maximum likelihood estimate; for the study, $26/40 = 0.65$ |
+### $L(\theta)$ vs. a probability distribution over $\theta$
 
-## Intervals and testing
+$L(\theta)$ is a function of $\theta$ built from data that are already fixed — it says how consistent each
+candidate value of $\theta$ is with the data you actually observed, but it is not required to (and typically
+does not) integrate to 1 over $\theta$, so it is not itself a probability distribution over $\theta$. That
+changes only when a prior $\pi(\theta)$ is introduced and combined with the likelihood to produce a genuine
+posterior distribution $\pi(\theta \mid \text{data})$ — a Week 12 idea, not a Week 5–6 one.
 
-| Symbol | Meaning |
-|---|---|
-| CI | **confidence interval** — a *procedure* with long-run coverage; never a probability statement about a fixed $\theta$ |
-| $z^{*}$, $t^{*}$ | the critical multiplier ($1.96$ for a 95% normal interval; $t_{n-1,\,0.975}$ for a mean) |
-| $H_0$, $H_a$ | null and alternative hypotheses |
-| $T$, $Z$ | a test statistic |
-| $p$-value | $P(T \text{ as or more extreme} \mid H_0)$ — a tail probability **under $H_0$**, not $P(H_0 \text{ true})$ |
-| $\alpha$ | significance level; the Type I error rate (rejecting a true $H_0$) |
-| $\beta$ | the Type II error rate (failing to reject a false $H_0$) |
-| power | $1 - \beta$ |
+MAC Study tie-back (Week 5): for the small pilot survey ($n = 5$, $k = 2$), the likelihood kernel
+$L(\pi) \propto \pi^2(1-\pi)^3$ evaluates to $0.02048$ at $\pi = 0.2$, $0.03456$ at $\pi = 0.4$, and $0.02304$
+at $\pi = 0.6$. Those three numbers rank candidate values of $\pi$ by how well each explains the fixed data
+in hand ($\pi = 0.4$ wins, foreshadowing the Week 6 MLE $\hat\pi = k/n = 0.4$) — they are not, and were never
+claimed to be, probabilities of $\pi$ itself, and they do not sum or integrate to 1.
 
-## Simulation-based inference
+### Bias, Variance, and MSE vs. each other
 
-| Symbol | Meaning |
-|---|---|
-| $\hat\theta^{*}$ | a bootstrap resampled estimate (resample the sample with replacement) |
-| percentile interval | the middle 95% of the bootstrap distribution |
-| permutation null | a randomization / reference distribution built by relabeling under the null |
+$\operatorname{Bias}(\hat\theta) = E[\hat\theta] - \theta$ measures systematic offset — does the estimator
+aim at the right target on average. $\operatorname{Var}(\hat\theta)$ measures spread — how much the estimator
+would bounce around across repeated samples, regardless of where it's centered. $\operatorname{MSE}(\hat\theta)
+= \operatorname{Var}(\hat\theta) + \operatorname{Bias}(\hat\theta)^2$ combines both into a single number, which
+is why an estimator can have zero bias and still lose to a biased competitor on MSE if the biased one has much
+lower variance.
 
-## Bayesian inference
+MAC Study tie-back (Week 4): the $(n-1)$-divisor derivation shows the naive $n$-divisor variance estimator has
+bias $-6.25$ (from $E\!\left[\tfrac{1}{n}\sum(x_i-\bar x)^2\right] = \tfrac{35}{36}(225) = 218.75$ against the
+hypothetical true $\sigma^2 = 225$). Separately, the shrinkage estimator $\hat\theta = 0.9\bar x$, compared
+against the hypothetical true $\mu = 48$, has $\operatorname{Bias} = -4.8$ and
+$\operatorname{Var}(\hat\theta) = 0.81(6.25) = 5.0625$, giving
+$\operatorname{MSE} = 5.0625 + 23.04 = 28.1025$ — much worse than the unbiased $\bar x$'s
+$\operatorname{MSE} = \operatorname{Var} = 6.25$ in this particular setup. Zero bias does not automatically
+mean "better": here it means much better, but the comparison has to be made on MSE, not on bias alone.
 
-| Symbol | Meaning |
-|---|---|
-| $\pi(\theta)$ | the **prior** distribution for $\theta$ (an assumption, not data) |
-| $p(x \mid \theta)$ | the **likelihood** of the data given $\theta$ |
-| $\pi(\theta \mid x)$ | the **posterior**: $\pi(\theta \mid x) \propto p(x \mid \theta)\,\pi(\theta)$ |
-| $p(x)$ | the **evidence** / marginal likelihood — the normalizing constant dropped by $\propto$ |
-| $\propto$ | "proportional to"; always know which constant ($p(x)$) it dropped |
-| $\text{Beta}(a,b)$ | the Beta prior/posterior (shape–shape); mean $a/(a+b)$ |
-| credible interval | a Bayesian posterior interval — a genuine probability statement about $\theta$ (the opposite of a CI) |
-| posterior predictive | the distribution of a future observation, averaging the likelihood over the posterior |
+### Type I vs. Type II error, and power
 
-## Decisions
+A Type I error is rejecting $H_0$ when $H_0$ is actually true; its rate is controlled directly by $\alpha$,
+chosen before the data are seen. A Type II error is *failing* to reject $H_0$ when a specific $H_a$ is
+actually true; its rate is $\beta$, and $\beta$ can only be computed against one specific alternative value at
+a time — there is no single "the" Type II error rate the way there is a single $\alpha$. Power $= 1 - \beta$
+is the complementary "correctly reject" rate against that same specific alternative.
 
-| Symbol | Meaning |
-|---|---|
-| $a$ | an action / decision |
-| $\operatorname{Loss}(\theta, a)$ | a decision **loss** — written out, **never** $L$ (which is the likelihood) |
+MAC Study tie-back (Week 9): against the specific hypothetical alternative $\mu = 50$, with a one-sided
+$\alpha = 0.05$ test, the critical value is $\bar x = 45 + 1.645(2.5) = 49.11$, giving
+$\text{Power} = P(\bar X > 49.11 \mid \mu = 50) = P(Z > -0.355) = \Phi(0.355) \approx 0.639$, so
+$\beta \approx 0.361$. Change the stipulated alternative to $\mu = 55$ instead of $\mu = 50$ and both numbers
+would change — power is never a property of the test alone, only of the test *against a stated alternative*.
 
----
+### A frequentist CI vs. a Bayesian credible interval
 
-*This page is a study reference. For graded specifics — deadlines, submissions, and policies — **Blackboard
-(the LMS) is authoritative**.*
+Both are intervals meant to summarize uncertainty about a parameter, and both can look numerically similar,
+but they answer different questions. The frequentist CI (above) is a statement about the **procedure's**
+long-run coverage rate, with $\theta$ treated as a fixed unknown constant. A Bayesian credible interval is a
+statement about the **posterior distribution** $\pi(\theta \mid \text{data})$ itself — an interval that
+actually contains 95% of the posterior probability, because in the Bayesian framework $\theta$ is treated as
+having a genuine probability distribution (updated from the prior by the data), so "95% probability $\theta$
+is in this interval" *is* the correct reading of a credible interval, in a way it never is for a frequentist CI.
+
+MAC Study tie-back (Week 12): starting from prior $\text{Beta}(3,7)$ (mean $0.30$) and updating on the full
+survey ($n=100$, $k=38$) gives posterior $\text{Beta}(41,69)$, posterior mean $41/110 \approx 0.373$, posterior
+SD $\approx 0.0459$, and a normal-approximation 95% credible interval $0.373 \pm 1.96(0.0459) \approx
+(0.283, 0.463)$. Compare this directly to the Week 7 frequentist CI for the same usage rate,
+$(0.285, 0.475)$: the two intervals are close in this case (a similar sample size and a not-too-informative
+prior), but only the credible interval supports the sentence "there is a 95% probability $\pi$ falls in
+$(0.283, 0.463)$, given the prior and the data." The frequentist interval never supports that sentence, no
+matter how tempting it is to read it that way.
+
+## How this connects to the rest of the course
+
+- **Weeks 1–3** introduce the parameter/statistic distinction ($\theta$ vs. $\hat\theta$; $\mu,\pi$ vs.
+  $\bar x, \hat p$) and the standard-error notation that every later week reuses.
+- **Week 4** derives $\operatorname{Bias}$, $\operatorname{Var}$, and $\operatorname{MSE}$ from scratch,
+  including the $(n-1)$-divisor result referenced above.
+- **Weeks 5–6** develop $L(\theta)$, $\ell(\theta)$, and $\hat\theta_{\text{MLE}}$, and the likelihood-vs-probability
+  distinction that matters until Week 12 reframes it.
+- **Week 7** develops the CI notation and the procedure-vs-probability distinction in full.
+- **Week 8** develops the p-value notation and the p-value-vs-$P(H_0\text{ true})$ distinction in full.
+- **Week 9** develops $\alpha$, $\beta$, and Power against a stated alternative.
+- **Weeks 10–11** reuse the CI and testing notation under resampling (bootstrap SE, permutation p-values),
+  flagging where an estimated SE is close-but-not-identical to a known-$\sigma$ SE.
+- **Week 12** introduces $\pi(\theta)$, $L(\theta\mid\text{data})$, and $\pi(\theta\mid\text{data})$, and is
+  where the CI-vs-credible-interval distinction above is developed in full.
+- **Week 13** puts the frequentist, likelihood, bootstrap/randomization, and Bayesian notations side by side
+  on the same MAC Study usage-rate question.
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.

@@ -1,378 +1,333 @@
 ---
 title: "Week 6 — Maximum likelihood estimation"
-subtitle: "How do we find the single value the data most support?"
-page_mode: normal_week
-week_contract: public_note
+subtitle: "Turning the likelihood function into a single best estimate, by calculus"
+page_mode: math_derivation_week
+week_contract: math_derivation
 source_mode: source-informed
-verified: false
 readings:
-  - "MIT OCW 18.05 — Maximum likelihood estimation — supports finding the MLE via the score equation and the log-likelihood"
+  - "MIT OCW 18.05 — Maximum likelihood estimation — supports deriving the MLE by differentiating the log-likelihood"
 toc: true
 ---
 
+## Mathematical goal
+
+Week 5 built the likelihood function $L(\theta)$ and compared its height at a few candidate values of
+$\theta$ by hand. That is progress, but it is not yet an estimation procedure: nobody wants to guess three
+candidate values and see which is tallest. This week's mathematical goal is to find the value of $\theta$ that
+maximizes $L(\theta)$ **exactly**, using calculus, so that "most likely value of $\theta$" becomes a formula
+you can compute directly from data rather than a comparison of guesses. The tool is the same in every case:
+take the log-likelihood, differentiate with respect to $\theta$, set the derivative to zero, and solve. We
+carry that single tool through two distributions used all term (Binomial/Bernoulli and Normal with known
+$\sigma$) and one transfer distribution (Poisson), and show that it always produces the intuitive estimator
+you would have guessed anyway — which is exactly the point of doing the derivation once, carefully.
+
 ## The week question
 
-Last week you learned to read the likelihood $L(\theta)$ as a function that scores every candidate value of a
-parameter by how well it would have produced the data you actually saw. A likelihood curve ranks values; it
-does not, by itself, hand you a single answer. This week's question is the natural next step: **of all the
-values $\theta$ could take, which one does the data support most?** That single value is the **maximum
-likelihood estimate**, written $\hat\theta_{\text{MLE}}$, and the procedure that produces it — find the peak
-of the likelihood — is one of the most general estimation tools in all of statistics. We will derive it by
-hand for the running proportion, get an honest standard error from the *curvature* of the log-likelihood, and
-then carry the same recipe to a mean and a rate so you can see the recipe is not specific to one problem.
+If $L(\theta)$ measures how well each candidate value of $\theta$ explains the data you actually observed,
+what is the value of $\theta$ that explains the data **best**, and how do you find it without checking
+candidates one at a time?
 
-## Why this matters
+## Notation
 
-Maximum likelihood is the engine under a huge fraction of the methods you will meet later — confidence
-intervals next week, the test statistics in week 8, logistic and Poisson regression, and the likelihoods
-inside Bayesian posteriors in week 12 all lean on it. It matters here for three reasons. First, it is a
-**single, mechanical recipe**: write the log-likelihood, differentiate, set the derivative to zero, solve.
-The same three steps work for a proportion, a mean, a rate, and far beyond. Second, the *second* derivative —
-how sharply the log-likelihood bends at its peak — gives you a standard error for free, so the estimate
-arrives with its own uncertainty attached. Third, maximum likelihood keeps the parameter-versus-estimate
-discipline of this course in sharp focus: the MLE is a **number computed from one sample** that estimates a
-**fixed unknown parameter**, and the likelihood it maximizes is a function of $\theta$, never a probability
-distribution over $\theta$. Holding that line is the whole point of the week.
+| Symbol | Meaning |
+|---|---|
+| $\theta$ | Generic unknown parameter being estimated |
+| $L(\theta)$ | Likelihood function: joint density/pmf of the observed data, viewed as a function of $\theta$ for **fixed** data |
+| $\ell(\theta) = \ln L(\theta)$ | Log-likelihood function |
+| $\hat\theta_{MLE}$ | Maximum likelihood estimate: the value of $\theta$ that maximizes $L(\theta)$ (equivalently $\ell(\theta)$) |
+| $\pi$, $\hat\pi$ | Population proportion; its MLE |
+| $n$, $k$ | Sample size; count of "successes" in a Binomial/Bernoulli sample |
+| $\mu$, $\hat\mu$ | Population mean (Normal, $\sigma$ known); its MLE |
+| $x_i$, $\bar x$ | Individual observation; sample mean |
+| $\lambda$, $\hat\lambda$ | Poisson rate parameter; its MLE |
+| $\dfrac{d\ell}{d\theta}$ | Derivative of the log-likelihood with respect to $\theta$ — set to 0 to locate the maximum |
 
-## Learning goals
+## Conceptual setup
 
-By the end of this week you should be able to:
+Two facts make maximizing a likelihood function tractable, and both are worth stating before any algebra.
 
-- State what the maximum likelihood estimate is — the parameter value that maximizes $L(\theta)$, equivalently
-  $\ell(\theta) = \log L(\theta)$ — and explain why maximizing the log is equivalent and easier.
-- Derive an MLE by writing the **score** $\ell'(\theta)$, setting it to zero, and solving the score equation.
-- Compute the locked proportion MLE $\hat\theta_{\text{MLE}} = 26/40 = 0.65$ for the reading-fluency study and
-  confirm it is a maximum, not just a stationary point.
-- Read a standard error off the **observed information** (the curvature of $\ell$): here
-  $\operatorname{SE}(\hat\theta) \approx 1/\sqrt{175.8} \approx 0.0754$, matching the week-3 Wald SE.
-- Transfer the recipe to a Normal mean (MLE is $\bar x = 8.0$) and to an exponential rate.
-- Keep the likelihood-is-not-a-probability-over-$\theta$ distinction explicit, and name what the MLE
-  conditions on (the chosen model) and what it does not deliver (a probability about the fixed $\theta$).
+**Fact 1 — maximizing $L(\theta)$ and maximizing $\ell(\theta) = \ln L(\theta)$ give the same $\hat\theta$.**
+The natural log is a strictly increasing function, so it never changes which input produces the largest
+output: if $L(\theta)$ peaks at some value, $\ln L(\theta)$ peaks at that same value. This matters because raw
+likelihoods for independent data are **products** (one factor per observation), and products of many terms are
+awkward to differentiate. Logs turn those products into **sums**, and sums differentiate one term at a time.
+This is why every derivation below works with $\ell(\theta)$, never $L(\theta)$ directly.
 
-## Core vocabulary
+**Fact 2 — a maximum of a smooth function occurs where its derivative is zero (and the function is concave
+there).** This is ordinary single-variable calculus, not anything special to statistics. The recipe is always
+the same three moves:
 
-A compact notation block for the week. These mirror the
-[notation glossary](../resources/notation-glossary.qmd); keep parameter, statistic, estimator, and estimate
-distinct in both words and symbols.
+1. Write down $L(\theta)$ from the assumed model and the observed data.
+2. Take $\ell(\theta) = \ln L(\theta)$, simplify.
+3. Differentiate $\ell(\theta)$ with respect to $\theta$, set $\dfrac{d\ell}{d\theta} = 0$, and solve for
+   $\theta$. Call the solution $\hat\theta_{MLE}$.
 
-- **Parameter** $\theta$ — the fixed unknown we want to learn about (the population pass-rate). Parameters are
-  fixed, not random, and never carry a hat themselves.
-- **Likelihood** $L(\theta)$ — a function **of $\theta$** given the observed data; it scores candidate
-  parameter values. It is **not** a probability distribution over $\theta$ and need not integrate to $1$.
-- **Log-likelihood** $\ell(\theta) = \log L(\theta)$ — the natural log of the likelihood. It has the same
-  maximizer as $L$ but turns products into sums, so derivatives are tractable.
-- **Score** $\ell'(\theta) = \dfrac{d}{d\theta}\,\ell(\theta)$ — the slope of the log-likelihood. Setting the
-  score to zero, $\ell'(\theta) = 0$, is the **score equation**; its solution is the candidate MLE.
-- **Maximum likelihood estimate** $\hat\theta_{\text{MLE}}$ — the value of $\theta$ that maximizes
-  $\ell(\theta)$; the parameter value that makes the observed data most probable under the chosen model. As an
-  *estimator* (a function of the random sample) it has a sampling distribution; as an *estimate* it is one
-  realized number from one sample.
-- **Observed information** $I(\hat\theta) = -\ell''(\hat\theta)$ — minus the second derivative (the curvature)
-  of $\ell$ at the peak. A sharply peaked log-likelihood means high information and a small standard error.
-- **Standard error of the MLE** $\operatorname{SE}(\hat\theta) \approx 1/\sqrt{I(\hat\theta)}$ — the
-  (estimated) SD of the estimator's sampling distribution, read off the curvature.
+A full course in mathematical statistics would also check the second derivative is negative (confirming a
+maximum, not a minimum or saddle point) and check the boundary of the parameter space; for the two models this
+week, the log-likelihood is a smooth, single-peaked (concave) function of $\theta$ over its whole valid range,
+so the first-order condition alone is what we need to see the idea. That verification is noted here and left
+as a background fact, not re-derived symbol by symbol on the page.
 
-## Concept development
+![**Fact 2, drawn (synthetic).** The log-likelihood $\ell(\pi)$ for the MAC-Study pilot ($n=5$, $k=2$,
+Worked example 1 below) peaks at $\pi=0.4$ (top). Its derivative $d\ell/d\pi$ crosses zero at that exact
+same $\pi=0.4$ (bottom) — the algebraic "set the derivative to zero" step in the recipe above, made
+visible.](../assets/figures/wk06_loglik_derivative.png){#fig-wk06-loglik-derivative fig-alt="Two stacked panels sharing a horizontal pi axis from 0 to 1. The top panel shows the log-likelihood curve rising to a single maximum at pi=0.4, then falling. The bottom panel shows the derivative curve, positive to the left of pi=0.4, crossing zero exactly at pi=0.4, and negative to the right."}
 
-### The idea: maximize the (log-)likelihood
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The top panel is the same shape as an ordinary
+single-peaked log-likelihood curve, maximized at $\pi=0.4$. The bottom panel is its derivative: positive
+(curve still rising) for $\pi<0.4$, zero exactly at $\pi=0.4$, and negative (curve falling) for $\pi>0.4$.
+The zero-crossing in the bottom panel and the peak in the top panel sit at the identical $\pi$ — that
+alignment is Fact 2 itself, not a coincidence of this particular example. *Synthetic instructional example;
+numbers are illustrative.*
+:::
 
-The likelihood ranks parameter values; the MLE picks the top-ranked one. Formally,
+One more thing this week's convention warning will return to: **the likelihood is a function of $\theta$, not
+a probability distribution over $\theta$.** Nothing about "maximizing $L(\theta)$" means $\theta$ is random or
+that $\hat\theta_{MLE}$ is "the most probable value of $\theta$" in a probability sense — that reading only
+becomes available once a prior is introduced in Week 12's Bayesian framework.
 
-$$
-\hat\theta_{\text{MLE}} = \arg\max_{\theta} \, L(\theta) = \arg\max_{\theta} \, \ell(\theta).
-$$
+## Worked example
 
-Why the log? Because the natural logarithm is strictly increasing, $L(\theta)$ and $\ell(\theta) = \log
-L(\theta)$ are maximized at exactly the same $\theta$ — the log moves the *height* of the peak but not its
-*location*. And the log turns a product of probabilities into a **sum** of log-probabilities, which is far
-easier to differentiate. For a smooth log-likelihood on the interior of the parameter space, the maximizer
-satisfies the **score equation** $\ell'(\theta) = 0$, and we confirm it is a maximum (not a minimum or
-saddle) by checking that the second derivative is negative there, $\ell''(\hat\theta) < 0$.
+### Worked example 1 — Binomial/Bernoulli MLE (the recurring MAC-Study pilot)
 
-A caution that is the week's central trap: the area under $L(\theta)$ has no meaning, and the height of the
-peak is not a probability. The MLE is the *location* of the peak, full stop. The likelihood is a function of
-$\theta$, not a density over $\theta$ — that is convention-risk 4 in the [notation glossary](../resources/notation-glossary.qmd).
-
-### The proportion: deriving the score equation symbolically
-
-For the reading-fluency study (Strand A), $X \sim \text{Binomial}(n, \theta)$ with $n = 40$ trials and $x =
-26$ passes. From week 5 the log-likelihood, up to an additive constant that does not depend on $\theta$, is
+**Symbolic derivation.** Suppose $n$ independent Bernoulli$(\pi)$ trials produce $k$ successes. As in Week 5,
+the likelihood kernel (the part of $L(\pi)$ that depends on $\pi$) is
 
 $$
-\ell(\theta) = \text{const} + 26\ln\theta + 14\ln(1-\theta), \qquad 0 < \theta < 1.
+L(\pi) \propto \pi^{k}(1-\pi)^{n-k}, \qquad 0 < \pi < 1.
 $$
 
-Differentiate with respect to $\theta$. Using $\frac{d}{d\theta}\ln\theta = 1/\theta$ and
-$\frac{d}{d\theta}\ln(1-\theta) = -1/(1-\theta)$, the score is
+Take the log:
 
 $$
-\ell'(\theta) = \frac{26}{\theta} - \frac{14}{1-\theta}.
+\ell(\pi) = \ln L(\pi) = k\ln \pi + (n-k)\ln(1-\pi) + C,
 $$
 
-The constant differentiated away, which is exactly why dropping it last week was harmless. Set the score to
-zero and solve:
+where $C$ collects constants that do not involve $\pi$ (they vanish under differentiation). Differentiate with
+respect to $\pi$:
 
 $$
-\begin{aligned}
-\frac{26}{\theta} - \frac{14}{1-\theta} &= 0 \\[4pt]
-\frac{26}{\theta} &= \frac{14}{1-\theta} \\[4pt]
-26(1-\theta) &= 14\,\theta \\[4pt]
-26 &= 26\,\theta + 14\,\theta = 40\,\theta \\[4pt]
-\hat\theta_{\text{MLE}} &= \frac{26}{40} = 0.65.
-\end{aligned}
+\frac{d\ell}{d\pi} = \frac{k}{\pi} - \frac{n-k}{1-\pi}.
 $$
 
-So the MLE of the pass-probability is $\hat\theta_{\text{MLE}} = 0.65$ — and notice it is exactly the sample
-proportion $\hat p = x/n$ from weeks 1 and 3. That is not a coincidence: for a binomial proportion the MLE
-*is* the sample proportion. The derivation just earns that familiar formula from a general principle rather
-than asserting it.
-
-Confirm it is a maximum. The second derivative is
+Set this equal to zero and solve:
 
 $$
-\ell''(\theta) = -\frac{26}{\theta^2} - \frac{14}{(1-\theta)^2},
+\frac{k}{\pi} = \frac{n-k}{1-\pi} \;\;\Longrightarrow\;\; k(1-\pi) = (n-k)\pi \;\;\Longrightarrow\;\; k - k\pi = n\pi - k\pi \;\;\Longrightarrow\;\; k = n\pi.
 $$
 
-which is negative for every $\theta$ in $(0,1)$, so $\ell$ is concave and the stationary point is the unique
-maximum. Interpreting: among all pass-probabilities, $\theta = 0.65$ is the single value under which observing
-$26$ passes in $40$ students is most probable. This is a statement about which parameter the **data** most
-support under the binomial model — it is **not** a claim that $\theta$ "is probably $0.65$," because $\theta$
-is a fixed unknown, not a random quantity.
-
-### Uncertainty for free: the curvature gives a standard error
-
-A point estimate without a standard error is half an answer. Maximum likelihood supplies the other half from
-the **observed information** — the curvature of the log-likelihood at its peak:
-
 $$
-I(\hat\theta) = -\ell''(\hat\theta).
+\boxed{\hat\pi_{MLE} = \frac{k}{n}}
 $$
 
-The intuition is geometric. If $\ell$ is sharply peaked, nearby $\theta$ values fit the data much worse, so
-the data pin $\theta$ down tightly — high information, small SE. If $\ell$ is broad and flat, many values fit
-nearly as well — low information, large SE. The standard error is
+That is exactly the sample proportion — the number every intro-stats student already computes, now justified
+as the value that makes the observed data most likely under the Bernoulli/Binomial model.
+
+**Numeric application (the pilot batch).** Using the course's locked small illustrative pilot — the first five
+survey responses, $n = 5$, $k = 2$ used the MAC:
 
 $$
-\operatorname{SE}(\hat\theta) \approx \frac{1}{\sqrt{I(\hat\theta)}}.
+\hat\pi_{MLE} = \frac{k}{n} = \frac{2}{5} = 0.4.
 $$
 
-For the binomial, plugging $\hat\theta = \hat p = 0.65$ into $-\ell''$ simplifies to the compact form
+This matches Week 5's likelihood-kernel comparison exactly: among $\pi = 0.2, 0.4, 0.6$, the kernel
+$\pi^2(1-\pi)^3$ was tallest at $\pi = 0.4$ (kernel values $0.02048$, $0.03456$, $0.02304$ respectively). The
+calculus confirms that $0.4$ is not just the tallest of those three candidates — it is the single tallest
+point over the entire interval $(0,1)$.
+
+![**The log-likelihood, maximized (synthetic).** $\ell(\pi)=2\ln\pi+3\ln(1-\pi)$ for the MAC-Study pilot
+($n=5$, $k=2$), peaking exactly at the boxed MLE, $\hat\pi_{MLE}=0.4$ — the same curve as Week 5's
+likelihood, now on the log scale, with the calculus result marked at its
+maximum.](../assets/figures/wk06_bernoulli_loglik_mle.png){#fig-wk06-bernoulli-loglik fig-alt="A single-peaked curve over pi from 0 to 1, rising steeply from a low value near pi=0, peaking at pi=0.4 where a dashed vertical line and a marked point are drawn, then falling toward a low value near pi=1."}
+
+### Worked example 2 — Normal MLE, $\sigma$ known (the recurring MAC-Study pilot)
+
+**Symbolic derivation.** Suppose $x_1, \dots, x_n$ are independent draws from a Normal$(\mu, \sigma^2)$
+distribution with $\sigma$ treated as known (the course's standing "known-$\sigma$" teaching simplification,
+same as Weeks 2–9). The likelihood is the product of the $n$ Normal densities:
 
 $$
-I(\hat\theta) \approx \frac{n}{\hat p(1-\hat p)} = \frac{40}{0.65 \cdot 0.35} = \frac{40}{0.2275} \approx 175.8,
+L(\mu) = \prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x_i-\mu)^2}{2\sigma^2}\right).
 $$
 
-so
+Take the log, turning the product into a sum:
 
 $$
-\operatorname{SE}(\hat\theta) \approx \frac{1}{\sqrt{175.8}} \approx 0.0754.
+\ell(\mu) = -\frac{n}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^{n} (x_i - \mu)^2.
 $$
 
-This matches the Wald standard error $\sqrt{\hat p(1-\hat p)/n} \approx 0.0754$ you computed in week 3 — and
-that agreement is no accident, since $\sqrt{\hat p(1-\hat p)/n} = 1/\sqrt{n/[\hat p(1-\hat p)]}$. Interpreting:
-$0.0754$ is the estimated SD of the *estimator* $\hat\theta$ across hypothetical repeated samples of $n = 40$,
-not the SD of any one student's outcome. It is what is **random** here — the sampling-to-sampling wobble of the
-procedure — while the parameter $\theta$ stays **fixed**.
+The first term does not involve $\mu$, so only the second term matters for differentiation. Differentiate with
+respect to $\mu$:
 
-### Why maximum likelihood is general
+$$
+\frac{d\ell}{d\mu} = \frac{1}{\sigma^2}\sum_{i=1}^{n} (x_i - \mu).
+$$
 
-Nothing in the recipe — write $\ell$, differentiate, set to zero, solve, check curvature — used a fact special
-to the binomial. The same three-line procedure produces the MLE for a Normal mean (the sample mean), a Normal
-variance, an exponential rate, a Poisson rate, and the coefficients in a regression. What changes from problem
-to problem is only the model you assume, which fixes the form of $\ell(\theta)$. That generality is the reason
-maximum likelihood, not a grab-bag of ad-hoc formulas, organizes the estimation chapter of this course. What
-stays constant across every application is the conditioning move: the MLE is the best-supported value **given
-the model you chose**. Choose a wrong model and you get the best-supported value of a wrong question, so the
-modeling assumption is never silent — that is convention-risk 14.
+Set this equal to zero (note $\sigma^2 > 0$, so it can be cleared without changing the solution):
 
-## Worked examples
+$$
+\sum_{i=1}^{n} (x_i - \mu) = 0 \;\;\Longrightarrow\;\; \sum_{i=1}^{n} x_i = n\mu.
+$$
 
-### Worked example — the reading-fluency study (the recurring slice)
+$$
+\boxed{\hat\mu_{MLE} = \frac{1}{n}\sum_{i=1}^{n} x_i = \bar x}
+$$
 
-**Model and data.** Synthetic; seed set (`set.seed(35103)`). A campus reading-intervention program records
-whether each of $n = 40$ students reached the reading-competency threshold; $x = 26$ passed. We model
-$X \sim \text{Binomial}(40, \theta)$, with $\theta$ the fixed population pass-probability.
+Once again, the calculus recovers the estimator every student already uses by instinct — the sample mean — now
+derived rather than assumed.
 
-**Computation.** From the derivation above, the score equation $\frac{26}{\theta} - \frac{14}{1-\theta} = 0$
-gives $26(1-\theta) = 14\theta$, hence $\hat\theta_{\text{MLE}} = 26/40 = 0.65$. The observed information is
-$I(\hat\theta) \approx 40/(0.65 \cdot 0.35) \approx 175.8$, so $\operatorname{SE}(\hat\theta) \approx
-1/\sqrt{175.8} \approx 0.0754$.
+**Numeric application (the pilot batch).** The course's locked small illustrative sample of five visit
+durations (minutes), a different pilot batch from the $n = 36$ visit-duration sample used from Week 2 onward:
+$52, 46, 58, 41, 53$.
 
-You can also find the maximizer **numerically**, without calculus, by evaluating $\ell(\theta)$ on a fine grid
-and taking the largest, or by handing $\ell$ to an optimizer. The static R below does both and confirms the
-hand derivation. It is shown as teaching code — it is not executed in these notes.
+$$
+\hat\mu_{MLE} = \bar x = \frac{52 + 46 + 58 + 41 + 53}{5} = \frac{250}{5} = 50 \text{ minutes.}
+$$
 
-```r
+![**The Normal log-likelihood, maximized (synthetic).** $\ell(\mu)$ for the five visit durations
+($52,46,58,41,53$), using the course's standing known-$\sigma\approx15$ simplification, peaks exactly at
+$\hat\mu_{MLE}=\bar x=50$. Tick marks along the bottom show the five raw
+observations.](../assets/figures/wk06_normal_loglik_mle.png){#fig-wk06-normal-loglik fig-alt="A single-peaked, symmetric curve over mu from 30 to 70, peaking at mu=50 where a dashed vertical line and a marked point are drawn. Small tick marks near the bottom axis mark the five raw data values at 41, 46, 52, 53, and 58."}
+
+::: {.callout-note appearance="minimal"}
+**What the figure shows (non-visual equivalent).** The log-likelihood for $\mu$, built from the five visit
+durations and the known-$\sigma\approx15$ simplification, is a smooth, symmetric, single-peaked curve. Its
+maximum sits exactly at $\mu=50$, the sample mean $\bar x$ — visually confirming that averaging the data is
+not just a convenient summary but the calculus-derived best-supported value of $\mu$ under this model.
+*Synthetic instructional example; numbers are illustrative.*
+:::
+
+### Transfer example — Poisson MLE for a call-center arrival rate (synthetic; seed set)
+
+**Setting.** A call center tracks the number of customer calls arriving per hour. A standard model for
+"count of events per fixed unit of time" is the Poisson distribution with rate parameter $\lambda$: for a
+single hour, $P(X = x) = \dfrac{e^{-\lambda}\lambda^{x}}{x!}$, $x = 0, 1, 2, \dots$. This is a genuinely
+different sampling model from both examples above (support on all non-negative integers, one parameter that is
+simultaneously the mean and the variance), which is exactly why it is useful as a transfer case: the same
+three-step recipe applies unchanged.
+
+**Symbolic derivation.** For $n$ independent hours with observed counts $x_1, \dots, x_n$, the likelihood is
+
+$$
+L(\lambda) = \prod_{i=1}^{n} \frac{e^{-\lambda}\lambda^{x_i}}{x_i!} = \frac{e^{-n\lambda}\,\lambda^{\sum x_i}}{\prod_{i=1}^n x_i!}.
+$$
+
+Take the log:
+
+$$
+\ell(\lambda) = -n\lambda + \left(\sum_{i=1}^{n} x_i\right)\ln \lambda - \ln\!\left(\prod_{i=1}^n x_i!\right),
+$$
+
+where the last term does not involve $\lambda$. Differentiate with respect to $\lambda$:
+
+$$
+\frac{d\ell}{d\lambda} = -n + \frac{\sum_{i=1}^{n} x_i}{\lambda}.
+$$
+
+Set this equal to zero and solve:
+
+$$
+\frac{\sum_{i=1}^{n} x_i}{\lambda} = n \;\;\Longrightarrow\;\; \sum_{i=1}^{n} x_i = n\lambda.
+$$
+
+$$
+\boxed{\hat\lambda_{MLE} = \frac{1}{n}\sum_{i=1}^{n} x_i = \bar x}
+$$
+
+The Poisson MLE for the rate is the sample mean count per hour — the same "average the data" shape as the
+Normal-mean derivation above, arrived at by the identical three-step recipe applied to a different model.
+
+**Numeric application (synthetic; seed 35103 set).** Suppose the call center records the following number of
+calls in each of $n = 6$ observed hours: $4, 6, 5, 7, 3, 5$.
+
+$$
+\hat\lambda_{MLE} = \bar x = \frac{4+6+5+7+3+5}{6} = \frac{30}{6} = 5 \text{ calls per hour.}
+$$
+
+```{r}
+#| label: poisson-mle-transfer
+#| eval: false
 set.seed(35103)
-
-# Reading-fluency study, Strand A: n = 40 trials, x = 26 passes
-n <- 40
-x <- 26
-
-# Log-likelihood for theta (drop the binomial coefficient -- constant in theta)
-loglik <- function(theta) x * log(theta) + (n - x) * log(1 - theta)
-
-# (1) Grid search: evaluate loglik on a fine grid, take the arg-max
-grid     <- seq(0.001, 0.999, by = 0.001)
-theta_hat_grid <- grid[which.max(loglik(grid))]
-theta_hat_grid       # 0.65
-
-# (2) Optimizer: maximize loglik directly (optimize minimizes, so negate)
-opt <- optimize(function(t) -loglik(t), interval = c(0.001, 0.999))
-opt$minimum          # 0.65  -- same answer
-
-# (3) SE from the observed information  I(theta_hat) = n / [p_hat (1 - p_hat)]
-p_hat <- x / n                       # 0.65
-info  <- n / (p_hat * (1 - p_hat))   # 175.8
-se    <- 1 / sqrt(info)              # 0.0754
-c(theta_hat = p_hat, info = info, se = se)
-#  theta_hat       info         se
-#       0.65      175.8     0.0754
+# Synthetic call-center hourly arrival counts (transfer example, not the MAC Study)
+calls_per_hour <- c(4, 6, 5, 7, 3, 5)
+lambda_hat <- mean(calls_per_hour)
+lambda_hat  # matches the by-hand MLE: 5
 ```
 
-**Interpretation.** All three routes agree: the data most support $\theta = 0.65$, with an estimated standard
-error of $0.0754$. The grid search and the optimizer matter because in harder models there is no closed-form
-score solution and the MLE *must* be found numerically — the binomial is the easy case where the calculus and
-the computer land in the same place. Name the pieces: $\theta$ is the **fixed** parameter; $\hat\theta = 0.65$
-is one **estimate** from one **observed** sample; $0.0754$ describes how that estimator would vary across the
-**random** resampling of $40$ students; and the binomial model with independent, identically distributed trials
-is the **assumption** the whole computation conditions on. The MLE does **not** say "there is a 65% chance
-$\theta = 0.65$" — that would read the likelihood as a probability over $\theta$, which it is not.
+**This chunk is shown but not executed on this page** (`eval: false`) — it only confirms the single number
+`lambda_hat`. The figure below goes one step further: it plots the full log-likelihood $\ell(\lambda)$ this
+chunk's data implies, over a grid of candidate $\lambda$ values, so the boxed MLE above is visible as a
+maximum rather than just a printed number.
 
-### Worked example — transfer: MLE of a Normal mean (and an exponential rate)
+![**The Poisson log-likelihood, maximized (synthetic).** $\ell(\lambda)$ for the six call-center hourly
+counts ($4,6,5,7,3,5$), peaking exactly at $\hat\lambda_{MLE}=\bar x=5$. Tick marks along the bottom show
+the six raw hourly
+counts.](../assets/figures/wk06_poisson_loglik_mle.png){#fig-wk06-poisson-loglik fig-alt="A single-peaked, right-skewed curve over lambda from 0.5 to 12, peaking at lambda=5 where a dashed vertical line and a marked point are drawn. Small tick marks near the bottom axis mark the six raw hourly counts at 3, 4, 5, 5, 6, and 7."}
 
-**Normal mean (Strand B).** Now switch outcomes. The reading-gain cohort (Strand B) has $n = 36$ scores with
-sample mean $\bar x = 8.0$ and sample SD $s = 6.0$ — a **different measured outcome** from the pass/not-pass
-proportion, so do not equate the two strands. Model the scores as $X_1, \dots, X_n \sim \text{Normal}(\mu,
-\sigma^2)$ i.i.d., and find the MLE of $\mu$ (treat $\sigma$ as known for the mean's derivation). Dropping
-constants, the log-likelihood in $\mu$ is
+## A convention warning
 
-$$
-\ell(\mu) = \text{const} - \frac{1}{2\sigma^2}\sum_{i=1}^{n}(x_i - \mu)^2.
-$$
+$L(\theta)$ and $\ell(\theta)$ are functions of the unknown parameter $\theta$ for **data that are already
+fixed** — they are not probability distributions over $\theta$, and $\theta$ is not being treated as random
+when you maximize them. "The value of $\theta$ that maximizes the likelihood" is a well-defined calculus
+question with a single answer; it is not the same claim as "the probability that $\theta$ equals this value,"
+which requires a prior distribution on $\theta$ and does not appear until Bayesian inference in Week 12. Keep
+maximum likelihood estimation and Bayesian posterior reasoning visually and verbally distinct: an MLE is a
+number derived from calculus on fixed data; a posterior is an entire distribution that requires a prior to
+exist in the first place.
 
-Differentiate and set to zero:
+A second, easily-missed warning: maximizing $\ell(\theta)$ instead of $L(\theta)$ is a convenience, not a
+different target. Because $\ln(\cdot)$ is strictly increasing, the two maximizations always agree on
+$\hat\theta_{MLE}$ — but they do **not** agree on the maximized height (the log-likelihood's maximum value is
+$\ln$ of the likelihood's maximum value, not the same number). Only the location of the peak transfers; the
+peak's height does not.
 
-$$
-\begin{aligned}
-\ell'(\mu) &= \frac{1}{\sigma^2}\sum_{i=1}^{n}(x_i - \mu) = 0 \\[4pt]
-\sum_{i=1}^{n} x_i - n\mu &= 0 \\[4pt]
-\hat\mu_{\text{MLE}} &= \frac{1}{n}\sum_{i=1}^{n} x_i = \bar x = 8.0.
-\end{aligned}
-$$
+## Practice (ungraded)
 
-So the MLE of a Normal mean is just the **sample mean**, $\hat\mu_{\text{MLE}} = \bar x = 8.0$. The same
-"write $\ell$, take the score, solve" recipe that produced $0.65$ for the proportion produces $8.0$ here — the
-only thing that changed was the assumed model. Interpreting: $8.0$ is the gain-score value the data most
-support under the Normal model; it is an **estimate** of the **fixed** mean $\mu$, and the spread of $\bar X$
-across **random** samples (its standard error, $s/\sqrt n = 6/6 = 1.0$ from week 3) is a separate question we
-formalize as an interval next week.
+Self-check only — no submission, no key, no due date.
 
-**Exponential rate.** As a second transfer, suppose waiting times until a student first reaches the threshold
-are modeled as $X_1, \dots, X_n \sim \text{Exponential}(\lambda)$ i.i.d., with rate parameter $\lambda > 0$
-and density $f(x \mid \lambda) = \lambda e^{-\lambda x}$. The log-likelihood is
-
-$$
-\ell(\lambda) = n\ln\lambda - \lambda\sum_{i=1}^{n} x_i,
-\qquad
-\ell'(\lambda) = \frac{n}{\lambda} - \sum_{i=1}^{n} x_i = 0
-\;\Rightarrow\;
-\hat\lambda_{\text{MLE}} = \frac{n}{\sum_{i=1}^{n} x_i} = \frac{1}{\bar x}.
-$$
-
-The MLE of an exponential rate is the **reciprocal of the sample mean** — sensible, since a larger average
-waiting time means a slower (smaller) rate. (Synthetic illustration: if such times averaged $\bar x = 4$
-weeks, then $\hat\lambda_{\text{MLE}} = 1/4 = 0.25$ per week; this is a notional transfer figure, not a locked
-study number.) The lesson across all three examples is the same: one general procedure, three different
-models, three answers — and in every case the answer is the value the data most support **given that model**.
-
-## A common mistake
-
-The week's trap is **reading the likelihood, or the MLE, as a probability statement about $\theta$**
-(convention-risk 4, and the companion risk 15 below). Three specific slips to avoid:
-
-- *"The likelihood says $\theta$ is probably $0.65$."* No. $L(\theta)$ is a function **of** $\theta$ given the
-  data; it is not a density **over** $\theta$, it need not integrate to $1$, and the area under it means
-  nothing. The MLE is the **location of the peak**, not a probability. A genuine probability statement about
-  $\theta$ requires a prior and a posterior — that is the Bayesian machinery of week 12, not maximum
-  likelihood.
-- *"$\hat\theta_{\text{MLE}} = 0.65$, so $\theta = 0.65$."* No. $\hat\theta_{\text{MLE}}$ is an **estimate** — a
-  single number from a single sample, an instance of a random estimator with standard error $0.0754$. The
-  fixed parameter $\theta$ remains unknown; the estimate is our best-supported guess, not the truth.
-- *Confusing the likelihood $L$ with a loss.* In this course $L(\theta)$ always means the **likelihood**; a
-  decision loss is written $\operatorname{Loss}(\theta, a)$, never $L$ (convention-risk 15). When week 9
-  introduces decisions, keep the symbols apart.
-
-A fourth, quieter slip is leaving the **model assumption silent**. The MLE is only "the best-supported value"
-*given* the binomial (or Normal, or exponential) model and the independence assumption. Name the model every
-time; an MLE under the wrong model is the right answer to the wrong question (convention-risk 14).
-
-## Low-stakes self-checks (ungraded)
-
-These are for self-study only — ungraded, no submission.
-
-1. Write the binomial log-likelihood for $n = 40$, $x = 26$ and differentiate it to recover the score
-   $\frac{26}{\theta} - \frac{14}{1-\theta}$. Solve the score equation and confirm $\hat\theta = 0.65$.
-2. Check that $\ell''(\theta) = -26/\theta^2 - 14/(1-\theta)^2 < 0$ for all $\theta \in (0,1)$. In one
-   sentence, what does the *sign* of the second derivative tell you, and what does its *magnitude* at the peak
-   tell you?
-3. Using $I(\hat\theta) \approx n/[\hat p(1-\hat p)] = 175.8$, reproduce $\operatorname{SE}(\hat\theta) \approx
-   0.0754$, and say in words why it agrees with the week-3 Wald SE.
-4. For a Normal sample, re-derive that $\hat\mu_{\text{MLE}} = \bar x$ from the score equation. Then state what
-   would change in the derivation, and what would not, if you instead had $n = 36$, $\bar x = 8.0$ values.
-5. For an exponential sample, show $\hat\lambda_{\text{MLE}} = 1/\bar x$. Self-check the direction: does a
-   larger mean waiting time give a larger or smaller rate, and does that match intuition?
-6. A classmate says "the MLE is $0.65$, so there's a 65% chance the true pass-rate is $0.65$." Identify the two
-   distinct mistakes in that sentence using this week's vocabulary.
+1. Re-derive $\hat\pi_{MLE} = k/n$ starting from $\ell(\pi) = k\ln\pi + (n-k)\ln(1-\pi)$, writing out every
+   algebra step from the derivative to the boxed result, without looking at the derivation above.
+2. A different pilot batch of Bernoulli MAC-usage responses has $n = 8$ trials with $k = 3$ successes. Using
+   the boxed formula $\hat\pi_{MLE} = k/n$, compute $\hat\pi_{MLE}$ for this batch. (This is a self-check
+   number only, not a new locked course fact.)
+3. For the Normal-mean derivation, explain in one or two sentences why the term
+   $-\frac{n}{2}\ln(2\pi\sigma^2)$ can be dropped before differentiating with respect to $\mu$, but would
+   **not** be droppable if you were instead solving for $\hat\sigma_{MLE}$ with $\mu$ known.
+4. Using the transfer example's recipe, suppose a second call-center sample of $n = 4$ hours gives counts
+   $2, 2, 3, 5$. Compute $\hat\lambda_{MLE}$ by hand and state what it means in words (calls per hour).
+5. Explain, in your own words, why maximizing $\ell(\theta) = \ln L(\theta)$ instead of $L(\theta)$ directly
+   changes none of the three boxed MLE results above.
 
 ## Reading and source pointer
 
-This week is grounded in **MIT OCW 18.05, *Introduction to Probability and Statistics* (Spring 2022)** —
-the reading on **maximum likelihood estimation**, which develops the MLE through the (log-)likelihood and the
-score equation, and connects the curvature of the log-likelihood to the precision of the estimate. It builds
-directly on last week's likelihood reading. *These notes are the course's own synthesis, grounded in but not
-copied from the sources.* For hands-on practice drawing and maximizing likelihood curves in R, work the
-companion [Lab 6 — Likelihood and MLE curves](../labs/lab-06-likelihood-and-mle-curves.qmd).
-
-## Formula-verification status
-
-**verified: false.** The formulas and every numeric value on this page are **drafted, synthetic, and not
-independently checked**. The course **math/statistics gate is BLOCKED**. The load-bearing items here — the
-binomial score $\ell'(\theta) = \frac{26}{\theta} - \frac{14}{1-\theta}$ and its solution
-$\hat\theta_{\text{MLE}} = 26/40 = 0.65$; the second derivative $\ell''(\theta) = -26/\theta^2 -
-14/(1-\theta)^2$; the observed information $I(\hat\theta) \approx n/[\hat p(1-\hat p)] = 40/0.2275 \approx
-175.8$ and the resulting $\operatorname{SE}(\hat\theta) \approx 1/\sqrt{175.8} \approx 0.0754$; the Normal-mean
-MLE $\hat\mu_{\text{MLE}} = \bar x = 8.0$; and the exponential-rate MLE $\hat\lambda_{\text{MLE}} = 1/\bar x$
-— are provisional and cross-checked only for internal and narrative consistency. All data
-are **synthetic** (`set.seed(35103)`) and represent the `reading-fluency study`, not real student records. Do
-not treat any value here as a confirmed reference until the human/source sign-off in
-`_state/notation_ledger.md` §5 is complete.
+This week follows MIT OCW 18.05's treatment of maximum likelihood estimation, which supports deriving the MLE
+by differentiating the log-likelihood and setting it to zero for both discrete (Binomial/Bernoulli) and
+continuous (Normal) models — the same differentiate-and-solve recipe used for the Poisson transfer example
+above. These notes are the course's own synthesis, grounded in but not copied from the sources.
 
 ## Public vs. graded
 
-These notes, the examples, and the practice here are **public and ungraded** — study material only. No graded
-prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference checkpoints,
-quizzes, homework, inference labs, the midterm, the project, and the final live in **Blackboard (the LMS)**,
-which is authoritative for due dates, submissions, and grades. If this page and Blackboard ever disagree,
-follow Blackboard.
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
 
 ## Looking ahead
 
-Next week we surround the MLE with an **interval** rather than reporting a single point. Week 7 builds the 95%
-confidence interval for $\theta$, $(0.502, 0.798)$, and for the mean, $(5.97, 10.03)$, directly on this week's
-estimate and standard error — and it asks the question that trips up almost everyone the first time: what does
-"95% confident" actually mean? (Spoiler: it is a property of the **procedure's** long-run coverage, not a
-probability about the fixed $\theta$.) Week 7 also marks the **midterm (Friday, October 9, in class)**, which
-covers sampling distributions through confidence intervals.
+Week 7 puts point estimates like $\hat\pi_{MLE}$ and $\hat\mu_{MLE}$ inside an interval that communicates
+uncertainty — the confidence interval — and also marks the in-class midterm (first-half material: sampling
+distributions through confidence intervals). The MLE machinery built this week does not stop at Week 7,
+either: point estimation by maximizing a likelihood is the same idea threading through hypothesis testing
+(Week 8), power (Week 9), and the Bayesian posterior mode (Week 12), where a prior is finally added to the
+picture this week deliberately withheld.
 
 ## See also
 
-- Previous week: [Week 5 — Likelihood](week-05-likelihood.qmd) — the likelihood curve this week's MLE
-  maximizes.
-- Next week: [Week 7 — Confidence intervals (and midterm)](week-07-confidence-intervals-and-midterm.qmd) —
-  surrounding the MLE with an interval and unpacking "95% confident."
-- Companion lab: [Lab 6 — Likelihood and MLE curves](../labs/lab-06-likelihood-and-mle-curves.qmd).
-- [Notation glossary](../resources/notation-glossary.qmd) — parameter vs statistic vs estimator vs estimate;
-  likelihood as a function of $\theta$.
-- [Inference reference](../resources/inference-reference.qmd) — the four lenses (frequentist, likelihood,
-  simulation, Bayesian) side by side.
+- [Week 5 — Likelihood](week-05-likelihood.qmd)
+- [Week 7 — Confidence intervals (+ midterm)](week-07-confidence-intervals-and-midterm.qmd)
+- [Lab 06 — Likelihood curves](../labs/lab-06-likelihood-curves.qmd) — plots the sharper likelihood curve
+  from the larger $n = 100$, $k = 38$ survey, peaked at $\hat\pi = 0.38$, alongside this week's calculus.
+- [Notation glossary](../resources/notation-glossary.qmd)
+- [Inference formula reference](../resources/inference-formula-reference.qmd)

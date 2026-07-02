@@ -1,52 +1,64 @@
 ---
 title: "Labs"
-subtitle: "The hands-on simulation strand (R + Quarto), in support of inferential reasoning"
-page-type: orientation
+subtitle: "The course's simulation strand"
 toc: true
 ---
 
-The labs are the course's hands-on simulation strand. They run alongside the notes, not instead of them:
-where the notes develop an inferential idea and interpret it, a lab lets you *do* it — simulate the sampling
-distribution, draw the likelihood curve, build the bootstrap interval, update the posterior, and read what
-the result means. Computation is in service of the inference, not the other way around. There are four labs
-across the term, each tied to a specific week.
+## What the labs are for
 
-## How a lab works
+Statistical inference is easier to trust once you have watched it happen many times over, not just once.
+The five labs in this course are the **simulation strand**: a thread of R-based exercises that runs alongside
+the week notes, giving you a place to see sampling variability, likelihood, resampling, randomization, and
+Bayesian updating play out computationally, over and over, rather than in a single static example.
 
-Every lab is built the same way, so you always know where you are:
+The labs **support the reasoning you build in the notes — they do not replace it**. A note develops the
+concept, the notation, and the worked examples by hand; the matching lab lets you re-derive the same idea by
+simulation, so you can compare "what the formula says" against "what actually happens across many simulated
+samples." Neither one stands alone. If a lab result and a note's formula-based result disagree by more than
+simulation noise should allow, that mismatch is itself worth noticing and asking about.
 
-1. **Goal.** What the inferential task is meant to show, stated in one or two sentences and linked back to the
-   companion week.
-2. **Setup.** The small bit of preparation you need — the random seed, the study, and the inferential
-   question.
-3. **Steps.** The analysis itself, broken into numbered steps with shown R code. You read the code,
-   understand each piece, then run it yourself.
-4. **Verify.** A check that the simulated result matches the theory and the interpretation from the notes —
-   the moment where computation and reasoning meet.
-5. **AI Use Note.** A short record of any AI help, with three parts — Tool, Purpose, and Verification — where
-   verification (how you checked the output yourself) is the load-bearing field.
+## The shared lab anatomy
 
-A note on the code: in these labs the R chunks are **shown for study**, written with a fixed seed
-(`set.seed(35103)`) so they are reproducible. They are not executed on this site — you run them in your own R
-session. See the [R · Quarto setup](../resources/r-quarto-setup.qmd) page to get going.
+Every lab in this course is built from the same five parts, in the same order, so once you know the pattern
+you can move through any lab efficiently:
 
-## The labs
+- **Idea & goal.** A short statement of the concept the lab illustrates and what you should be able to say or
+  compute by the end of it.
+- **Setup.** What you need before starting — the relevant note, any background from the recurring MAC Study,
+  and the base-R tools the lab will use.
+- **Numbered steps.** A sequence of `### Step` sections, each with a short explanation and a shown base-R code
+  chunk. The code is real, runnable base R (`sample()`, `replicate()`, `mean()`, and similar building blocks) —
+  never a specialized inference package — so the mechanics stay visible line by line.
+  Every simulation chunk carries `set.seed(35103)`, so the same code produces the same result every time it is
+  actually run.
+- **Verify.** A short check for whether your simulation behaved as expected — usually a comparison to a
+  formula-based answer from the companion week note.
+  Numbers here are drawn from the MAC Study exactly as locked in the companion note.
+- **AI use note.** A short table naming any AI tool a student might reasonably use while working through the
+  lab (for example, an AI coding assistant), the purpose it can legitimately serve, and how you would verify
+  its output yourself rather than trusting it directly.
 
-The four labs accompany the simulation-heavy weeks, one in each quarter of the term:
+## The five labs
 
-- **Lab 2 — Simulating sampling distributions.** Repeating the study in code to *see* a sampling distribution
-  form, and reading its center and spread. (Accompanies Week 2.)
-- **Lab 6 — Likelihood & MLE curves.** Drawing the likelihood and log-likelihood for a proportion and finding
-  where they peak. (Accompanies Week 6.)
-- **Lab 10 — Bootstrap intervals.** Resampling your own data to build a percentile confidence interval for a
-  mean. (Accompanies Week 10.)
-- **Lab 12 — Bayesian updating by simulation.** Turning a prior into a posterior and reading a credible
-  interval. (Accompanies Week 12.)
+| Lab | Companion week | What it simulates |
+|-----|-----------------|--------------------|
+| [Lab 2 — Simulating sampling distributions](lab-02-simulating-sampling-distributions.qmd) | [Week 2](../notes/week-02-sampling-distributions-and-simulation.qmd) | Sampling distributions: repeatedly draw samples from a known world and watch the sample mean's own distribution take shape. |
+| [Lab 6 — Likelihood curves](lab-06-likelihood-curves.qmd) | [Week 6](../notes/week-06-maximum-likelihood-estimation.qmd) | Likelihood curves: compute and plot the likelihood function across candidate parameter values to see the maximum emerge. |
+| [Lab 10 — Bootstrap intervals](lab-10-bootstrap-intervals.qmd) | [Week 10](../notes/week-10-bootstrap-inference.qmd) | Bootstrap intervals: resample the data in hand, with replacement, to build a confidence interval without assuming a known standard error. |
+| [Lab 11 — Randomization tests](lab-11-randomization-tests.qmd) | [Week 11](../notes/week-11-randomization-and-permutation-tests.qmd) | Randomization tests: shuffle group labels to build a null distribution for a group difference from scratch. |
+| [Lab 12 — Simulating the posterior](lab-12-simulating-the-posterior.qmd) | [Week 12](../notes/week-12-bayesian-inference.qmd) | Posterior distributions: simulate draws from a Beta posterior to see Bayesian updating as a distribution, not just a formula. |
 
-Randomization and permutation tests get a full hands-on treatment inside the Week 11 note itself, with the
-same shown-code style.
+These five topics are named directly in the syllabus's "Inference labs" line; the lab numbers match the week
+each one pairs with, and no other week has a companion lab.
+
+## A note on the code
+
+Every R chunk you see in a lab on this site is **shown for study, not executed on this site**. The chunks are
+base R, each carries `set.seed(35103)` wherever randomness is involved, and each is written to be reproducible
+line-for-line if you copy it into your own R or RStudio/Posit Cloud session. Reading the code and predicting
+what it will do before you run it is itself part of the exercise.
 
 ## Public vs. graded
 
-The labs here are public study material; the graded deliverable, its rubric, and due date live in
-**Blackboard (the LMS)** — this page is study and practice only.
+The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only.

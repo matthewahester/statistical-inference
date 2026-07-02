@@ -1,125 +1,254 @@
 ---
 title: "Lab 2 — Simulating sampling distributions"
-subtitle: "Repeating the study in code to watch a sampling distribution form"
+subtitle: "Watching x̄ ~ Normal(48, 2.5²) happen, instead of just writing it down"
 page_mode: software_lab_week
 week_contract: software_note_lab
 source_mode: source-informed
-verified: false
 toc: true
 ---
 
-> **Purpose.** This lab is the hands-on companion to
-> [Week 2 — Sampling distributions & simulation](../notes/week-02-sampling-distributions-and-simulation.qmd).
-> The note argues that an estimator is a random variable with a sampling distribution; here you *make* that
-> distribution appear by repeating the study thousands of times in code and reading its center and spread.
+> **Purpose.** Week 2's note (see
+> [Week 2 — Sampling distributions and simulation](../notes/week-02-sampling-distributions-and-simulation.qmd))
+> derives that, under the hypothetical true world Normal(μ = 48, σ = 15), the sampling distribution of the
+> mean of n = 36 MAC visit durations is approximately Normal(48, 2.5²), where 2.5 = σ/√n = 15/√36 = 15/6. That
+> claim is a statement about *infinitely many* hypothetical samples you will never actually collect. This lab
+> makes it concrete by simulating a large but finite number of samples yourself, computing the mean of each
+> one, and looking at what the resulting collection of means actually looks like — its center, its spread, and
+> its shape — next to the theoretical curve the note derived. You are not proving the claim here; you are
+> watching it happen.
 
 ## The idea
 
-A sampling distribution is what you would see if you could run the study over and over and collect the
-estimate each time. In the real world you run it once. In simulation you can run it ten thousand times — and
-because we are using a synthetic study with a known true parameter, we can watch the estimates pile up into the
-very distribution the theory predicts. This lab does that twice: for a proportion ($\hat p$) and for a mean
-($\bar X$), so you see the same idea in two settings. All data are synthetic and the seed is fixed, so your
-numbers will match the notes' locked values.
+A sampling distribution is the distribution of a statistic (here, x̄) across *repeated* samples from the same
+world. You can never actually take infinitely many repeated samples of real MAC visits — you get one sample,
+once. But a computer can pretend to be the hypothetical true world as many times as you like, because
+Normal(μ = 48, σ = 15) is a world you get to fully specify yourself. This lab uses that trick: it draws many
+independent samples of size n = 36 from Normal(48, 15), computes the mean of each simulated sample, and then
+looks at the distribution of those means. If the Week 2 derivation is right, this simulated distribution of
+means should end up centered near 48 with a standard deviation near 2.5, and its shape should look Normal. The
+sample data in hand from the real MAC survey (x̄ = 49.8, n = 36) is never used inside the simulation itself —
+the simulation only ever draws from the *hypothetical* true world, exactly as flagged in the note. Comparing
+the simulated distribution to the theoretical Normal(48, 2.5²) curve is the whole point: it turns an algebraic
+formula (σ/√n) into something you can see settle into place as the number of simulated samples grows.
+
+This is also a place where the course's simulation-based framing (informed by ModernDive's emphasis on seeing
+a sampling distribution by resampling) meets the course's base-R-only convention (§5 of the build
+conventions): the idea of "generate many samples, compute a statistic from each, look at the resulting
+distribution" is exactly ModernDive's simulation-based inference framing, but every step below is shown with
+base R (`rnorm()`, a loop or `replicate()`, `mean()`) rather than the `infer` package's `specify()` /
+`generate()` / `calculate()` pipeline.
+
+![**This lab's simulation pipeline (synthetic).** Five steps, always in this order: start from a fully
+specified hypothetical world, draw many independent samples from it, collapse each sample to its own mean,
+look at the resulting collection of means as a histogram, and compare that histogram to the theoretical curve
+the Week 2 derivation predicts.](../assets/figures/lab02_sim_pipeline.png){#fig-lab02-pipeline fig-alt="A left-to-right flow diagram of five boxes connected by arrows: hypothetical world Normal 48 15, draw B=5000 samples of n=36, colMeans to get 5000 x-bar values, histogram of the 5000 means, compare to Normal 48 2.5 squared."}
 
 ## Goal
 
-Generate the sampling distribution of $\hat p$ for $n = 40$ at a true pass rate $\theta = 0.65$, read its
-center (near $0.65$) and spread (SD near $0.075$), and confirm the spread matches the standard-error formula
-$\sqrt{\theta(1-\theta)/n}$. Then repeat the exercise for the sample mean and see the central limit theorem
-shape emerge.
+By the end of this lab you should be able to:
+
+- Write base-R code that draws `B` independent random samples of size `n` from a specified Normal world.
+- Compute the sample mean of each simulated sample and collect the results into a single vector of length `B`.
+- Summarize that vector (mean, SD) and compare the summary numbers to the theoretical mean and standard error
+  from the Week 2 derivation.
+- Plot a histogram of the simulated means and overlay the theoretical Normal density, and describe in words
+  how the two compare.
 
 ## Setup
 
-Open R (or Posit Cloud) and a fresh Quarto document; see [R · Quarto setup](../resources/r-quarto-setup.qmd).
-Set the seed once at the top so the whole lab is reproducible. The "study" is the recurring reading-fluency
-study: a competency pass/fail for the proportion, and a reading-gain score for the mean. Nothing is read from
-disk — we simulate directly from the model.
+You will need base R only — no packages beyond what ships with R. Before you run anything below in your own
+session (remember: in this build the chunks are shown, not executed, so you will run them yourself later),
+set your seed so your results match the ones described here:
 
-```r
+```{r}
+#| label: setup
+#| eval: false
 set.seed(35103)
-theta <- 0.65     # true pass rate (known here because the study is synthetic)
-n     <- 40       # students per sample
-reps  <- 10000    # number of simulated studies
 ```
+
+Keep this `set.seed(35103)` call at the top of your script, before you draw any random numbers. If you re-run
+the whole script from the top with the same seed, you will get the same simulated numbers every time — that
+is what "reproducible" means in a simulation context, and it is why every simulation chunk in this course
+carries the same seed.
+
+Recall from the Week 2 note the two numbers that anchor this whole lab, both hypothetical-world quantities,
+never the real sample facts:
+
+- Hypothetical true world: Normal(μ = 48, σ = 15) — a stipulated truth used only for this teaching device.
+- Sample size: n = 36 (matching the size of the real MAC visit-duration sample, so the comparison to that
+  sample's standard error is apples to apples).
+- Theoretical sampling distribution of x̄, from the Week 2 derivation: Normal(48, 2.5²), since
+  SE(x̄) = σ/√n = 15/√36 = 15/6 = 2.5.
 
 ## Steps
 
-### Step 1 — simulate one study, then many
+### Step 1 — Simulate B = 5000 samples of size 36 from Normal(48, 15)
 
-A single study draws 40 pass/fail outcomes and records the sample proportion. Repeating that `reps` times gives
-one $\hat p$ per simulated study — a whole sampling distribution in a vector.
+The core idea is to draw not one sample of 36 values, but many independent samples of 36 values each, all from
+the same hypothetical true world. A convenient way to organize this in base R is to draw one long vector of
+`B * n` values, then arrange it into a matrix with `n` rows and `B` columns, so that each *column* is one
+simulated sample of size 36.
 
-```r
+```{r}
+#| label: simulate-samples
+#| eval: false
 set.seed(35103)
-phat_sim <- replicate(reps, {
-  passes <- rbinom(1, size = n, prob = theta)   # number who pass, out of 40
-  passes / n                                     # the sample proportion p-hat
-})
-length(phat_sim)   # 10000 simulated estimates
+
+mu_true    <- 48
+sigma_true <- 15
+n          <- 36
+B          <- 5000
+
+# One long draw of B * n independent Normal(48, 15) values, reshaped so each
+# column is one simulated sample of size n = 36.
+sim_values  <- rnorm(B * n, mean = mu_true, sd = sigma_true)
+sim_samples <- matrix(sim_values, nrow = n, ncol = B)
 ```
 
-### Step 2 — read the center and spread
+After this step, `sim_samples` is a 36-by-5000 matrix. Each of the 5000 columns is a separate, independent
+pretend sample of 36 MAC visit durations, drawn from the hypothetical Normal(48, 15) world — not from the real
+survey data, and not from each other.
 
-The sampling distribution's center should sit near the true $\theta = 0.65$, and its standard deviation is the
-standard error.
+### Step 2 — Compute the sample mean of each simulated sample
 
-```r
-mean(phat_sim)   # ~ 0.65   (centered at the true theta -> p-hat is unbiased)
-sd(phat_sim)     # ~ 0.075  (this IS the standard error of p-hat)
-hist(phat_sim, breaks = 30,
-     main = "Sampling distribution of p-hat (n = 40, theta = 0.65)",
-     xlab = "p-hat")
-```
+Now collapse each column of `sim_samples` down to a single number: that column's sample mean. Base R's
+`colMeans()` does exactly this in one line, giving you a vector of 5000 simulated sample means — one x̄ value
+per pretend sample.
 
-### Step 3 — check against the formula, then do the mean
-
-Compare the simulated spread to the standard-error formula, then repeat the whole exercise for the sample mean
-to see the CLT shape appear for a continuous outcome.
-
-```r
-sqrt(theta * (1 - theta) / n)   # ~ 0.0754  -> matches sd(phat_sim)
-
-# the mean strand: gains with population mean 8, SD 6, samples of n = 36
+```{r}
+#| label: compute-means
+#| eval: false
 set.seed(35103)
-xbar_sim <- replicate(reps, mean(rnorm(36, mean = 8, sd = 6)))
-mean(xbar_sim)   # ~ 8.0
-sd(xbar_sim)     # ~ 1.0   (= 6 / sqrt(36), the SE of the mean)
-hist(xbar_sim, breaks = 30, main = "Sampling distribution of x-bar", xlab = "x-bar")
+
+xbar_sim <- colMeans(sim_samples)
+
+length(xbar_sim)   # should be 5000
+head(xbar_sim)      # first few simulated sample means
 ```
+
+`xbar_sim` is now the object of interest for the rest of the lab: it is a simulated approximation to the
+sampling distribution of x̄. Each of its 5000 entries is what you would have gotten as your sample mean, had
+that particular pretend sample of 36 visits been the one you actually drew from the hypothetical true world.
+
+### Step 3 — Summarize the distribution and plot a histogram
+
+With 5000 simulated means in hand, compute their mean and standard deviation, and compare both numbers to the
+theoretical values the Week 2 note derived: a mean at 48 and a standard error of 2.5.
+
+```{r}
+#| label: summarize-and-plot
+#| eval: false
+set.seed(35103)
+
+mean(xbar_sim)   # expect a number close to 48
+sd(xbar_sim)     # expect a number close to 2.5
+
+hist(xbar_sim,
+     breaks = 40,
+     freq   = FALSE,
+     main   = "Simulated sampling distribution of x-bar (B = 5000, n = 36)",
+     xlab   = "simulated sample mean")
+```
+
+**This chunk is shown but not executed on this page** (`eval: false`) — running it yourself in your own R
+session, with `set.seed(35103)` restored at the top, is the point of this lab. The figure below was produced
+by running exactly this simulation separately (same seed, same `mu_true`/`sigma_true`/`n`/`B`), so you can
+compare its shape and its printed `mean(xbar_sim)`/`sd(xbar_sim)` values to what you get when you run it
+yourself:
+
+![**The simulated sampling distribution, before the theoretical curve (synthetic).** A histogram of 5000
+simulated sample means from Normal(48, 15) with n = 36, on a density scale. The dashed line marks the
+simulation's own mean, 47.973 — close to, but not exactly, the theoretical 48; `sd(xbar_sim)` came out to
+2.520, close to the theoretical SE of
+2.5.](../assets/figures/lab02_sim_hist.png){#fig-lab02-sim-hist fig-alt="A bell-shaped histogram of 5000 simulated sample means, centered near 48, with a dashed vertical line marking the simulation's own mean near 48 and text reporting the simulated mean and standard deviation."}
+
+Because `B = 5000` is large but finite, `mean(xbar_sim)` will not land on exactly 48, and `sd(xbar_sim)` will
+not land on exactly 2.5 — expect small simulation noise, typically numbers such as 47.9-something and
+2.4-something-to-2.5-something, changing slightly if you rerun with a different seed or a different `B`. The
+point of the exercise is that these simulated numbers land *close to* the theoretical mean and SE, not that
+they match them digit for digit. The histogram itself, with `freq = FALSE` so it is on a density scale, should
+already look bell-shaped and centered near 48 even before you add the theoretical curve in Step 4.
+
+### Step 4 — Overlay the theoretical Normal(48, 2.5²) curve
+
+Finally, draw the theoretical density curve for Normal(48, 2.5²) on top of the histogram, using base R's
+`dnorm()` and `curve()`, so you can see directly how closely the simulated distribution tracks the formula
+from the Week 2 derivation.
+
+```{r}
+#| label: overlay-theoretical-curve
+#| eval: false
+set.seed(35103)
+
+se_theoretical <- sigma_true / sqrt(n)   # 15 / 6 = 2.5
+
+hist(xbar_sim,
+     breaks = 40,
+     freq   = FALSE,
+     main   = "Simulated vs. theoretical sampling distribution of x-bar",
+     xlab   = "simulated sample mean")
+
+curve(dnorm(x, mean = mu_true, sd = se_theoretical),
+      add = TRUE,
+      lwd = 2)
+```
+
+**This chunk is shown but not executed on this page** (`eval: false`) — running it yourself is the point. The
+figure below was produced by running exactly this code separately (same seed, same `xbar_sim` as Step 3, same
+theoretical curve), so you can check whether the curve sits on your own histogram the way it sits on this one:
+
+![**Simulated histogram with the theoretical curve overlaid (synthetic).** The same 5000 simulated means as
+the figure above, now with the theoretical Normal(48, 2.5²) density drawn on top. The curve sits closely
+against the bars across the whole
+range.](../assets/figures/lab02_sim_theoretical_overlay.png){#fig-lab02-theoretical-overlay fig-alt="The same bell-shaped histogram of simulated sample means as the previous figure, now with a smooth theoretical curve traced closely over the bars, peaking near 48."}
+
+If the simulation and the theory agree, the smooth curve should sit almost exactly on top of the histogram's
+bars, rising to a peak near x = 48 and falling off to near zero by roughly x = 40.5 and x = 55.5 (about three
+theoretical standard errors, 3 × 2.5 = 7.5, on either side of 48).
 
 ## Verify
 
-Three checks tell you the simulation behaved as the theory says it should:
+Before you consider this lab complete, check all of the following against your own output:
 
-- **Center.** `mean(phat_sim)` is about $0.65$ and `mean(xbar_sim)` is about $8.0$ — each estimator is centered
-  at its true parameter, which is what "unbiased" looks like.
-- **Spread matches the formula.** `sd(phat_sim)` is about $0.075$, matching $\sqrt{0.65 \times 0.35/40} \approx
-  0.0754$; `sd(xbar_sim)` is about $1.0$, matching $6/\sqrt{36}$. The simulated standard error and the formula
-  agree.
-- **Shape.** Both histograms are mound-shaped and roughly symmetric — the central limit theorem at work, even
-  though the proportion came from yes/no draws.
+- `length(xbar_sim)` equals 5000 — one simulated mean per simulated sample, no more and no fewer.
+- `mean(xbar_sim)` is close to 48 (the hypothetical true μ), not close to 49.8 (the real sample's x̄) — this
+  simulation never touches the real MAC survey data, only the stipulated hypothetical world.
+- `sd(xbar_sim)` is close to 2.5, matching σ/√n = 15/6 from the Week 2 derivation, not close to 15 (that would
+  be the SD of a single *observation*, not of the sample *mean*).
+- The histogram from Step 3 looks unimodal and roughly symmetric, centered near 48, before you have added any
+  theoretical curve — the bell shape should emerge from the simulation alone.
+- The overlaid curve from Step 4 sits close to the histogram's bars across the whole range, not systematically
+  above or below them, and not shifted to one side.
+- If you rerun the whole script from the very top with `set.seed(35103)` restored at each chunk, you get the
+  same `xbar_sim` values and the same summary numbers every time.
 
-If your numbers are off, check that you set the seed *before* the simulation and that `reps` is large (10,000,
-not 100); a small `reps` gives a jittery, untrustworthy picture.
+As a second, unrelated context for the same idea, imagine (synthetic; seed 35103) a hypothetical true world of
+package delivery times, Normal(μ = 120, σ = 24) minutes, and a sample size of n = 16 deliveries. The same
+four-step recipe above — simulate B samples of size n, take `colMeans()`, summarize, overlay the theoretical
+curve — would produce simulated means centered near 120 with an SD near σ/√n = 24/√16 = 24/4 = **6**. Nothing
+about the four steps changes: only the three numbers you feed in (`mu_true`, `sigma_true`, `n`) change. That
+portability — the same simulation recipe working for any Normal world and any sample size — is itself one of
+the lab's lessons: a sampling-distribution simulation is a general tool, not something special to MAC visit
+durations.
+
+![**The same recipe, a different world (synthetic).** Running the identical four-step simulation with
+`mu_true = 120`, `sigma_true = 24`, `n = 16` (same seed 35103, B = 5000) gives simulated means centered near
+120 with SD near 6, matching the theoretical Normal(120, 6²) curve overlaid here — no part of the recipe
+itself changed, only the three input
+numbers.](../assets/figures/lab02_transfer_delivery.png){#fig-lab02-transfer-delivery fig-alt="A bell-shaped histogram of 5000 simulated sample means for a package-delivery-times example, centered near 120 minutes, with a smooth theoretical curve traced over it and summary text reporting the simulated mean and standard deviation."}
 
 ## AI use note
 
-| Field | What to record |
-|-------|----------------|
-| Tool | which assistant you used, with approximate date or version |
-| Purpose | what you used it for (e.g. explaining `replicate`, debugging a histogram, interpreting the spread) |
-| Verification | how you checked it: re-ran with the fixed seed, compared `sd(phat_sim)` to the formula, or rewrote the explanation in your own words after checking |
+| Tool | Purpose | Verification |
+|------|---------|--------------|
+| AI coding assistant (e.g. Claude, ChatGPT, Copilot) | Drafting or troubleshooting base-R simulation code such as the `rnorm()` / `matrix()` / `colMeans()` pattern above, or explaining an unfamiliar base-R function's arguments | Run the AI-suggested code yourself in your own R session with `set.seed(35103)` set, and confirm `length(xbar_sim) == 5000`, `mean(xbar_sim)` near 48, and `sd(xbar_sim)` near 2.5 before trusting any AI-assisted rewrite; never submit AI output you have not run and checked against these numbers |
 
-Verification is the load-bearing line: an AI can explain `replicate`, but you confirm the simulated standard
-error matches $\sqrt{\theta(1-\theta)/n}$ yourself.
+The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
+practice only.
 
 ## See also
 
-- [Week 2 — Sampling distributions & simulation](../notes/week-02-sampling-distributions-and-simulation.qmd)
-- [Week 3 — Estimators & standard errors](../notes/week-03-estimators-and-standard-errors.qmd)
-- [Lab 10 — Bootstrap intervals](lab-10-bootstrap-intervals.qmd)
-- [R · Quarto setup](../resources/r-quarto-setup.qmd)
-
-*The graded deliverable, its rubric, and due date live in Blackboard (the LMS) — this page is study and
-practice only. All numbers are synthetic and `verified: false`; the math gate is blocked pending sign-off.*
+- [Week 2 — Sampling distributions and simulation](../notes/week-02-sampling-distributions-and-simulation.qmd)
+  — the companion note deriving the Normal(48, 2.5²) sampling distribution this lab simulates.
+- [Labs index](index.qmd) — the full list of course labs.
+- [Notation glossary](../resources/notation-glossary.qmd) — definitions for μ, σ, x̄, n, and SE(x̄).

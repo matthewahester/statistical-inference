@@ -1,79 +1,136 @@
 ---
-title: "R · Quarto setup"
-subtitle: "Getting set up to run the simulation code"
-page-type: reference
+title: "R and Quarto setup"
+subtitle: "Getting R, RStudio (or Posit Cloud), and Quarto working before you open a lab"
 toc: true
 ---
 
-The inference labs use **R** and **Quarto** to simulate sampling distributions, draw likelihood and posterior
-curves, build bootstrap intervals, and run randomization tests. This page gets you set up and explains the
-reproducibility conventions every lab uses. You need no prior R experience — the simulation work is scaffolded
-in the labs, and the code is explained as it goes.
+## What this page is
 
-::: {.callout-note}
-On this site the R code in the notes and labs is **shown as static teaching code** — it is
-displayed, syntax-highlighted, but not executed in place. You run it yourself in your own R session, which is
-exactly how you will work on the labs.
-:::
+This page is a one-time setup reference, not a week of new inference content. It walks through what to
+install, how to check that Quarto can find R on your machine, a tiny reproducible example that mirrors the
+kind of thing you will do in the labs, and the reproducibility habits this course expects every time you sit
+down with a `.qmd` file. Read it once before Lab 2, and come back to it any time your setup stops behaving as
+expected.
 
-## Option A — Posit Cloud (nothing to install)
+## What to install
 
-The quickest start is the browser. Create a free account at [posit.cloud](https://posit.cloud), open a new
-project, and you have R, RStudio, and Quarto ready to use with nothing installed on your machine. This is the
-recommended path if you are new to R or working on a shared computer.
+You need three things, and all three are free.
 
-## Option B — install locally
+- **R, from CRAN.** R is the statistical computing language every lab in this course uses. Install it from
+  the Comprehensive R Archive Network (CRAN), choosing the installer for your operating system. R itself has
+  no graphical interface worth using directly — you almost always run it through RStudio (below) or Posit
+  Cloud, not by double-clicking an R icon and typing at a bare console.
+- **RStudio Desktop, or Posit Cloud, as your working environment.** RStudio Desktop is a free application you
+  install locally, alongside R, that gives you an editor, a console, a file browser, and a place to preview
+  rendered documents. Posit Cloud is the browser-based alternative: it runs R and RStudio's interface on a
+  remote server, so there is nothing to install locally, which is a reasonable choice if you are working from
+  a machine where you cannot install software, or if you just want to get started faster. Either path gets you
+  to the same place for this course's purposes; use whichever fits your situation.
+- **Quarto.** Quarto is the tool that turns a `.qmd` file — prose, headings, and R code chunks mixed together,
+  which is exactly the format this course's notes and labs are written in — into a rendered document. If you
+  install a recent version of RStudio Desktop, Quarto is already bundled with it, so a separate Quarto install
+  is often unnecessary; Posit Cloud's standard R environments also come with Quarto preinstalled. If you are
+  working outside either of those (for example, a plain R installation with a different editor), install
+  Quarto separately from its own site. Either way, confirm Quarto is present before your first lab, using the
+  check in the next section.
 
-To work offline, install two pieces:
+## Making R discoverable by Quarto
 
-1. **R** — the language — from [cran.r-project.org](https://cran.r-project.org/).
-2. **RStudio Desktop** — the editor — from [posit.co/download/rstudio-desktop](https://posit.co/download/rstudio-desktop/).
-   Recent RStudio ships with **Quarto** built in; if you want the standalone tool, get it from
-   [quarto.org](https://quarto.org/docs/get-started/).
+Quarto needs to be able to find an R installation on your machine in order to run any `.qmd` file that
+contains R code chunks. If you installed R and then installed RStudio Desktop (in either order), this
+discovery step normally happens automatically — RStudio configures itself to know where R lives, and Quarto,
+run from inside RStudio, inherits that same configuration. Two situations are worth knowing about anyway:
 
-Open RStudio, create a new Quarto document (`File → New File → Quarto Document`), and you are ready.
+- **Confirming Quarto sees R.** From a terminal (or the RStudio "Terminal" tab), running `quarto check` prints
+  a diagnostic report, including whether Quarto has located a working R installation and which version. If
+  this check reports that R was not found, the most common fix is reinstalling R from CRAN and then restarting
+  RStudio, so RStudio can re-detect it.
+- **More than one R version installed.** If you have installed R more than once (for example, upgrading to a
+  newer version without removing the old one), Quarto and RStudio both default to the most recently installed
+  version unless you explicitly configure otherwise. For this course, any reasonably recent R version is fine;
+  you do not need to pin an exact version number.
 
-## Running the lab code
+If you are using Posit Cloud instead of a local install, this whole discoverability question is handled for
+you — the cloud environment ships with a working R-and-Quarto pairing already connected, and there is no local
+configuration step at all.
 
-Each lab is a sequence of small R chunks. Copy a chunk into your Quarto document (or an R script), run it, and
-read the output against the lab's **Verify** section. The labs use only base R — `rbinom`, `rnorm`,
-`replicate`, `sample`, `quantile`, `dbinom`, `qbeta`, `pbeta`, and `optimize` — so there is nothing extra to
-install for the simulations.
+## A minimal reproducible example: "hello, inference"
 
-## Reproducibility conventions
+Here is a small, self-contained piece of base R that mirrors the shape of the course's labs: it sets a seed,
+simulates something, and checks a number against what theory predicts. This particular example uses the MAC
+Study's full usage-rate survey as its anchor: the sample data in hand is n = 100 students surveyed, with
+k = 38 of them having used the MAC at least once that week, giving a sample proportion p̂ = 38/100 = 0.38 (see
+the recurring case as introduced in
+[Week 1 — What is statistical inference?](../notes/week-01-what-is-statistical-inference.qmd)).
 
-Three habits make your work reproducible, and the labs use all three:
+The chunk below does not use that real sample directly; instead, it asks a different, purely illustrative
+question — if you *simulate* drawing samples from a Bernoulli world where the true proportion really is 0.38,
+does the simulated sample proportion recover a number near 0.38? This is the same "hypothetical true world
+used only as a teaching device" pattern the course uses elsewhere (see Week 2's simulation of the hypothetical
+true world, Normal(μ = 48, σ = 15)): here the stipulated truth is π = 0.38, used only so the simulation has
+something to check itself against, never asserted as a known fact about the real survey.
 
-- **Fix the seed.** Begin with `set.seed(35103)` so every simulation returns the same numbers on every run.
-  This is what lets your output match the locked values in the notes — and what lets a reader confirm your
-  results.
-- **One Quarto file, top to bottom.** Keep the narrative, the code, and the output in a single `.qmd` that
-  renders start to finish without manual steps.
-- **Record session information.** End a report with `sessionInfo()` so the exact R and package versions are
-  part of the record.
+```{r}
+#| label: hello-inference
+#| eval: false
+set.seed(35103)
 
-```r
-set.seed(35103)   # put this near the top, before any random draw
-# ... your simulation code ...
-sessionInfo()     # at the end, to capture versions
+p_true <- 0.38   # hypothetical true proportion, stipulated only for this check
+n      <- 100    # matches the size of the real MAC usage-rate survey
+
+# Simulate one sample of n Bernoulli(p_true) draws (1 = used the MAC, 0 = did not).
+sample_draws <- rbinom(n, size = 1, prob = p_true)
+
+p_hat_sim <- mean(sample_draws)
+p_hat_sim   # expect a number near 0.38, not exactly 0.38
 ```
 
-## If something goes wrong
+Because `n = 100` is finite, `p_hat_sim` will not land on exactly 0.38 — expect a nearby number such as
+0.30-something to 0.40-something, depending on the random draw, even with the seed fixed. That is the whole
+point of the check: it demonstrates that a single simulated sample proportion is a noisy but honest estimate of
+the true proportion it was drawn from, which is the same phenomenon behind why the real survey's p̂ = 0.38 is
+an estimate of an unknown π, not π itself. Running this exact chunk with `set.seed(35103)` in your own session
+will always reproduce the same `p_hat_sim` value, which is the point of the next section.
 
-- **Numbers change every run.** You did not set the seed, or set it after a random draw. Move `set.seed(35103)`
-  above the simulation.
-- **A jittery histogram or interval.** Your number of repetitions is too small; push `replicate(...)` or the
-  bootstrap count to $10{,}000$.
-- **`could not find function`.** A typo in a base-R function name, or you are in a fresh session — re-run the
-  setup chunk.
+## Reproducibility habits
 
-## A note on AI help
+Every R script and every lab in this course follows the same small set of habits, so that your work — and
+anyone else's, including a grader or your future self — reproduces the same output every time it is run.
 
-You may use an AI assistant to explain a function or help debug your own code, but you must check what it
-produces — re-run it with the fixed seed, compare to the lab's Verify section, and include an **AI Use Note**
-(Tool / Purpose / Verification) on any graded work. Verification is the load-bearing line.
+- **Always `set.seed(35103)` before any random draw.** Every simulation chunk in this course's notes and labs
+  sets this same seed, so results are consistent across the whole term and comparable across students. Set it
+  at the top of a script, and again at the top of any chunk that draws random numbers, so a chunk run on its
+  own still reproduces correctly even if it is not run as part of the full script from the top.
+- **End a script with `sessionInfo()`.** This prints your R version, your operating system, and the version of
+  every loaded package, all in one block. Keeping this at the bottom of a script (or the end of a `.qmd` file)
+  means that if your output ever looks different from someone else's, the first thing to compare is this
+  block, not the code itself.
+- **One file per task.** Keep each lab, each homework problem, or each self-contained piece of exploration in
+  its own `.qmd` or `.R` file, rather than accumulating unrelated work in one long script. This makes it far
+  easier to re-run, to debug, and to know exactly what a given file is for when you come back to it later in
+  the term.
 
----
+Put together, a typical script in this course has the shape: set the seed, do the work, `sessionInfo()` at the
+end. The lab pages in this course (starting with Lab 2) follow exactly this shape in their own R chunks.
 
-*This page is a study reference. For graded specifics — deadlines, submissions, and policies — **Blackboard
-(the LMS) is authoritative**.*
+## AI Use Note
+
+| Tool | Purpose | Verification |
+|------|---------|--------------|
+| AI coding assistant (e.g. Claude, ChatGPT, Copilot) | Explaining an installation error message, drafting a first attempt at an R/Quarto configuration fix, or explaining what a `quarto check` diagnostic line means | **Load-bearing:** run `quarto check` yourself after any AI-suggested fix and confirm it reports a working R installation before trusting the fix; never install a package or edit a configuration file solely on an AI's say-so without confirming the installed version and the check output in your own session |
+
+## Public vs. graded
+
+These notes, the examples, and the practice here are **public and ungraded** — study material only. No
+graded prompts, answer keys, rubrics, point values, or due dates appear on this site. Graded inference
+checkpoints, quizzes, homework, labs, the midterm, the project, and the final live in **Blackboard
+(the LMS)**, which is authoritative for due dates, submissions, and grades. If this page and Blackboard
+ever disagree, follow Blackboard.
+
+## See also
+
+- [Labs index](../labs/index.qmd) — the full list of course labs, each of which assumes this setup is working.
+- [Notation glossary](notation-glossary.qmd) — definitions for the symbols used in the "hello, inference"
+  example above, including p̂ and π.
+- [Inference formula reference](inference-formula-reference.qmd) — the standard-error and estimation formulas
+  this example previews, gathered in one place for lookup.
